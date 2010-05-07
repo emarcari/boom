@@ -1,0 +1,12 @@
+Import('env')
+
+file_list = Split("""
+CompositeParamPolicy.cpp
+ManyParamPolicy.cpp
+MixtureDataPolicy.cpp
+NullParamPolicy.cpp
+PriorPolicy.cpp
+""")
+
+obj = env.Object(file_list)
+Return('obj')
