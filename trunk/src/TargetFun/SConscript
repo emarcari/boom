@@ -1,0 +1,11 @@
+Import('env')
+
+file_list=Split("""
+Loglike.cpp
+LoglikeSubset.cpp
+LogPost.cpp
+ScalarLogpostTF.cpp
+""")
+
+obj = env.Object(file_list)
+Return('obj')

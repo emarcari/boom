@@ -1,0 +1,47 @@
+Import('env')
+
+## ConditionalMarkovModel.cpp
+
+file_list = Split("""
+BetaModel.cpp
+BinomialModel.cpp
+CategoricalData.cpp
+ChisqModel.cpp
+CompositeData.cpp
+CompositeEmMixtureComponent.cpp
+CompositeModel.cpp
+ConstrainedVectorParams.cpp
+DataTypes.cpp
+DirichletModel.cpp
+EmMixtureComponent.cpp
+ExponentialModel.cpp
+FiniteMixtureModel.cpp
+GammaModel.cpp
+GaussianModelBase.cpp
+GaussianModel.cpp
+GaussianModelGivenSigma.cpp
+ZeroMeanGaussianModel.cpp
+MarkovModel.cpp
+ModelTypes.cpp
+MultinomialModel.cpp
+MvnBase.cpp
+MvnGivenSigma.cpp
+MvnModel.cpp
+MvtModel.cpp
+ParamTypes.cpp
+PoissonModel.cpp
+ProductDirichletModel.cpp
+ScaledChisqModel.cpp
+SpdData.cpp
+SpdParams.cpp
+Sufstat.cpp
+TruncatedGammaModel.cpp
+MarginallyUniformCorrelationModel.cpp
+UniformCorrelationModel.cpp
+UniformModel.cpp
+WeightedMvnModel.cpp
+WishartModel.cpp
+""")
+
+obj =env.Object(file_list)
+Return('obj')

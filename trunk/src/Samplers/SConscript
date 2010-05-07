@@ -1,0 +1,16 @@
+Import('env')
+
+file_list=Split("""
+ARMS.cpp
+MetropolisHastings.cpp
+MH_Proposals.cpp
+Sampler.cpp
+ScalarSliceSampler.cpp
+SliceSampler.cpp
+TIM.cpp
+UnivariateSliceSampler.cpp
+Gilks/arms.cpp
+""")
+
+obj = env.Object(file_list)
+Return('obj')

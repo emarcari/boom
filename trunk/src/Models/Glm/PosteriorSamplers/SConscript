@@ -1,0 +1,30 @@
+Import('env')
+
+file_list = Split("""
+BregVsSampler.cpp
+DAFE_MLM.cpp
+GlmMvnPriorMeanSampler.cpp
+GlmMvnPriorMeanSampler.cpp
+GlmMvnSiginvSepStratSampler.cpp
+GlmMvnSiginvIndSampler.cpp
+LogitSampler.cpp
+LogitSamplerBma.cpp
+MlogitRwm.cpp
+MLVS_base.cpp
+MLVS.cpp
+MLVS_data_imputer.cpp
+MLVS_split.cpp
+MnpBetaSampler.cpp
+MnpBetaGivenSigmaSampler.cpp
+MLAuxMixSampler.cpp
+PartRegSampler.cpp
+RegressionConjSampler.cpp
+MvRegSampler.cpp
+MvtRegSampler.cpp
+VsPriorSampler.cpp
+""")
+
+### 
+
+obj =env.Object(file_list)
+Return('obj')

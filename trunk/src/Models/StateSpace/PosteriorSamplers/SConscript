@@ -1,0 +1,11 @@
+Import('env')
+
+## ConditionalMarkovModel.cpp
+
+file_list = Split("""
+LocalLinearTrendConjSampler.cpp
+ScalarSsmPosteriorSampler.cpp
+""")
+
+obj =env.Object(file_list)
+Return('obj')
