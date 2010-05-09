@@ -1,0 +1,28 @@
+Import('env')
+
+file_list= Split("""
+BinomialDistribution.cpp
+Markov.cpp
+Rmath_dist.cpp
+Wishart.cpp
+dirichlet.cpp
+extreme_value.cpp
+rtriangle.cpp
+matrix_normal.cpp
+mvn.cpp
+mvt.cpp
+random_cor.cpp
+random_int.cpp
+rlexp.cpp
+rmulti.cpp
+rng.cpp
+set_seed.cpp
+student_fix.cpp
+trun_gamma.cpp
+trun_norm.cpp
+trun_exp.cpp
+usp.cpp
+""")
+
+obj = env.Object(file_list)
+Return('obj')

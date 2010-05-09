@@ -1,0 +1,107 @@
+/*
+  Copyright (C) 2006 Steven L. Scott
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+*/
+#include "MvnMeanSampler.hpp"
+#include <Models/MvnModel.hpp>
+#include <Models/ParamTypes.hpp>
+#include <distributions.hpp>
+#include <cpputil/math_utils.hpp>
+namespace BOOM{
+
+  typedef MvnConjMeanSampler MCS;
+
+  MCS::MvnConjMeanSampler(Ptr<MvnModel> Mod)
+    : mvn(Mod),
+      mu0(new VectorParams(Mod->mu().zero())),
+      kappa(new UnivParams(0.0))
+  {}
+
+  MCS::MvnConjMeanSampler
+  (Ptr<MvnModel> Mod, Ptr<VectorParams> Mu0, Ptr<UnivParams> Kappa)
+    : mvn(Mod),
+      mu0(Mu0),
+      kappa(Kappa)
+  {}
+
+  MCS::MvnConjMeanSampler
+  (Ptr<MvnModel> Mod, const Vec & Mu0, double Kappa)
+    : mvn(Mod),
+      mu0(new VectorParams(Mu0)),
+      kappa(new UnivParams(Kappa))
+  {}
+
+  void MCS::draw(){
+    Ptr<MvnSuf> s = mvn->suf();
+    double n =s->n();
+    double k = kappa->value();
+    const Spd & Siginv(mvn->siginv());
+    Spd ivar = (n+k)*Siginv;
+    double w = n/(n+k);
+    Vec mu = w*s->ybar() + (1.0-w)*mu0->value();
+    mu = rmvn_ivar_mt(rng(), mu, ivar);
+    mvn->set_mu(mu);
+  }
+
+  double MCS::logpri()const{
+    double k = kappa->value();
+    if(k==0.0) return BOOM::infinity(-1);
+    const Ptr<SpdParams> Sig = mvn->Sigma_prm();
+    const Vec &mu(mvn->mu());
+    uint d = mvn->dim();
+    double ldsi = d*log(k) + Sig->ldsi();
+    return dmvn(mu, mu0->value(), k*Sig->ivar(), ldsi, true);
+  }
+
+  //----------------------------------------------------------------------
+  typedef MvnMeanSampler MMS;
+
+  MMS::MvnMeanSampler(Ptr<MvnModel> m, Ptr<VectorParams> Mu0, Ptr<SpdParams> Omega)
+    : mvn(m),
+      mu0(Mu0),
+      omega(Omega)
+  {}
+
+  MMS::MvnMeanSampler(Ptr<MvnModel> m, Ptr<MvnModel> Pri)
+    : mvn(m),
+      mu0(Pri->Mu_prm()),
+      omega(Pri->Sigma_prm())
+  {}
+
+
+
+  MMS::MvnMeanSampler(Ptr<MvnModel> m, const Vec &Mu0, const Spd &Omega)
+    : mvn(m),
+      mu0(new VectorParams(Mu0)),
+      omega(new SpdParams(Omega))
+  {}
+
+  double MMS::logpri()const{
+    return dmvn(mvn->mu(), mu0->value(), omega->ivar(),
+		omega->ldsi(), true);
+  }
+
+  void MMS::draw(){
+    Ptr<MvnSuf> s = mvn->suf();
+    double n = s->n();
+    const Spd &siginv(mvn->siginv());
+    const Spd &ominv(omega->ivar());
+    Spd Ivar = n*siginv + omega->ivar();
+    Vec mu = Ivar.solve(n*(siginv*s->ybar()) + ominv*mu0->value());
+    mu = rmvn_ivar(mu, Ivar);
+    mvn->set_mu(mu);
+  }
+}

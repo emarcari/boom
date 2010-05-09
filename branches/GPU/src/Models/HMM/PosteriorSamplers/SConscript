@@ -1,0 +1,8 @@
+Import('env')
+
+file_list = Split("""
+HmmPosteriorSampler.cpp
+""")
+
+obj =env.Object(file_list)
+Return('obj')

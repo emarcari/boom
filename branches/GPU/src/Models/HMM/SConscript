@@ -1,0 +1,14 @@
+Import('env')
+
+### HiddenConditionalMarkovModel.cpp
+### ConditionalHmmFilter.cpp
+
+file_list = Split("""
+hmm_tools.cpp
+HmmDataImputer.cpp
+HmmFilter.cpp
+HMM2.cpp
+""")
+
+obj =env.Object(file_list)
+Return('obj')
