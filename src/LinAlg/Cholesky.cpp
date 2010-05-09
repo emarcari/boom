@@ -130,7 +130,7 @@ namespace BOOM{
     double Chol::logdet()const{
       ConstVectorView d(diag(dcmp));
       double ans = 0;
-      for(int i = 0; i < d.size(); ++i){
+      for(uint i = 0; i < d.size(); ++i){
         ans += std::log(fabs(d[i]));
       }
       return 2 * ans;

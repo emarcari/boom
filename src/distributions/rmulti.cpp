@@ -20,6 +20,7 @@
 #include <distributions.hpp>
 #include <LinAlg/Types.hpp>
 #include <LinAlg/Vector.hpp>
+#include <cpputil/math_utils.hpp>
 
 #include <stdexcept>
 #include <sstream>

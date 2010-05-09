@@ -21,6 +21,10 @@
 #include <cpputil/math_utils.hpp>
 #include <distributions.hpp>
 #include <cmath>
+#include <iostream>
+#include <ostream>
+
+using namespace std;
 
 namespace BOOM{
   namespace LinAlg{
@@ -56,9 +60,9 @@ namespace BOOM{
   // matrices.  It is broken
     CM random_cor(uint n){
       CM R(n);
-      for(int k = 0; k < 1; ++k){
-        for(int i = 0; i < n-1; ++i){
-          for(int j = i+1; j < n; ++j){
+      for(uint k = 0; k < 1; ++k){
+        for(uint i = 0; i < n-1; ++i){
+          for(uint j = i+1; j < n; ++j){
             Rdet f(R, i, j);
             double f1 = f(1);
             double fn = f(-1);
