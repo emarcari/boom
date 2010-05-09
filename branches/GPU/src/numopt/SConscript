@@ -1,0 +1,20 @@
+Import('env')
+
+file_list = Split("""
+max_nd.cpp
+bfgs.cpp
+newton.cpp
+Negate.cpp
+simulated_annealing.cpp
+nelder_mead.cpp
+conj_grad.cpp
+Integrate.cpp
+ScalarLaplaceApproximation.cpp
+ScalarNewtonMax.cpp
+""")
+
+obj = env.Object(file_list)
+Return('obj')
+ 
+
+
