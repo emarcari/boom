@@ -1,0 +1,119 @@
+/*
+  Copyright (C) 2005 Steven L. Scott
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+*/
+#ifndef BOOM_MULTINOMIAL_MODEL_HPP
+#define BOOM_MULTINOMIAL_MODEL_HPP
+#include "ModelTypes.hpp"
+#include "ParamTypes.hpp"
+#include "Sufstat.hpp"
+#include <Models/CategoricalData.hpp>
+#include "Policies/SufstatDataPolicy.hpp"
+#include "Policies/ConjugatePriorPolicy.hpp"
+#include "Policies/ParamPolicy_1.hpp"
+#include <Models/EmMixtureComponent.hpp>
+
+namespace BOOM{
+
+  class MultinomialSuf
+    : public SufstatDetails<CategoricalData>
+  {
+  public:
+    MultinomialSuf(uint p);
+    MultinomialSuf(const MultinomialSuf &rhs);
+    MultinomialSuf* clone()const;
+
+    void Update(const CategoricalData &d);
+    void add_mixture_data(uint y, double prob);
+    void update_raw(uint k);
+    void clear();
+
+    const Vec &n()const;
+    void combine(Ptr<MultinomialSuf>);
+    void combine(const MultinomialSuf &);
+    MultinomialSuf * abstract_combine(Sufstat *s){
+      return abstract_combine_impl(this,s); }
+
+    virtual Vec vectorize(bool minimal=true)const;
+    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
+					    bool minimal=true);
+    virtual Vec::const_iterator unvectorize(const Vec &v,
+					    bool minimal=true);
+  private:
+    Vec counts;
+  };
+
+  //======================================================================
+  class MultinomialDirichletSampler;
+  class DirichletModel;
+
+  class MultinomialModel
+    : public ParamPolicy_1<VectorParams>,
+      public SufstatDataPolicy<CategoricalData, MultinomialSuf>,
+      public ConjugatePriorPolicy<MultinomialDirichletSampler>,
+      public LoglikeModel,
+      public EmMixtureComponent
+  {
+  public:
+    MultinomialModel(uint Nlevels);
+    MultinomialModel(const Vec &probs );
+    MultinomialModel(const std::vector<string> &);
+
+    template <class Fwd> // iterator promotable to uint
+    MultinomialModel(Fwd b, Fwd e);
+    MultinomialModel(const MultinomialModel &rhs);
+    MultinomialModel * clone()const;
+
+    uint nlevels()const;
+    Ptr<VectorParams> Pi_prm();
+    const Ptr<VectorParams> Pi_prm()const;
+
+    const double & pi(int s) const;
+    const Vec & pi()const;
+    void set_pi(const Vec &probs);
+
+    uint size()const;         // number of potential outcomes;
+    double loglike()const;
+    void mle();
+    double pdf(Ptr<Data> dp, bool logscale) const;
+    void add_mixture_data(Ptr<Data>, double prob);
+
+    void set_conjugate_prior(const Vec &nu);
+    void set_conjugate_prior(Ptr<DirichletModel>);
+    void set_conjugate_prior(Ptr<MultinomialDirichletSampler>);
+
+    uint simdat()const;
+  };
+
+  template <class Fwd> // iterator promotable to uint
+  MultinomialModel::MultinomialModel(Fwd b, Fwd e)
+    : ParamPolicy(new VectorParams(1)),
+      DataPolicy(new MultinomialSuf(1)),
+      ConjPriorPolicy()
+  {
+    std::vector<uint> uivec(b,e);
+    std::vector<Ptr<CategoricalData> >
+      dvec(make_catdat_ptrs(uivec));
+
+    uint nlev= dvec[0]->size();
+    Vec probs(nlev, 1.0/nlev);
+    set_pi(probs);
+
+    set_data(dvec);
+    mle();
+  }
+}
+#endif // BOOM_MULTINOMIAL_MODEL_HPP
