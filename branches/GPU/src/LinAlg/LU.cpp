@@ -70,7 +70,7 @@ namespace BOOM{
       double ans = 1.0;  // not right!  might be -1... how to tell from pivots?
       int sign = 1;
       for(uint i=0; i<dcmp.nrow(); ++i){
-        if(pivots[i]!=i+1) sign = -sign;
+        if(pivots[i]!=(int)i+1) sign = -sign;
         ans*= dcmp.unchecked(i,i);
       }
       return sign*ans;

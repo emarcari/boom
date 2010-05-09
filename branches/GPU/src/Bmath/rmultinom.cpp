@@ -55,6 +55,7 @@
  */
 
 #include <Bmath/Bmath.hpp>
+#include <Bmath/nmath.hpp>
 #include <vector>
 #include <stdexcept>
 #include <sstream>

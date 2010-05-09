@@ -18,6 +18,8 @@
 #include <Samplers/MH_Proposals.hpp>
 #include <LinAlg/Cholesky.hpp>
 #include <distributions.hpp>
+#include <cpputil/math_utils.hpp>
+
 namespace BOOM{
 
 

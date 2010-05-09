@@ -22,6 +22,8 @@
 #include <cassert>
 #include <stdexcept>
 
+using namespace std;
+
 namespace BOOM{
   SliceSampler::SliceSampler(Func F, bool Unimodal)
     : unimodal(Unimodal),

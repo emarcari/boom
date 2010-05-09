@@ -1,7 +1,7 @@
 import os
 
 Import('flags Libname Libhome OtherInc be')
-allflags = " -Wall -Wunused -Wextra -Werror -Woverloaded-virtual -Wsign-promo "
+allflags = " -Wall -Wunused -Wextra -Woverloaded-virtual -Wsign-promo "
 allflags += " -Wno-uninitialized "
 flags = flags + allflags
 

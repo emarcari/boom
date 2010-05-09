@@ -11,7 +11,8 @@ Givens.cpp
 Kronecker.cpp
 LU.cpp                 
 Matrix.cpp     
-QR.cpp         
+QR.cpp      
+Selector.cpp
 SpdMatrix.cpp  
 SVD.cpp
 SWEEP.cpp
