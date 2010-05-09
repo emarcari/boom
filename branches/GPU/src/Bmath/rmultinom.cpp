@@ -54,70 +54,43 @@
  *	=> Hence also can have  int arguments.
  */
 
-#include <Bmath/Bmath.hpp>
-#include <vector>
-#include <stdexcept>
-#include <sstream>
-#include <cstdlib>
-
+#include "nmath.hpp"
+#include <stdlib.h>
 namespace Rmath{
-  std::vector<int> rmultinom_mt(RNG &rng, int n, const std::vector<double> &prob){
-    std::vector<int> result;
-    rmultinom_mt(rng, n, prob, result);
-    return result;
-  }
 
-  void rmultinom(int n, const std::vector<double> &prob, std::vector<int> &result){
-    rmultinom_mt(BOOM::GlobalRng::rng, n, prob, result);
-  }
+#ifdef MATHLIB_STANDALONE
+#define ML_ERR_ret_NAN(_k_) {ML_ERROR(ME_DOMAIN); rN[_k_]=-1; return;}
+#else
+#define ML_ERR_ret_NAN(_k_) {ML_ERROR(ME_DOMAIN); rN[_k_]=NA_INTEGER; return;}
+#endif
 
-  std::vector<int> rmultinom(int n, const std::vector<double> &prob){
-    std::vector<int> result;
-    rmultinom_mt(BOOM::GlobalRng::rng, n, prob, result);
-    return result;
-  }
-
-  void rmultinom_mt(BOOM::RNG & rng,
-                    int n,
-                    const std::vector<double> & prob,
-                    std::vector<int> &rN){
-    /* `Return' vector  rN[1:K] {K := length(prob)}
-     *  where rN[j] ~ Bin(n, prob[j]) ,  sum_j rN[j] == n,  sum_j prob[j] == 1,
-     */
-
-    int K = prob.size();
-    if(rN.size()!=K) rN.resize(K);
-    if(K < 1){
-      throw std::runtime_error("empty argument 'prob' in rmultinom_mt");
-    }
-
+void rmultinom(int n, double* prob, int K, int* rN)
+/* `Return' vector  rN[1:K] {K := length(prob)}
+ *  where rN[j] ~ Bin(n, prob[j]) ,  sum_j rN[j] == n,  sum_j prob[j] == 1,
+ */
+{
     int k;
     double pp, p_tot = 0.;
 
+#ifdef MATHLIB_STANDALONE
+    if (K < 1) { ML_ERROR(ME_DOMAIN); return;}
+    if (n < 0)  ML_ERR_ret_NAN(0);
+#else
+    if (K == NA_INTEGER || K < 1) { ML_ERROR(ME_DOMAIN); return;}
+    if (n == NA_INTEGER || n < 0)  ML_ERR_ret_NAN(0);
+#endif
 
     /* Note: prob[K] is only used here for checking  sum_k prob[k] = 1 ;
      *       Could make loop one shorter and drop that check !
      */
     for(k = 0; k < K; k++) {
-      pp = prob[k];
-      if (!finite(pp) || pp < 0. || pp > 1.){
-        std::ostringstream err;
-        err << "rmultinom:  element " << k
-            << " (counting from 0) of 'prob' is illegal."
-            << std::endl << "prob =";
-        for(int m = 0; m < K; ++m){
-          err << " " << prob[m];
-        }
-        err << std::endl;
-        throw std::runtime_error(err.str());
-      }
-      p_tot += pp;
-      rN[k] = 0;
+	pp = prob[k];
+	if (!R_FINITE(pp) || pp < 0. || pp > 1.) ML_ERR_ret_NAN(k);
+	p_tot += pp;
+	rN[k] = 0;
     }
     if(fabs(p_tot - 1.) > 1e-7){
-      std::ostringstream err;
-      err << "rmultinom: probability sum should be 1, but is " << p_tot << std::endl;
-      throw std::runtime_error(err.str());
+      mathlib_error("rbinom: probability sum should be 1, but is ", p_tot);
     }
     if (n == 0) return;
     if (K == 1 && p_tot == 0.) return;/* trivial border case: do as rbinom */
@@ -125,13 +98,15 @@ namespace Rmath{
     /* Generate the first K-1 obs. via binomials */
 
     for(k = 0; k < K-1; k++) { /* (p_tot, n) are for "remaining binomial" */
-      pp = prob[k] / p_tot;
-      rN[k] = rbinom_mt(rng, n,  pp);
-      n -= rN[k];
-      if(n <= 0) /* we have all*/ return;
-      p_tot -= prob[k]; /* i.e. = sum(prob[(k+1):K]) */
+	pp = prob[k] / p_tot;
+	rN[k] = (int) rbinom(n,  pp);
+	n -= rN[k];
+	if(n <= 0) /* we have all*/ return;
+	p_tot -= prob[k]; /* i.e. = sum(prob[(k+1):K]) */
     }
     rN[K-1] = n;
     return;
-  }
 }
+#undef ML_ERR_ret_NAN
+}
+
