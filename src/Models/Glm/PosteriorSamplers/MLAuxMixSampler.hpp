@@ -40,7 +40,7 @@ namespace BOOM{
     // latent data.
   public:
     MLAuxMixSampler(Ptr<MultinomialLogitModel> Mod,
-		    Ptr<MvnBase> Pri, uint nthreads=1);
+		    Ptr<MvnBase> Pri, uint nthreads=1, bool useGPU=false);
     virtual void draw();
     virtual double logpri()const;
   private:
