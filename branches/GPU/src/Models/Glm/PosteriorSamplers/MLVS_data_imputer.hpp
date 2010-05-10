@@ -24,16 +24,21 @@
 #include <Models/Glm/PosteriorSamplers/MLVS_base.hpp>
 #include <distributions/rng.hpp>
 
+//#define CUDA_ENABLED  // Moved to compile command-line options
+
 namespace BOOM{
 
   namespace mlvs_impute{
     class MDI_base;
     class MDI_worker;
+#ifdef CUDA_ENABLED
+    class GPU_MDI_worker;
+#endif
   }
 
   class MlvsDataImputer : private RefCounted{
   public:
-    MlvsDataImputer(Ptr<MLogitBase> Mod, Ptr<MlvsCdSuf> Suf, uint nthreads);
+    MlvsDataImputer(Ptr<MLogitBase> Mod, Ptr<MlvsCdSuf> Suf, uint nthreads, bool useGPU=false);
     void draw();
 
     friend void intrusive_ptr_add_ref(MlvsDataImputer *d){
@@ -60,13 +65,22 @@ namespace BOOM{
 		 Ptr<MlvsCdSuf> s,
 		 uint Thread_id=0,
 		 uint Nthreads=1);
+#ifdef CUDA_ENABLED
       void impute_u(Ptr<ChoiceData> dp);
       uint unmix(double u);
-      const Ptr<MlvsCdSuf> suf()const;
+      virtual void operator()();
+#else
+      void impute_u(Ptr<ChoiceData> dp);
+      uint unmix(double u);
       void operator()();
+#endif
+      const Ptr<MlvsCdSuf> suf()const;
       void seed(unsigned long);
-
+#ifdef CUDA_ENABLED
+    protected:
+#else
     private:
+#endif
       Ptr<MLogitBase> mlm;
       Ptr<MlvsCdSuf> suf_;
 
@@ -87,6 +101,7 @@ namespace BOOM{
       boost::shared_ptr<Mat> thisX;
       RNG rng;
     };
+
     //======================================================================
     class MDI_base : private RefCounted{
     public:
@@ -101,12 +116,12 @@ namespace BOOM{
     //======================================================================
     class MDI_unthreaded : public MDI_base {
     public:
-      MDI_unthreaded(Ptr<MLogitBase> m, Ptr<MlvsCdSuf> s);
+      MDI_unthreaded(Ptr<MLogitBase> m, Ptr<MlvsCdSuf> s, bool useGPU=false);
       virtual void draw();
     private:
       Ptr<MLogitBase> mlm;
       Ptr<MlvsCdSuf> suf;
-      MDI_worker imp;
+      Ptr<MDI_worker> imp;
     };
 
     //======================================================================

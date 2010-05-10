@@ -41,12 +41,16 @@
 // #include <distributions/rmulti_mt.hpp>
 // #include <distributions/rlexp_mt.hpp>
 
+#ifdef CUDA_ENABLED
+#include <GPU/GPU_MDI_worker.hpp>
+#endif
+
 namespace BOOM{
 
   typedef MlvsDataImputer MDI;
-  MDI::MlvsDataImputer(Ptr<MLogitBase> Mod, Ptr<MlvsCdSuf> Suf, uint nthreads){
+  MDI::MlvsDataImputer(Ptr<MLogitBase> Mod, Ptr<MlvsCdSuf> Suf, uint nthreads, bool useGPU){
     if(nthreads<=1){
-      imp = new mlvs_impute::MDI_unthreaded(Mod, Suf);
+      imp = new mlvs_impute::MDI_unthreaded(Mod, Suf, useGPU);
     }else{
 #ifndef THREADS_ARE_DISABLED
       imp = new mlvs_impute::MDI_threaded(Mod, Suf, nthreads);
@@ -67,13 +71,27 @@ namespace BOOM{
     using boost::thread;
 #endif
     typedef MDI_worker MDIW;
+#ifdef CUDA_ENABLED
+    typedef GPU_MDI_worker	GMDIW;
+#endif
 
-    MDI_unthreaded::MDI_unthreaded(Ptr<MLogitBase> m, Ptr<MlvsCdSuf> s)
+    MDI_unthreaded::MDI_unthreaded(Ptr<MLogitBase> m, Ptr<MlvsCdSuf> s, bool useGPU)
       : mlm(m),
-	suf(s),
-	imp(mlm, s)
-    {}
-    void MDI_unthreaded::draw(){ imp(); }
+	suf(s) //,
+//	imp(mlm, s)
+    {
+#ifndef CUDA_ENABLED
+    	imp = new MDI_worker(mlm, s);
+
+#else
+    	if (useGPU) {
+    		imp = new GPU_MDI_worker(mlm, s);
+    	} else {
+    		imp = new MDI_worker(mlm, s);
+    	}
+#endif
+    }
+    void MDI_unthreaded::draw(){ (*imp)(); }
     //======================================================================
 
 #ifndef BOOST_DISABLE_THREADS
