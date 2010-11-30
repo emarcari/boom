@@ -1,13 +1,12 @@
-#summary I'm testing the wiki interface.
+#summary Welcome to BOOM!
 
 = Introduction =
 
-It would be nice to have some documentation for BOOM.
+BOOM is a C++ environment for statistical computing, with a heavy emphasis on Bayesian computation.  Broadly speaking, BOOM has two components, which can be thought of as
+  * building blocks, and 
+  * models.  
+The building blocks are classes and functions for doing low-level things like manipulating matrices and vectors, evaluating probability distributions, and integrating or sampling from functions.  Whenever possible, BOOM uses high quality existing tools to implement the building blocks.  Matrix computations are done using [http://www.netlib.org/lapack/ LAPACK] and [http://www.netlib.org/blas/ BLAS] (e.g. [http://math-atlas.sourceforge.net/ ATLAS]).  Probability distributions are managed using source code from [http://www.r-project.org/ R].
+Low level memory management, filesystem interactions, and functional programming are done using tools from the [http://www.boost.org/ boost] libraries.
 
+Models in BOOM are abstractions for managing the relationship between model parameters and data.  A Model is a class that owns one or more of each of the following three things:  parameters, data, and a learning method (such as a posterior sampler).  
 
-= Details =
-
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
