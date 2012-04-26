@@ -55,6 +55,8 @@
  */
 
 #include <Bmath/Bmath.hpp>
+#include <cpputil/report_error.hpp>
+
 #include <vector>
 #include <stdexcept>
 #include <sstream>
@@ -88,12 +90,11 @@ namespace Rmath{
     int K = prob.size();
     if(rN.size()!=K) rN.resize(K);
     if(K < 1){
-      throw std::runtime_error("empty argument 'prob' in rmultinom_mt");
+      BOOM::report_error("empty argument 'prob' in rmultinom_mt");
     }
 
     int k;
     double pp, p_tot = 0.;
-
 
     /* Note: prob[K] is only used here for checking  sum_k prob[k] = 1 ;
      *       Could make loop one shorter and drop that check !
@@ -109,7 +110,7 @@ namespace Rmath{
           err << " " << prob[m];
         }
         err << std::endl;
-        throw std::runtime_error(err.str());
+        BOOM::report_error(err.str());
       }
       p_tot += pp;
       rN[k] = 0;
@@ -117,7 +118,7 @@ namespace Rmath{
     if(fabs(p_tot - 1.) > 1e-7){
       std::ostringstream err;
       err << "rmultinom: probability sum should be 1, but is " << p_tot << std::endl;
-      throw std::runtime_error(err.str());
+      BOOM::report_error(err.str());
     }
     if (n == 0) return;
     if (K == 1 && p_tot == 0.) return;/* trivial border case: do as rbinom */

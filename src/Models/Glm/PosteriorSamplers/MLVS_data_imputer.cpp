@@ -17,20 +17,8 @@
 */
 
 #include <Models/Glm/PosteriorSamplers/MLVS_data_imputer.hpp>
-
-#ifndef BOOST_CONFIG_HPP
-#  include <boost/config.hpp>
-#endif
-#if defined(BOOST_DISABLE_THREADS)
-#define THREADS_ARE_DISABLED
-#endif
-
-#ifndef THREADS_ARE_DISABLED
 #include <boost/thread.hpp>
-#endif
-
 #include <boost/ref.hpp>
-#include <boost/cast.hpp>
 
 #include <cpputil/math_utils.hpp>
 #include <cpputil/lse.hpp>
@@ -38,22 +26,16 @@
 #include <stats/logit.hpp>
 
 #include <distributions.hpp>
-// #include <distributions/rmulti_mt.hpp>
-// #include <distributions/rlexp_mt.hpp>
+#include <cmath>
 
 namespace BOOM{
 
   typedef MlvsDataImputer MDI;
-  MDI::MlvsDataImputer(Ptr<MLogitBase> Mod, Ptr<MlvsCdSuf> Suf, uint nthreads){
+  MDI::MlvsDataImputer(MLogitBase *Mod, Ptr<MlvsCdSuf> Suf, uint nthreads){
     if(nthreads<=1){
       imp = new mlvs_impute::MDI_unthreaded(Mod, Suf);
     }else{
-#ifndef THREADS_ARE_DISABLED
       imp = new mlvs_impute::MDI_threaded(Mod, Suf, nthreads);
-#else
-      throw std::runtime_error("threads are disabled:  you can't use the "
-			       "multi-threaded version of MlvsDataImputer");
-#endif
     }
   }
 
@@ -62,13 +44,11 @@ namespace BOOM{
   //______________________________________________________________________
 
   namespace mlvs_impute{
-#ifndef THREADS_ARE_DISABLED
     using boost::thread_group;
     using boost::thread;
-#endif
     typedef MDI_worker MDIW;
 
-    MDI_unthreaded::MDI_unthreaded(Ptr<MLogitBase> m, Ptr<MlvsCdSuf> s)
+  MDI_unthreaded::MDI_unthreaded(MLogitBase *m, Ptr<MlvsCdSuf> s)
       : mlm(m),
 	suf(s),
 	imp(mlm, s)
@@ -76,9 +56,7 @@ namespace BOOM{
     void MDI_unthreaded::draw(){ imp(); }
     //======================================================================
 
-#ifndef BOOST_DISABLE_THREADS
-
-    MDI_threaded::MDI_threaded(Ptr<MLogitBase> m,  Ptr<MlvsCdSuf> s,
+    MDI_threaded::MDI_threaded(MLogitBase *m,  Ptr<MlvsCdSuf> s,
 			       uint nthreads)
       : mlm(m),
 	suf(s)
@@ -102,16 +80,17 @@ namespace BOOM{
 	suf->add(crew[i]->suf());
       }
     }
-#endif
     //======================================================================
 
     unsigned long getseed(){
        double u = runif() * std::numeric_limits<unsigned long>::max();
-       unsigned long ans(boost::numeric_cast<unsigned long>(u));
+       // convert from double to long long (using llround), and then
+       // from long long to unsigned long.
+       unsigned long ans(llround(u));
        return ans;
      }
     //======================================================================
-    MDIW::MDI_worker(Ptr<MLogitBase> mod,
+    MDIW::MDI_worker(MLogitBase *mod,
 		     Ptr<MlvsCdSuf> s,
 		     uint tid, uint nt)
       : mlm(mod),
@@ -119,9 +98,11 @@ namespace BOOM{
 	thread_id(tid),
 	nthreads(nt),
 	mu_(Vec("5.09 3.29 1.82 1.24 0.76 0.39 0.04 -0.31 -0.67  -1.06")),
-	sigsq_inv_(pow(Vec("4.5 2.02 1.1 0.42 0.2 0.11 0.08 0.08 0.09 0.15"),-1)),
+	sigsq_inv_(pow(Vec(
+            "4.5 2.02 1.1 0.42 0.2 0.11 0.08 0.08 0.09 0.15"),-1)),
 	sd_(pow(sigsq_inv_,-0.5)),
-	logpi_(log(Vec("0.004 0.04 0.168 0.147 0.125 0.101 0.104 0.116 0.107 0.088"))),
+	logpi_(log(Vec(
+            "0.004 0.04 0.168 0.147 0.125 0.101 0.104 0.116 0.107 0.088"))),
 	log_sampling_probs_(mlm->log_sampling_probs()),
 	downsampling_ (log_sampling_probs_.size() == mlm->Nchoices()),
 	post_prob_ (logpi_),
@@ -135,7 +116,7 @@ namespace BOOM{
     }
     //----------------------------------------------------------------------
     void MDIW::impute_u(Ptr<ChoiceData> dp){
-      mlm->fill_eta(dp, eta);      // eta+= downsampling_logprob
+      mlm->fill_eta(*dp, eta);      // eta+= downsampling_logprob
       if(downsampling_) eta += log_sampling_probs_;  //
       uint M = mlm->Nchoices();
       uint y = dp->value();

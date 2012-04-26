@@ -19,6 +19,7 @@
 #include <cmath>
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
+#include <sstream>
 
  /* functions for the triangular distribution over the interval (x0,
     x1) with breakpoint xm */
@@ -36,10 +37,18 @@ namespace BOOM{
 
      double y, m0, m1, a0, u;
 
-     if(x1<x0) throw illegal_distribution_params();
-     else if(x0==x1) return x0;
+     if(x1 < x0) {
+       std::ostringstream err;
+       err << "error in rtriangle_mt: called with" << endl
+           << "x0 = " << x0 << endl
+           << "x1 = " << x1 << endl
+           << "xm = " << xm << endl
+           << "x0 must be less than x1";
+       throw_exception<std::runtime_error>(err.str());
+     }
+     else if(x0 == x1) return x0;
 
-     if(xm< x0 || xm>x1) xm=(x0+x1)/2.0;
+     if(xm < x0 || xm > x1) xm=(x0 + x1)/2.0;
 
      y = 2.0/(x1-x0);
      m0 = y/(xm-x0);
@@ -51,7 +60,7 @@ namespace BOOM{
      double ans =0;
      if(u<a0) ans =  x0 + sqrt(2*u/m0);  /* area of left right triangle */
      else if(u>=a0) ans = x1-sqrt(-2.0*(1-u)/m1);  /* area of right right triangle */
-     else throw unknown_error();
+     else throw_exception<std::runtime_error>("an unknown error occurred in rtriangle_mt");
      return ans;
    }
    /*======================================================================*/
@@ -59,7 +68,17 @@ namespace BOOM{
  		   bool logscale){
      double m0, m1, y, ans;
 
-     if(x1<x0) throw illegal_distribution_params();
+     if(x1<x0){
+       std::ostringstream err;
+       err << "error in dtriangle: called with" << endl
+           << "x0 = " << x0 << endl
+           << "x1 = " << x1 << endl
+           << "xm = " << xm << endl
+           << "logscale = " << logscale << endl
+           << "x0 must be less than x1";
+
+       throw_exception<std::runtime_error>(err.str());
+     }
      if(x0==x1) return x0;
 
      if(x<x0 || x> x1) return (logscale ? infinity(-1) : 0);
@@ -77,7 +96,15 @@ namespace BOOM{
 
      double y;
 
-     if(x1<x0) throw illegal_distribution_params();
+     if(x1<x0){
+       std::ostringstream err;
+       err << "error in ptriangle: called with" << endl
+           << "x0 = " << x0 << endl
+           << "x1 = " << x1 << endl
+           << "xm = " << xm << endl
+           << "x0 must be less than x1";
+       throw_exception<std::runtime_error>(err.str());
+     }
      else if(x0==x1) return x0;
 
      if(x<x0) return lower_tail?0.0:1.0;
@@ -96,7 +123,7 @@ namespace BOOM{
        double m1= y/(xm-x1);
        double b= 0.5*m1*(x-x1)*(x1-x);
        ans = lower_tail ? b : 1-b;
-     }else throw unknown_error();
+     }else throw_exception<std::runtime_error>("an unknown error occurred in ptrigangle" );
 
      return ans;
    }
@@ -105,7 +132,15 @@ namespace BOOM{
 
      double y, m0, m1, a0;
 
-     if(x1<x0) throw illegal_distribution_params();
+     if(x1<x0){
+       std::ostringstream err;
+       err << "error in qtriangle: called with" << endl
+           << "x0 = " << x0 << endl
+           << "x1 = " << x1 << endl
+           << "xm = " << xm << endl
+           << "x0 must be less than x1";
+       throw_exception<std::runtime_error>(err.str());
+     }
      else if(x0==x1) return x0;
 
      if(xm< x0 || xm>x1) xm=(x0+x1)/2.0;
@@ -119,7 +154,7 @@ namespace BOOM{
      double ans=0;
      if(p<a0) ans =  x0 + sqrt(2*p/m0);  /* area of left right triangle */
      else if(p>=a0) ans = x1-sqrt(-2.0*(1-p)/m1);  /* area of right right triangle */
-     else throw unknown_error();
+     else throw_exception<std::runtime_error>("an unknown error occurred in qtriangle");
 
      return ans;
 

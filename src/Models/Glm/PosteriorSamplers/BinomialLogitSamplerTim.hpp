@@ -28,7 +28,7 @@ namespace BOOM{
 
   class BinomialLogitSamplerTim : public PosteriorSampler{
    public:
-    BinomialLogitSamplerTim(Ptr<BinomialLogitModel> model,
+    BinomialLogitSamplerTim(BinomialLogitModel *model,
                             Ptr<MvnBase> prior,
                             bool mode_is_stable = true,
                             double nu = 3);
@@ -41,7 +41,7 @@ namespace BOOM{
     double d2logp(const Vec &beta, Vec &g, Mat &H)const;
     double Logp(const Vec &beta, Vec &g, Mat &h, int nd)const;
    private:
-    Ptr<BinomialLogitModel> m_;
+    BinomialLogitModel *m_;
     Ptr<MvnBase> pri_;
     TIM sam_;
     //    Ptr<MvtIndepProposal> create_proposal(int n)const;

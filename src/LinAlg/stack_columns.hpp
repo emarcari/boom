@@ -19,10 +19,8 @@
 #define BOOM_STACK_COLUMNS_HPP
 #include <LinAlg/Vector.hpp>
 namespace BOOM{
-  namespace LinAlg{
-    class Matrix;
-    Vector stack_columns(const Matrix &m);
-  }
+  class Matrix;
+  Vector stack_columns(const Matrix &m);
 }
 
 #endif// BOOM_STACK_COLUMNS_HPP

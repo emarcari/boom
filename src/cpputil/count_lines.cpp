@@ -1,14 +1,13 @@
 #include "file_utils.hpp"
 #include <fstream>
-#include <stdexcept>
-
+#include <cpputil/ThrowException.hpp>
 using namespace std;
 namespace BOOM{
   uint count_lines(const string &fname){
     ifstream in(fname.c_str());
     if(!in){
       string err = "couldn't find file named " + fname;
-      throw runtime_error(err.c_str());
+      throw_exception<runtime_error>(err.c_str());
     }
 
     uint cnt=0;

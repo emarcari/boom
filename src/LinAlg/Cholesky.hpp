@@ -22,7 +22,6 @@
 #include "SpdMatrix.hpp"
 
 namespace BOOM{
-  namespace LinAlg{
     class Chol{
     public:
       Chol(const Matrix &A);
@@ -49,6 +48,5 @@ namespace BOOM{
   Chol operator*(double a, const Chol &C);
   Chol operator*(const Chol &C, double a);
 
-  }
 }
 #endif// BOOM_CHOL_HPP

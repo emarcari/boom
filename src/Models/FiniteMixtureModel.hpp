@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2007 Steven L. Scott
+  Copyright (C) 2007-2012 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -20,6 +20,7 @@
 #define BOOM_FINITE_MIXTURE_MODEL_HPP
 
 #include <Models/ModelTypes.hpp>
+#include <Models/EmMixtureComponent.hpp>
 #include <Models/ParamTypes.hpp>
 #include <Models/Policies/CompositeParamPolicy.hpp>
 #include <Models/Policies/MixtureDataPolicy.hpp>
@@ -28,14 +29,14 @@
 namespace BOOM{
 
   class FiniteMixtureModel
-    : public LoglikeModel,
-      public LatentVariableModel,
-      public CompositeParamPolicy,
-      public MixtureDataPolicy
+      : public LatentVariableModel,
+        public CompositeParamPolicy,
+        public MixtureDataPolicy,
+        public PriorPolicy
   {
   public:
-    FiniteMixtureModel(Ptr<LoglikeModel>, uint S);
-    FiniteMixtureModel(Ptr<LoglikeModel>, Ptr<MultinomialModel>);
+    FiniteMixtureModel(Ptr<MixtureComponent>, uint S);
+    FiniteMixtureModel(Ptr<MixtureComponent>, Ptr<MultinomialModel>);
 
     template <class M>
     FiniteMixtureModel(std::vector<Ptr<M> >, Ptr<MultinomialModel>);
@@ -46,42 +47,54 @@ namespace BOOM{
     FiniteMixtureModel(const FiniteMixtureModel &rhs);
     FiniteMixtureModel * clone()const;
 
-    virtual double loglike()const;
-    virtual void mle();
     void clear_component_data();
     virtual void impute_latent_data();
-    virtual double complete_data_loglike()const;
-    void EStep();
-    void MStep();
-
-    virtual double logpri()const;
-    virtual void sample_posterior();
-    virtual void set_method(Ptr<PosteriorSampler>);
+    void class_membership_probability(Ptr<Data>, Vec &ans)const;
+    double last_loglike()const;
 
     double pdf(dPtr dp, bool logscale)const;
     uint size()const;
+    uint number_of_mixture_components()const;
 
     const Vec & pi()const;
+    const Vec & logpi()const;
 
     Ptr<MultinomialModel> mixing_distribution();
-    const Ptr<MultinomialModel> mixing_distribution()const;
+    const MultinomialModel * mixing_distribution()const;
 
-    std::vector<Ptr<LoglikeModel> > mixture_components();
-    const std::vector<Ptr<LoglikeModel> > mixture_components()const;
+    Ptr<MixtureComponent> mixture_component(int s);
+    const MixtureComponent * mixture_component(int s)const;
 
+    // Returns a matrix of class membership probabilities for each
+    // observation.  The table of membership probabilities is
+    // re-written with each call to impute_latent_data().
+    const Mat & class_membership_probability()const;
+
+    // Returns a vector giving the latent class to which each
+    // observation was assigned during the most recent call to
+    // impute_latent_data().
+    Vec class_assignment()const;
+
+  protected:
+    void set_logpi()const;
+    mutable Vec wsp_;
+
+    // Save the class membership probabilities for user i.
+    void update_class_membership_probabilities(int i, const Vec &probs);
   private:
-    std::vector<Ptr<LoglikeModel> > mixture_components_;
+    std::vector<Ptr<MixtureComponent> > mixture_components_;
     Ptr<MultinomialModel> mixing_dist_;
-    mutable Vec logpi_, wsp_;
+    mutable Vec logpi_;
     mutable bool logpi_current_;
     void observe_pi()const;
-    void set_logpi()const;
     void set_observers();
-    virtual std::vector<Ptr<LoglikeModel> > models();
-    virtual const std::vector<Ptr<LoglikeModel> > models()const;
+    virtual std::vector<Ptr<MixtureComponent> > models();
+    virtual const std::vector<Ptr<MixtureComponent> > models()const;
+    double last_loglike_;
+    Mat class_membership_probabilities_;
+    std::vector<int> which_mixture_component_;
   };
-
-
+  //----------------------------------------------------------------------
   template <class FwdIt>
   FiniteMixtureModel::FiniteMixtureModel(FwdIt Beg, FwdIt End,
                                          Ptr<MultinomialModel> MixDist)
@@ -101,6 +114,47 @@ namespace BOOM{
   {
     set_observers();
   }
+
+//======================================================================
+  class EmFiniteMixtureModel
+      : public FiniteMixtureModel,
+        public LoglikeModel
+  {
+   public:
+    EmFiniteMixtureModel(Ptr<EmMixtureComponent>, uint S);
+    EmFiniteMixtureModel(Ptr<EmMixtureComponent>, Ptr<MultinomialModel>);
+
+    template <class M>
+    EmFiniteMixtureModel(std::vector<Ptr<M> > mixture_components,
+                         Ptr<MultinomialModel> mixing_distribution)
+        : FiniteMixtureModel(mixture_components, mixing_distribution),
+          em_mixture_components_(mixture_components.begin(),
+                                 mixture_components.end())
+    {}
+
+    template <class FwdIt>
+    EmFiniteMixtureModel(FwdIt Beg, FwdIt End,
+                         Ptr<MultinomialModel> mixing_distribution)
+        : FiniteMixtureModel(Beg, End, mixing_distribution),
+          em_mixture_components_(Beg, End)
+    {}
+
+    EmFiniteMixtureModel(const EmFiniteMixtureModel &rhs);
+    EmFiniteMixtureModel * clone()const;
+
+    virtual double loglike()const;
+    virtual void mle();
+
+    // The EStep returns the observed data likelihood
+    double EStep();
+    void MStep(bool posterior_mode);
+
+    Ptr<EmMixtureComponent> em_mixture_component(int s);
+    const EmMixtureComponent * em_mixture_component(int s)const;
+   private:
+    std::vector<Ptr<EmMixtureComponent> > em_mixture_components_;
+    void populate_em_mixture_components();
+  };
 
 }
 #endif// BOOM_FINITE_MIXTURE_MODEL_HPP

@@ -34,7 +34,6 @@ void binomial_distribution::setup(double pp){
   r = p / q;
   g = r * (n + 1);
   psave = pp;
-  nsave = n;
 
   if(np<30){
     qn = pow(q, (double) n);

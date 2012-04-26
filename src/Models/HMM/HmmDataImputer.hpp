@@ -27,13 +27,13 @@ namespace BOOM{
 class HmmDataImputer
     : private RefCounted
 {
-  // HmmDataImputer 
+  // HmmDataImputer
  public:
   HmmDataImputer(HiddenMarkovModel *hmm, uint id, uint nworkers);
   void operator()();
 
   Ptr<MarkovModel> mark();
-  Ptr<Model> models(uint s);
+  Ptr<MixtureComponent> models(uint s);
   double loglike()const;
 
   void setup(HiddenMarkovModel *);
@@ -47,7 +47,7 @@ class HmmDataImputer
   uint id_;
   uint nworkers_;
   Ptr<MarkovModel> mark_;
-  std::vector<Ptr<Model> > mix_;
+  std::vector<Ptr<MixtureComponent> > mix_;
   Ptr<HmmFilter> filter_;
   double loglike_;
   std::vector<TimeSeries<Data> * > dat_;

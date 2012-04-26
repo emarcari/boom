@@ -26,8 +26,8 @@ namespace BOOM{
   double dig(double x, double mu, double lambda, bool logscale){
     const double log_two_pi(1.83787706640935);
     if(x <= 0) return logscale ? infinity(-1) :  0;
-    if(mu <= 0) throw std::runtime_error("mu <= 0 in dig");
-    if(lambda <= 0) throw std::runtime_error("lambda <= 0 in dig");
+    if(mu <= 0) throw_exception<std::runtime_error>("mu <= 0 in dig");
+    if(lambda <= 0) throw_exception<std::runtime_error>("lambda <= 0 in dig");
 
     double ans = -lambda * pow(x-mu, 2)/(2 * mu * mu * x);
     ans += .5 * (log(lambda)  - log_two_pi - 3 * log(x));
@@ -36,8 +36,8 @@ namespace BOOM{
 
   double pig(double x, double mu, double lambda, bool logscale){
     if(x <= 0) return logscale ? infinity(-1) :  0;
-    if(mu <= 0) throw std::runtime_error("mu <= 0 in pig");
-    if(lambda <= 0) throw std::runtime_error("lambda <= 0 in pig");
+    if(mu <= 0) throw_exception<std::runtime_error>("mu <= 0 in pig");
+    if(lambda <= 0) throw_exception<std::runtime_error>("lambda <= 0 in pig");
 
     double rlx = sqrt(lambda/x);
     double xmu = x/mu;

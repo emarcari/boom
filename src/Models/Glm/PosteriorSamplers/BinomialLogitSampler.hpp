@@ -28,9 +28,13 @@
 
 #include <stats/logit.hpp> // for lope
 
+#include <numopt/ScalarNewtonMax.hpp>
+
 #include <vector>
 
 namespace BOOM{
+
+  class BinomialLogitSampler;
 
   struct BinomialLogitComputations{
       BinomialLogitComputations()
@@ -44,7 +48,26 @@ namespace BOOM{
       bool operator<(double eta)const{return eta_ < eta; }
     };
 
-
+  class BinomialLogitDataImputer {
+   public:
+    BinomialLogitDataImputer(BinomialLogitSampler *sampler,
+                             int worker_number,
+                             int number_of_workers)
+        : sampler_(sampler),
+          worker_number_(worker_number),
+          number_of_workers_(number_of_workers)
+    {}
+    BinomialLogitDataImputer(const BinomialLogitDataImputer &rhs)
+        : sampler_(rhs.sampler_),
+          worker_number_(rhs.worker_number_),
+          number_of_workers_(rhs.number_of_workers_)
+    {}
+    void operator()();
+   private:
+    BinomialLogitSampler *sampler_;
+    int worker_number_;
+    int number_of_workers_;
+  };
 
   // draws from the posterior distribution of beta given data in a
   // BinomialLogitModel using the Binomial Auxiliary Mixture Sampling
@@ -52,10 +75,15 @@ namespace BOOM{
   class BinomialLogitSampler
       : public PosteriorSampler{
    public:
-    BinomialLogitSampler(Ptr<BinomialLogitModel> m,
+    BinomialLogitSampler(BinomialLogitModel *m,
                          Ptr<MvnBase> pri,
                          int clt_threshold = 0); // default is to always batch_impute
     virtual void draw();
+    void impute_latent_data();
+    void impute_latent_data_driver(int worker_id, int number_of_workers);
+
+    virtual void draw_beta();
+
     virtual double logpri()const;
 
     static double mu(int i){return mu_[i];}
@@ -68,19 +96,21 @@ namespace BOOM{
     static const Vec &pi(){return pi_;}
     static const Vec &sigsq(){return sigsq_;}
 
-    void merge_table(const std::vector<BinomialLogitComputations> &);
-    double smallest_eta()const;
-    double largest_eta()const;
+    //    void merge_table(const std::vector<BinomialLogitComputations> &);
+//     double smallest_eta()const;
+//     double largest_eta()const;
+
+    void set_number_of_threads(int nthreads);
    private:
-    void impute_latent_data();
-    void draw_beta();
+    void impute_latent_data_distributed();
 
     // impute latent data using large sample approximations to
     // auxiliary mixture sampling.
     void batch_impute(int n, int y, double eta, const Vec &x);
     int locate_position_in_table(double eta);
+    void left_endpoint(double eta);
+    void right_endpoint(double eta);
     void fill_conditional_probs(double eta);
-    void compute_conditional_probs(double eta);
     void precompute(double lo, double hi);
 
     // impute latent data by making trial-level draws using the holmes
@@ -92,24 +122,19 @@ namespace BOOM{
     void single_impute_auxmix(int n, double eta, bool y, const Vec &x);
     int unmix(double u, Vec &prob)const;
 
-    Ptr<BinomialLogitModel> m_;
+    BinomialLogitModel *m_;
+    GlmCoefs *beta_;
     Ptr<MvnBase> pri_;
 
-    std::vector<BinomialLogitComputations> table_;
+    void print_data(std::ostream &)const;
+
+    static const std::vector<BinomialLogitComputations> table_;
 
     // complete data sufficient statistics;
-    Spd ivar_, xtwx_;
-    Vec ivar_mu_, xtwu_;
-
-    Vec p0_;  // conditional distribution of the mixture
-    Vec p1_;   // indicator given eta given eta and y
-    Vec cmeans_zero_;
-    Vec cmeans_one_;            // conditional means and variances of
-    Vec cvars_zero_;            // the latent utility given eta and
-    Vec cvars_one_;             // the mixture indicator
-
+    Spd xtwx_;
+    Vec xtwu_;
+    BinomialLogitComputations b_;
     int clt_threshold_;
-    double stepsize_;
 
     // parameters of the Gaussian mixture approximation to the Gumbel
     // distribution
@@ -119,8 +144,17 @@ namespace BOOM{
     static const Vec pi_;
     static const Vec logpi_;
 
-    //    static const std::vector<BinomialLogitComputations> initial_table_;
-    static std::vector<BinomialLogitComputations> fill_initial_table();
+    // A set of workers for multi-threaded computations.  This is left
+    // empty unless set_number_of_threads is called with a positive
+    // argument, and cleared if set_number_of_threads is called with a
+    // non-positive argument.
+    std::vector<Ptr<BinomialLogitSampler> > workers_;
+
+   protected:
+    mutable Spd ivar_;
+    mutable Vec ivar_mu_;
+    const Spd &xtwx()const;
+    const Vec &xtwu()const;
   };
 
 //======================================================================
@@ -307,16 +341,25 @@ namespace BOOM{
       double second_moment(double u, double mu)const{
         return pow(u - mu, 2) * prob(u);
       }
+
+      double find_mode()const{
+        double x, g, h;
+        x = eta_;
+        scalar_newton_max(*this, x, g, h);
+        return x;
+      }
      private:
       double eta_;
       bool y_;
       int m_;
     };
 
-  // this free function does the work in compute_conditional_probs
-    void fill_probs(double eta, int i, bool y, Vec &probs, Vec &means, Vec &vars);
+    // this free function does the work in compute_conditional_probs
+    void fill_probs(double eta, int i, bool y, Vec &probs, Vec &means, Vec &vars,
+                    double last_mu = BOOM::infinity(1));
+    BinomialLogitComputations fill_probs(double eta, const BinomialLogitComputations *last);
 
-  // this function returns a bunch of precomputed results
+    // this function returns a bunch of precomputed results
     std::vector<BinomialLogitComputations> fill_binomial_logit_table();
   } // namespace BlsHelper;
 

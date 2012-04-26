@@ -23,6 +23,7 @@
 #include <Models/Glm/MLogitBase.hpp>
 #include <distributions.hpp>
 #include <cpputil/nyi.hpp>
+#include <LinAlg/SubMatrix.hpp>
 
 namespace BOOM{
 
@@ -140,106 +141,150 @@ namespace BOOM{
     return rmvn(mu(), Sigma());
   }
 
-  double MvnGivenX::pdf(Ptr<Data> dp, bool logscale)const{
-    double ans = dmvn(DAT(dp)->value(), mu(), siginv(), ldsi(), true);
-    return logscale ? ans : exp(ans);
+//______________________________________________________________________
+
+  MvnGivenXMultinomialLogit::MvnGivenXMultinomialLogit(
+      const Vec &beta_prior_mean,
+      double prior_sample_size,
+      double diagonal_weight)
+      : ParamPolicy(new VectorParams(beta_prior_mean),
+                    new UnivParams(prior_sample_size)),
+        diagonal_weight_(diagonal_weight)
+  {}
+
+  MvnGivenXMultinomialLogit::MvnGivenXMultinomialLogit(
+      Ptr<VectorParams> beta_prior_mean,
+      Ptr<UnivParams> prior_sample_size,
+      double diagonal_weight)
+      : ParamPolicy(beta_prior_mean, prior_sample_size),
+        diagonal_weight_(diagonal_weight)
+  {}
+
+  MvnGivenXMultinomialLogit::MvnGivenXMultinomialLogit(
+      const MvnGivenXMultinomialLogit &rhs)
+      : Model(rhs),
+        MvnBase(rhs),
+        ParamPolicy(rhs),
+        DataPolicy(rhs),
+        PriorPolicy(rhs),
+        diagonal_weight_(rhs.diagonal_weight_)
+  {
+
   }
 
-  double MvnGivenX::loglike()const{
-    nyi("MvnGivenX::loglike");
+  MvnGivenXMultinomialLogit * MvnGivenXMultinomialLogit::clone()const{
+    return new MvnGivenXMultinomialLogit(*this);}
+
+  void MvnGivenXMultinomialLogit::set_x(const Matrix &subject_characeristics,
+                                        const Array & choice_characteristics){
+
+    if(choice_characteristics.ndim() > 0
+       && choice_characteristics.ndim() != 3){
+      report_error("choice_characteristics must either be empty or a 3-way array");
+    }
+    current_ = false;
+    scaled_subject_xtx_.resize(ncol(subject_characeristics));
+    scaled_subject_xtx_ = 0;
+    int number_of_observations = nrow(subject_characeristics);
+    int number_of_subject_predictors = ncol(subject_characeristics);
+
+    const std::vector<int> & choice_dimension(choice_characteristics.dim());
+    int number_of_choice_observations = choice_dimension[0];
+    int number_of_choice_predictors = choice_dimension[1];
+    int number_of_choices = choice_dimension[2];
+    double weight = 1.0/(number_of_choices * number_of_observations);
+
+    scaled_subject_xtx_.add_outer(subject_characeristics);
+    scaled_subject_xtx_ *= weight;
+
+    scaled_choice_xtx_.resize(number_of_choice_predictors);
+    scaled_choice_xtx_ = 0;
+    for(int i = 0; i < number_of_choice_observations; ++i){
+      ConstVectorView baseline_predictors(
+          choice_characteristics.vector_slice(
+              ConstArrayBase::index3(i, -1, 0)));
+      for(int m = 1; m < number_of_choices; ++m){
+        const ConstVectorView choice_predictors(
+            choice_characteristics.vector_slice(
+                ConstArrayBase::index3(i, -1, m)));
+        scaled_choice_xtx_.add_outer(
+            choice_predictors - baseline_predictors);
+      }
+    }
+    scaled_choice_xtx_ *= weight;
+
+    // Build overall_xtx_ as a sequence of blocks of scaled_subject_xtx_ with
+    // single scaled_choice_xtx_ block at the end.
+    int overall_xtx_dimension = (number_of_choices - 1) * number_of_subject_predictors
+        + number_of_choice_predictors;
+    overall_xtx_.resize(overall_xtx_dimension);
+    overall_xtx_ = 0;
+
+    int lo = 0;
+    for(int m = 1; m < number_of_choices; ++m){
+      int hi = lo + number_of_subject_predictors - 1;
+      SubMatrix block(overall_xtx_, lo, hi, lo, hi);
+      block = scaled_subject_xtx_;
+      lo = hi + 1;
+    }
+    int hi = lo + number_of_choice_predictors - 1;
+    SubMatrix block(overall_xtx_, lo, hi, lo, hi);
+    block = scaled_choice_xtx_;
+
+    if(diagonal_weight_ > 0){
+      Vec d(overall_xtx_.diag());
+      overall_xtx_ *= (1-diagonal_weight_);
+      overall_xtx_.set_diag(d, false);
+    }
+  }
+
+  Ptr<VectorParams> MvnGivenXMultinomialLogit::Mu_prm(){
+    return ParamPolicy::prm1();
+  }
+  const Ptr<VectorParams> MvnGivenXMultinomialLogit::Mu_prm()const{
+    return ParamPolicy::prm1();
+  }
+  const Vector & MvnGivenXMultinomialLogit::mu()const{
+    return prm1_ref().value();
+  }
+  void MvnGivenXMultinomialLogit::set_mu(const Vec &mu){
+    Mu_prm()->set(mu);
+  }
+
+  Ptr<UnivParams> MvnGivenXMultinomialLogit::Kappa_prm(){
+    return ParamPolicy::prm2();
+  }
+  const Ptr<UnivParams> MvnGivenXMultinomialLogit::Kappa_prm()const{
+    return ParamPolicy::prm2();
+  }
+  double MvnGivenXMultinomialLogit::kappa()const{
+    return prm2_ref().value();
+  }
+  void MvnGivenXMultinomialLogit::set_kappa(double kappa){
+    Kappa_prm()->set(kappa);
+    current_ = false;
+  }
+
+  const Spd & MvnGivenXMultinomialLogit::Sigma()const{
+    make_current();
+    return Sigma_storage_->var();
+  }
+
+  const Spd & MvnGivenXMultinomialLogit::siginv()const{
+    make_current();
+    return Sigma_storage_->ivar();
+  }
+
+  double MvnGivenXMultinomialLogit::ldsi()const{
+    report_error("MvnGivenXMultinomialLogit::ldsi not yet implemented]\n");
     return 0;
-    /////////////////////////////////////
   }
 
-  //______________________________________________________________________
-//   MvnGivenXReg::MvnGivenXReg(Ptr<RegressionModel> reg,
-// 			       Ptr<VectorParams> Mu,
-// 			       double prior_nobs, double diag_wgt)
-//     : MvnGivenX(Mu, prior_nobs, diag_wgt),
-//       reg_(reg)
-//   {}
-
-//   MvnGivenXReg::MvnGivenXReg(Ptr<RegressionModel> reg,
-// 			     Ptr<VectorParams> Mu,
-// 			     const Vec & Lambda_,
-// 			     double prior_nobs,
-// 			     double diag_wgt)
-//     : MvnGivenX(Mu, Lambda, prior_nobs, diag_wgt),
-//       reg_(reg)
-//   {}
-
-//   MvnGivenXReg::MvnGivenXReg(const MvnGivenXReg &rhs)
-//     : Model(rhs),
-//       MvnGivenX(rhs),
-//       reg_(rhs.reg_)
-//   {}
-
-//   MvnGivenXReg * MvnGivenXReg::clone()const{
-//     return new MvnGivenXReg(*this);}
-
-//   void MvnGivenXReg::refresh_xtwx(){
-//     clear_xtwx();
-//     ////////////////////////
-//   }
-
-
-//   const Spd & MvnGivenXReg::Sigma()const{
-//     double sigsq = reg_->sigsq();
-
-//   }
-//   const Spd & MvnGivenXReg::siginv()const{
-
-//   }
-
-//   double MvnGivenXReg::ldsi()const{
-//     double sigsq = reg_->sigsq();
-//     double ans = MvnGivenX::ldsi();
-//     uint p = mu().size();
-//     ans += p * log(sigsq);
-//     return ans;
-//   }
-
-
-
-  //______________________________________________________________________
-
-  MvnGivenXLogit::MvnGivenXLogit(Ptr<LogisticRegressionModel> mod,
-				 Ptr<VectorParams> beta_prior_mean,
-				 Ptr<UnivParams> prior_sample_size,
-				 double diag_wgt)
-    : MvnGivenX(beta_prior_mean, prior_sample_size, diag_wgt),
-      mod_(mod)
-  {}
-
-  MvnGivenXLogit::MvnGivenXLogit(Ptr<LogisticRegressionModel> mod,
-				 Ptr<VectorParams> beta_prior_mean,
-				 Ptr<UnivParams> prior_sample_size,
-				 const Vec & Lambda,
-				 double diag_wgt)
-    : MvnGivenX(beta_prior_mean, prior_sample_size, Lambda, diag_wgt),
-      mod_(mod)
-  {}
-
-  MvnGivenXLogit::MvnGivenXLogit(const MvnGivenXLogit &rhs)
-    : Model(rhs),
-      VectorModel(rhs),
-      MvnGivenX(rhs),
-      mod_(rhs.mod_)
-  {}
-
-  MvnGivenXLogit * MvnGivenXLogit::clone()const{
-    return new MvnGivenXLogit(*this);}
-
-
-  void MvnGivenXLogit::refresh_xtwx(){
-    clear_xtwx();
-    const std::vector<Ptr<BinaryRegressionData> > &d(mod_->dat());
-    uint n = d.size();
-    for(uint i=0; i<n; ++i) add_x(d[i]->x());
+  void MvnGivenXMultinomialLogit::make_current()const{
+    if(!current_){
+      Sigma_storage_->set_ivar(overall_xtx_ * kappa());
+      current_ = true;
+    }
   }
-
-
-  //______________________________________________________________________
-
 
 }

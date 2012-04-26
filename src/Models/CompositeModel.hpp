@@ -23,28 +23,32 @@
 #include <Models/Policies/CompositeParamPolicy.hpp>
 #include <Models/Policies/IID_DataPolicy.hpp>
 #include <Models/Policies/PriorPolicy.hpp>
-#include <boost/utility/enable_if.hpp>
 
 namespace BOOM{
 
+  // A composite model assumes that y1, y2, ... are independent with
+  // y1 ~ m1, y2 ~ m2, etc.  y1,y2... are stored in CompositeData,
+  // and m1, m2, etc. are stored here
+  //
+  // The learning method should be set (using set_method) for the
+  // component models before they are loaded in to the CompositeModel.
   class CompositeModel
-    : virtual public Model,
+    : virtual public MixtureComponent,
       public CompositeParamPolicy,
       public IID_DataPolicy<CompositeData>,
       public PriorPolicy
   {
-
-    // A composite model assumes that y1, y2, ... are independent with
-    // y1 ~ m1, y2 ~ m2, etc.  y1,y2... are stored in CompositeData,
-    // and m1, m2, etc. are stored here
-
   public:
+    // The default constructor can be used in conjuction with
+    // add_model if you want to build the mode up incrementally.
+    CompositeModel();
+
+    // This constructor can be used if you've already got a vector of
+    // model pointers.  Note that they have to be of the same type but
+    // it can be any type that inherits from MixtureComponent.
     template <class MOD>
-    CompositeModel(const std::vector<Ptr<MOD> > &mod,
-		   typename boost::enable_if<
-		   boost::is_base_of<Model, MOD>
-		   >::type * =0)
-      : m_(mod.begin(), mod.end())
+    CompositeModel(const std::vector<Ptr<MOD> > &models)
+        : m_(models.begin(), models.end())
     {
       setup();
     }
@@ -52,27 +56,29 @@ namespace BOOM{
     CompositeModel(const CompositeModel &rhs);
     CompositeModel * clone()const;
 
-    //    virtual void initialize_params();
+    void add_model(Ptr<MixtureComponent>);
+
     virtual void add_data(Ptr<CompositeData>);
     virtual void add_data(Ptr<Data>);
+    virtual void clear_data();
 
-    double pdf(Ptr<CompositeData>, bool logscale)const;
+    double pdf(const CompositeData &, bool logscale)const;
     double pdf(Ptr<Data>, bool logscale)const;
+    double pdf(const Data *, bool logscale)const;
+
+    std::vector<Ptr<MixtureComponent> > &components();
+    const std::vector<Ptr<MixtureComponent> > &components()const;
 
   protected:
-
-    CompositeModel();
-
     template <class Fwd>
     void set_models(Fwd b, Fwd e){   // to be called by constructors of
       m_.assign(b,e);                // derived classes
       setup(); }
   private:
-    std::vector<Ptr<Model> > m_;
+    std::vector<Ptr<MixtureComponent> > m_;
     void setup();
   };
 
 }
 
 #endif // BOOM_COMPOSITE_MODEL_HPP
-

@@ -24,11 +24,11 @@ namespace BOOM{
   class FixedProbBinomialSampler
     : public PosteriorSampler{
   public:
-    FixedProbBinomialSampler(Ptr<BinomialModel> mod, double p = 1.0);
+    FixedProbBinomialSampler(BinomialModel *mod, double p = 1.0);
     virtual void draw();
     virtual double logpri()const;
   private:
-    Ptr<BinomialModel> m_;
+    BinomialModel *m_;
     double p_;
   };
 }

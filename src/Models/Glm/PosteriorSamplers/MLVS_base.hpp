@@ -31,6 +31,10 @@ namespace BOOM{
   class ChoiceData;
   class Selector;
 
+  // Abstract base class for multinomial logit complete data
+  // sufficient statistics.  The plan is to have a version of this
+  // class for both ordinary multinomial logit models and the split
+  // parameter version.
   class MlvsCdSuf : private RefCounted {
   public:
     friend void intrusive_ptr_add_ref(MlvsCdSuf *d){d->up_count();}
@@ -38,10 +42,11 @@ namespace BOOM{
       d->down_count(); if(d->ref_count()==0) delete d;}
 
     virtual ~MlvsCdSuf(){}
-    virtual void clear()=0;
-    virtual void update(Ptr<ChoiceData> dp, const Vec &wgts,
-			const Vec & u)=0;
     virtual MlvsCdSuf * clone()const=0;
+
+    virtual void clear()=0;
+    virtual void update(Ptr<ChoiceData> dp, const Vec &wgts, const Vec & u)=0;
+
     virtual void add(Ptr<MlvsCdSuf>)=0;
   };
 
@@ -57,7 +62,7 @@ namespace BOOM{
     // statistics and some workspace.  It does not store the imputed
     // latent data.
   public:
-    MLVS_base(Ptr<MLogitBase>, bool do_selection = true);
+    MLVS_base(MLogitBase *, bool do_selection = true);
 
     virtual void draw();
     virtual void impute_latent_data()=0;

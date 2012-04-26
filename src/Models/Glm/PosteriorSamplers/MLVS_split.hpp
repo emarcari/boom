@@ -55,13 +55,13 @@ namespace BOOM{
     typedef VariableSelectionPrior VSP;
 
   public:
-    MLVS_split(Ptr<MLogitSplit>, std::vector<Ptr<MvnBase> >,
+    MLVS_split(MLogitSplit*, std::vector<Ptr<MvnBase> >,
 	       std::vector<Ptr<VSP> >, uint nthreads=1);
-    MLVS_split(Ptr<MLogitSplit>, Ptr<MvnBase>, Ptr<VSP>, uint nthreads=1); // symmetric priors
+    MLVS_split(MLogitSplit*, Ptr<MvnBase>, Ptr<VSP>, uint nthreads=1); // symmetric priors
     virtual double logpri()const;
     virtual void find_posterior_mode();
   private:
-    Ptr<MLogitSplit> mod_;
+    MLogitSplit *mod_;
     std::vector<Ptr<MvnBase> > bpri_;
     std::vector<Ptr<VSP> > vpri_;
     Ptr<MlvsCdSuf_split> suf;

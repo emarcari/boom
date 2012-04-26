@@ -119,7 +119,7 @@ double pnt(double t, double df, double delta, int lower_tail, int log_p)
 
 	    /*========== really use an other algorithm for this case !!! */
 	    ML_ERROR(ME_UNDERFLOW);
-	    throw std::range_error(""); /* |delta| too large */
+	    BOOM::throw_exception<std::range_error>(""); /* |delta| too large */
 	    return R_DT_0;
 	}
 #ifdef DEBUG_pnt
@@ -178,4 +178,3 @@ double pnt(double t, double df, double delta, int lower_tail, int log_p)
     return R_DT_val(tnc);
 }
 }
-

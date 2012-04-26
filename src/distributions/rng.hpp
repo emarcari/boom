@@ -27,6 +27,7 @@ typedef boost::random::ranlux64_base_01 RNG;
 struct GlobalRng{
  public:
   static RNG rng;
+  static void seed_with_timestamp();
 };
 
 unsigned long seed_rng();  // generates a random seed from the global RNG

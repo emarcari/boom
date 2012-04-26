@@ -28,7 +28,7 @@
 
 namespace BOOM{
 
-  SepStratSampler::SepStratSampler(Ptr<MvnModel> mod,
+  SepStratSampler::SepStratSampler(MvnModel *mod,
                                    const std::vector<Ptr<GammaModel> > & ivar)
       : mod_(mod),
         Rpri_(new UniformCorrelationModel(mod->dim())),
@@ -37,7 +37,7 @@ namespace BOOM{
     setup();
   }
 
-  SepStratSampler::SepStratSampler(Ptr<MvnModel> mod,
+  SepStratSampler::SepStratSampler(MvnModel *mod,
                                    Ptr<CorrModel> cor,
                                    const std::vector<Ptr<GammaModel> > & ivar)
       : mod_(mod),
@@ -145,7 +145,7 @@ namespace BOOM{
     R_ = var2cor(Sigma);
     sd_ = sqrt(diag(Sigma));
 
-    double ans = Rpri_->pdf(R_, true);
+    double ans = Rpri_->logp(R_);
     if(ans == BOOM::infinity(-1)) return ans;
     for(int i = 0; i < sd_.size(); ++i){
       double sd = sd_[i];
@@ -167,7 +167,7 @@ namespace BOOM{
     const Spd & Siginv(cand_);
     double ans =  .5 * n_ * logdet(Siginv);  // positive .5
     ans +=  -.5 * traceAB(Siginv, sumsq_);
-    ans += Rpri_->pdf(R_, true);
+    ans += Rpri_->logp(R_);
     // skip the jacobian because it only has products of sigma^2's in it
     return ans;
   }
@@ -216,7 +216,7 @@ namespace BOOM{
             << "n             = " << n_ << endl
             << "alpha         = " << alpha_ << endl
             << "(1-alpha) * n = " << a * n_;
-        throw std::runtime_error(err.str());
+        throw_exception<std::runtime_error>(err.str());
       }
       cand_ = rWishChol(df, sqrt(a) * sumsq_upper_chol_, true);
       if(logp0(cand_, alpha_) > slice){

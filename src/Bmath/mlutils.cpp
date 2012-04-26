@@ -53,18 +53,18 @@ void ml_error(int n)
 	break;
 
     case ME_DOMAIN:
-      throw std::domain_error("Bmath domain error");
+      BOOM::throw_exception<std::domain_error>("Bmath domain error");
       break;
     case ME_NOCONV:
-      throw std::domain_error("failed to converge");
+      BOOM::throw_exception<std::domain_error>("failed to converge");
       break;
 
     case ME_RANGE:
-      throw std::range_error("Bmath range error");
+      BOOM::throw_exception<std::range_error>("Bmath range error");
       break;
 
     default:
-      throw std::logic_error("call to Bmath::ml_error with unknown error");
+      BOOM::throw_exception<std::logic_error>("call to Bmath::ml_error with unknown error");
       break;
     }
 }
@@ -209,4 +209,3 @@ double R_PosInf = BOOM::infinity(1), R_NegInf = BOOM::infinity(-1);
 
 #endif /* MATHLIB_STANDALONE */
 }
-

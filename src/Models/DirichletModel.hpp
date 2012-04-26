@@ -47,8 +47,7 @@ namespace BOOM{
 
     const Vec & sumlog()const;
     double n()const;
-    DirichletSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this, s);}
+    DirichletSuf * abstract_combine(Sufstat *s);
     void combine(const DirichletSuf &);
     void combine(Ptr<DirichletSuf>);
 
@@ -57,7 +56,7 @@ namespace BOOM{
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
-
+    virtual ostream & print(ostream &out)const;
   };
 
   //======================================================================
@@ -88,6 +87,7 @@ namespace BOOM{
     double pi(uint i)const;
 
     double pdf(dPtr dp, bool logscale) const;
+    double pdf(const Data *, bool logscale) const;
     double pdf(const Vec &pi, bool logscale) const;
     double Logp(const Vec &p, Vec &g, Mat &h, uint lev) const ;
     double Loglike(Vec &g, Mat &h, uint nderiv) const ;

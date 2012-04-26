@@ -25,27 +25,29 @@ namespace BOOM{
 
 typedef HmmPosteriorSampler HS;
 
-  HS::HmmPosteriorSampler(Ptr<HiddenMarkovModel> hmm)
+  HS::HmmPosteriorSampler(HiddenMarkovModel *hmm)
       : hmm_(hmm),
         use_threads_(false)
   {}
 
   void HS::draw(){
-    hmm_->impute_latent_data();
     hmm_->mark()->sample_posterior();
     draw_mixture_components();
+    // by drawing latent data at the end, the log likelihood stored
+    // int the model matches the current set of parameters.
+    hmm_->impute_latent_data();
   }
 
   double HS::logpri()const{
     double ans = hmm_->mark()->logpri();
-    std::vector<Ptr<Model> > mix = hmm_->mixture_components();
+    std::vector<Ptr<MixtureComponent> > mix = hmm_->mixture_components();
     uint S = mix.size();
     for(uint s=0; s<S; ++s) ans += mix[s]->logpri();
     return ans;
   }
 
   void HS::draw_mixture_components(){
-    std::vector<Ptr<Model> > mix = hmm_->mixture_components();
+    std::vector<Ptr<MixtureComponent> > mix = hmm_->mixture_components();
     uint S = mix.size();
 
     if(use_threads_){
@@ -62,12 +64,12 @@ typedef HmmPosteriorSampler HS;
   void HS::use_threads(bool yn){
     use_threads_ = yn;
     if(!use_threads_) return;
-    std::vector<Ptr<Model> > mix = hmm_->mixture_components();
+    std::vector<Ptr<MixtureComponent> > mix = hmm_->mixture_components();
     uint S = mix.size();
     workers_.clear();
     for(uint s=0; s<S; ++s){
       boost::shared_ptr<MixtureComponentSampler>
-          worker(new MixtureComponentSampler(mix[s]));
+          worker(new MixtureComponentSampler(mix[s].dumb_ptr()));
       workers_.push_back(worker);
     }
   }

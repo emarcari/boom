@@ -147,7 +147,7 @@ double qnorm(double p, double mu, double sigma, int lower_tail, int log_p)
 #ifdef DEBUG_qnorm
 	    REprintf("\t r < numeric_limits<double>::min() : giving up (-> +- Inf \n");
 #endif
-	    throw std::range_error("");
+	   BOOM::throw_exception<std::range_error>("");
 	    if(q < 0.0) return BOOM::infinity(-1);
 	    else	return BOOM::infinity(1);
 	}

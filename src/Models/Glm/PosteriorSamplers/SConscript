@@ -1,6 +1,8 @@
 Import('env')
 
 file_list = Split("""
+BinomialLogitSampler.cpp
+BinomialLogitSpikeSlabSampler.cpp
 BregVsSampler.cpp
 DAFE_MLM.cpp
 GlmMvnPriorMeanSampler.cpp

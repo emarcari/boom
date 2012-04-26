@@ -47,7 +47,8 @@ namespace BOOM{
         public NumOptModel,
         public ParamPolicy_1<GlmCoefs>,
         public IID_DataPolicy<BinomialRegressionData>,
-        public PriorPolicy
+        public PriorPolicy,
+        public MixtureComponent
   {
    public:
     BinomialLogitModel(uint beta_dim, bool include_all=true);
@@ -59,6 +60,7 @@ namespace BOOM{
     Ptr<GlmCoefs> coef(){return ParamPolicy::prm();}
     const Ptr<GlmCoefs> coef()const{return ParamPolicy::prm();}
 
+    virtual double pdf(const Data * dp, bool logscale)const;
     virtual double pdf(dPtr dp, bool logscale)const;
     virtual double pdf(Ptr<BinomialRegressionData>, bool)const;
     virtual double logp(uint y, uint n, const Vec &x, bool logscale)const;

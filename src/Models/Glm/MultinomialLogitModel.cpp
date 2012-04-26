@@ -74,8 +74,8 @@ namespace BOOM{
 
   MLM::MultinomialLogitModel(const std::vector<uint> &y,
 			     const Mat &Xsubject,
-			     const Arr3 &Xchoice)
-    : MLB(num_unique(y), Xsubject.ncol(), Xchoice.dim2())
+			     const Array &Xchoice)
+    : MLB(num_unique(y), Xsubject.ncol(), Xchoice.dim(1))
   {
     setup();
     std::set<uint> tmp(y.begin(), y.end());
@@ -86,16 +86,16 @@ namespace BOOM{
       err << "MultinomialLogitModel was initialized with a vector of integers "
 	  << "that skipped some values:  "
 	  << FreqDist(y) << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
     NEW(CatKey, key)(n);
 
-    uint nch = Xchoice.dim2();
+    uint nch = Xchoice.dim(1);
     for(uint i=0; i<n; ++i){
       NEW(VectorData, xsub)(Xsubject.row(i));
       std::vector<Ptr<VectorData> > ch;
       for(uint j=0; j<nch; ++j){
-	NEW(VectorData, xch)(Xchoice[i].row(j));
+	NEW(VectorData, xch)(Xchoice.vector_slice(Array::index3(i, j, -1)));
 	ch.push_back(xch);
       }
       NEW(ChoiceData, d)(y[i], key, ch, xsub);
@@ -117,7 +117,7 @@ namespace BOOM{
       err << "MultinomialLogitModel was initialized with a vector of integers "
 	  << "that skipped some values:  "
 	  << FreqDist(y) << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
     NEW(CatKey, key)(n);
 
@@ -127,7 +127,7 @@ namespace BOOM{
       err << "MultinmoalLogitModel:  size of y vector was " << nobs << endl
           << "but X had " << Xsubject.nrow() << " rows" << endl
           << "they should be the same" << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
     for(uint i=0; i<nobs; ++i){
       NEW(VectorData, xsub)(Xsubject.row(i));
@@ -139,8 +139,8 @@ namespace BOOM{
 
   MLM::MultinomialLogitModel(const std::vector<string> &y,
 			     const Mat &Xsubject,
-			     const Arr3 &Xchoice)
-    : MLB(num_unique(y), Xsubject.ncol(), Xchoice.dim2())
+			     const Array &Xchoice)
+    : MLB(num_unique(y), Xsubject.ncol(), Xchoice.dim(1))
   {
     setup();
     std::set<string> tmp(y.begin(), y.end());
@@ -148,12 +148,12 @@ namespace BOOM{
     std::vector<string> labs(tmp.begin(), tmp.end());
     NEW(CatKey, key)(labs);
 
-    uint nch = Xchoice.dim2();
+    uint nch = Xchoice.dim(1);
     for(uint i=0; i<n; ++i){
       NEW(VectorData, xsub)(Xsubject.row(i));
       std::vector<Ptr<VectorData> > ch;
       for(uint j=0; j<nch; ++j){
-	NEW(VectorData, xch)(Xchoice[i].row(j));
+	NEW(VectorData, xch)(Xchoice.vector_slice(Array::index3(i, j, -1)));
 	ch.push_back(xch);
       }
       NEW(ChoiceData, d)(y[i], key, ch, xsub);
@@ -182,7 +182,7 @@ namespace BOOM{
   //------------------------------------------------------------
   MLM::MultinomialLogitModel(ResponseVec responses,
 			     const Mat &Xsubject,
-			     const Arr3 &Xchoice)
+			     const Array &Xchoice)
     : MLB(responses, Xsubject, Xchoice),
       ParamPolicy()
   {
@@ -283,7 +283,7 @@ namespace BOOM{
     for(uint i=0; i<n; ++i){
       Ptr<ChoiceData> dp = d[i];
       uint y = dp->value();
-      fill_eta(dp,wsp);
+      fill_eta(*dp,wsp);
       if(downsampling) wsp += log_sampling_probs();
       double lognc = lse(wsp);
       ans += wsp[y] - lognc;
@@ -341,14 +341,14 @@ namespace BOOM{
   //------------------------------------------------------------
   Vec MLM::eta(Ptr<ChoiceData> dp)const{
     Vec ans(Nchoices());
-    return fill_eta(dp, ans);
+    return fill_eta(*dp, ans);
   }
   //------------------------------------------------------------
 
-  Vec&  MLM::fill_eta(Ptr<ChoiceData> dp, Vec &ans)const{
+  Vec&  MLM::fill_eta(const ChoiceData & dp, Vec &ans)const{
     uint M = Nchoices();
     ans.resize(M);
-    const Mat &X(dp->X());
+    const Mat &X(dp.X());
     ans = X * beta_with_zeros();
     return ans;
   }
@@ -356,7 +356,15 @@ namespace BOOM{
   //------------------------------------------------------------
   void MLM::setup_observers(){
     Ptr<GlmCoefs> b(coef());
-    b->add_observer(boost::bind(&MLM::watch_beta, this));
+    try{
+      b->add_observer(boost::bind(&MLM::watch_beta, this));
+    } catch(const std::exception &e){
+      throw_exception<std::runtime_error>(e.what());
+    }catch(...){
+      throw_exception<std::runtime_error>(
+          "unknown exception (from boost::bind) caught by "
+          "MultinomialLogitModel::setup_observer");
+    }
   }
 
   //------------------------------------------------------------
@@ -380,7 +388,7 @@ namespace BOOM{
     err << "index " << m << " outside the allowable range (" << 1 << ", "
 	<< Nchoices()-1 << ") in MultinomialLogitModel::set_beta_subject."
 	<< endl;
-    throw std::runtime_error(err.str());
+    throw_exception<std::runtime_error>(err.str());
   }
 
   //______________________________________________________________________
@@ -407,7 +415,7 @@ namespace BOOM{
       err << "mismatch between data and probs_ in "
 	  << "MultinomialLogitEMC::Loglike." <<endl
 	;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
 
     double ans=0;
@@ -423,7 +431,7 @@ namespace BOOM{
       double w = probs_[i];
       Ptr<ChoiceData> dp = d[i];
       uint y = dp->value();
-      fill_eta(dp,wsp);
+      fill_eta(*dp,wsp);
       if(downsampling) wsp += log_sampling_probs();
       double lognc = lse(wsp);
       ans += w * (wsp[y] - lognc);
@@ -470,7 +478,7 @@ namespace BOOM{
       ostringstream err;
       err << "MultinomialLogit_EMC cannot find posterior mode.  "
 	  << "No prior is set." << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
 
     d2LoglikeTF loglike(this);

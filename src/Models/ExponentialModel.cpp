@@ -23,6 +23,7 @@
 #include <Models/PosteriorSamplers/ExponentialGammaSampler.hpp>
 #include <distributions.hpp>
 #include <Models/GammaModel.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
 
 namespace BOOM{
 
@@ -61,6 +62,9 @@ namespace BOOM{
     sum_ += s.sum_;
   }
 
+  ExpSuf * ExpSuf::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this, s);}
+
   Vec ExpSuf::vectorize(bool)const{
     Vec ans(2);
     ans[0] = sum_;
@@ -79,6 +83,9 @@ namespace BOOM{
     return unvectorize(it, minimal);
   }
 
+  ostream & ExpSuf::print(ostream &out)const{
+    return out << n_ << " " << sum_;
+  }
   //======================================================================
   typedef ExponentialModel EM;
 
@@ -149,22 +156,19 @@ namespace BOOM{
     return ans;
   }
 
-//   double ExponentialModel::pdf(double x, bool logscale)const{
-//     double lam = this->lam();
-//     if(lam<=0) return infinity(-1);
-//     double ans = log(lam) - lam*x;
-//     return logscale?  ans: exp(ans);
-//   }
+  double ExponentialModel::pdf(Ptr<Data> dp, bool logscale)const{
+    double ans = logp(DAT(dp)->value());
+    return logscale ? ans : exp(ans);}
 
-//   double ExponentialModel::pdf(Ptr<Data> dp, bool logscale)const{
-//     double x = DAT(dp)->value();
-//     return pdf(x,logscale);
-//   }
+  double ExponentialModel::pdf(const Data * dp, bool logscale)const{
+    double ans = logp(DAT(dp)->value());
+    return logscale ? ans : exp(ans);}
 
   double ExponentialModel::Logp(double x, double &g, double &h, uint nd)const{
-    double ans = pdf(x,true);
+    double lam = this->lam();
+     if(lam<=0) return infinity(-1);
+     double ans = x <0 ? infinity(-1) : log(lam) - lam*x;
     if(nd>0){
-      double lam = this->lam();
       if(lam>0) g = 1.0/lam - x;
       else g = 1.0;
       if(nd>1){

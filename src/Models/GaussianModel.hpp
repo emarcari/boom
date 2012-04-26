@@ -23,24 +23,18 @@
 #include <Models/Policies/ConjugatePriorPolicy.hpp>
 #include <Models/Policies/ParamPolicy_2.hpp>
 #include <Models/EmMixtureComponent.hpp>
+#include <Models/PosteriorSamplers/GaussianConjSampler.hpp>
 
 namespace BOOM{
   class GaussianModelGivenSigma;
   class GammaModel;
   class GaussianConjSampler;
 
-
-
   //------------------------------------------------------------
-
   class GaussianModel
       : public GaussianModelBase,
         public ParamPolicy_2<UnivParams, UnivParams>,
         public ConjugatePriorPolicy<GaussianConjSampler>
-        //        public SufstatDataPolicy<DoubleData, GaussianSuf>,
-//       public DiffDoubleModel,
-//       public NumOptModel,
-//       public EmMixtureComponent
   {
   public:
     GaussianModel();  // N(0,1)
@@ -72,6 +66,7 @@ namespace BOOM{
 
     double Loglike(Vec &g, Mat &h, uint nd)const;
 
+    virtual void find_posterior_mode();
   };
 
 }

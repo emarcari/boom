@@ -23,28 +23,49 @@
 
 namespace BOOM{
   namespace SPD{
+
+    // Abstract base class for storing the different incarnations of a
+    // symmetric positive definite matrix.  The class keeps track of
+    // whether or not the currently stored data is current by placing
+    // observers in other Storage objects.  When the user sets the
+    // data in a Storage object, it signals the list of observers
+    // watching it, so they know that their data needs to be updated.
     class Storage{
-    public:
+     public:
       Storage(bool current=false);
       Storage(const Storage &rhs);
       virtual ~Storage();
       virtual Storage * clone()const=0;
 
+      // Returns the length of one side of the stored matrix.
       virtual uint dim()const=0;
+
+      // The storage capacity requirements of either the full matrix
+      // (minimial = false), or the triangle (minimial = true).
       virtual uint size(bool minimal=true)const;
 
+      // Is the stored data current?
       bool current()const;
+
+      // Signal any observers that a change has been made.
       void signal();
+
+      // Marks the stored data as current.
       void set_current();
+
+      // Creates an observer that can be placed in another Storage
+      // object using add_observer().
       boost::function<void(void)> create_observer();
 
+      // Adds an from another Storage object.
       void add_observer(boost::function<void(void)>);
-    private:
+     private:
       bool current_;
       void observe_changes();
 
       std::vector<boost::function<void(void)> >signals_;
     };
+
     //------------------------------------------------------------
     class SpdStorage;
     class CholStorage : public Storage{
@@ -61,6 +82,7 @@ namespace BOOM{
       Mat L;
     };
     typedef boost::shared_ptr<CholStorage> CholPtr;
+
     //------------------------------------------------------------
     class SpdStorage : public Storage{
     public:
@@ -79,6 +101,12 @@ namespace BOOM{
     typedef boost::shared_ptr<SpdStorage> SpdPtr;
   }
   //____________________________________________________________
+
+  // This class stores a Spd matrix in several different formats.  It
+  // keeps both the original matrix (though of as a variance matrix),
+  // its inverse (ivar), as well as the cholesky triangles for these
+  // two matrices.  This is extravagant, but it prevents excessive
+  // computation.
   class SpdData
     : public DataTraits<Spd>
   {
@@ -91,7 +119,6 @@ namespace BOOM{
     virtual uint size(bool minimal=true)const;
     virtual uint dim()const;
     virtual ostream & display(ostream &out)const;
-    //    virtual istream & read(istream &);
 
     virtual const Spd & value()const;
     virtual void set(const Spd &v, bool sig=true);
@@ -106,17 +133,16 @@ namespace BOOM{
     void set_ivar(const Spd &, bool signal=true);
     void set_var_chol(const Mat &L, bool signal=true);
     void set_ivar_chol(const Mat &L, bool signal=true);
+
+    // Args:
+    //   sd:  A vector of standard deviations to go along the diagonal.
+    //   L:  The lower cholesky triangle for a correlation matrix.
     void set_S_Rchol(const Vec &sd, const Mat &L);
 
     void ensure_ivar_current()const;
     void ensure_var_current()const;
     void ensure_var_chol_current()const;
     void ensure_ivar_chol_current()const;
-
-    //    const Corr & R()const;
-    //    const Spd & Rinv()const;
-    //    const Vec & sd()const;
-    //    void set_R_S(const Corr &R, const Vec &S);
 
   private:
     typedef boost::shared_ptr<SPD::SpdStorage>  SpdPtr;
@@ -127,10 +153,12 @@ namespace BOOM{
     mutable SpdPtr ivar_;
     mutable CholPtr var_chol_;
     mutable CholPtr ivar_chol_;
-    //    boost::shared_ptr<SPD::CorrSdStorage> RS_;
 
+    // Points to the current representation: variance, inverse
+    // variance, cholesky of variance, cholesky of inverse.
     StoragePtr current_rep_;
 
+    // Create observers among all the available storage modes.
     void setup_storage();
     void ensure_current(SpdPtr, CholPtr, SpdPtr, CholPtr)const;
     void ensure_chol_current(CholPtr, SpdPtr, CholPtr, SpdPtr)const;

@@ -45,13 +45,13 @@ namespace BOOM{
     double n()const;
     void combine(Ptr<ExpSuf>);
     void combine(const ExpSuf &);
-    ExpSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this, s);}
+    ExpSuf * abstract_combine(Sufstat *s);
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
+    virtual ostream &print(ostream &out)const;
   };
   //======================================================================
   class GammaModel;
@@ -81,6 +81,8 @@ namespace BOOM{
     void set_conjugate_prior(Ptr<ExponentialGammaSampler>);
 
     // probability calculations
+    virtual double pdf(Ptr<Data> dp, bool logscale)const;
+    virtual double pdf(const Data * dp, bool logscale)const;
     double Loglike(Vec &g, Mat &h, uint lev) const ;
     double Logp(double x, double &g, double &h, const uint lev) const ;
     double sim() const;

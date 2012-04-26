@@ -29,11 +29,11 @@ namespace BOOM{
 
   const bool do_qr = true;  // natural state of world is true
 
-  LinAlg::QR NS::make_qr_const(double lo, double hi)const{
+  QR NS::make_qr_const(double lo, double hi)const{
     Vec tmplo = basis(lo,2);
     Vec tmphi = basis(hi,2);
     Mat tmp = rbind(tmplo, tmphi);
-    LinAlg::QR qr(tmp.t());
+    QR qr(tmp.t());
     return qr;
   }
 
@@ -69,7 +69,7 @@ namespace BOOM{
 
   void NS::too_few_knots()const{
     string msg = "you must have at least one knot to use a NaturalSpline";
-    throw std::runtime_error(msg);
+    throw_exception<std::runtime_error>(msg);
   }
 
   NS::NaturalSpline(const Vec &Knots, double lo, double hi, bool intercept)
@@ -91,7 +91,7 @@ namespace BOOM{
 	  << "boundary knots must be outside interior knots:"<<endl
 	  << "you supplied: " << endl
 	  << "[" << lo << "] " << knots_ << " [" << hi <<"]" <<endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
     if(lo>hi) std::swap(hi,lo);
     for(int j=0; j<order_; ++j){
@@ -211,7 +211,7 @@ namespace BOOM{
 	  << " you can't have x inside the left or right " << order_
 	  << " knots." << endl
 	  << "x = " << x << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
     if(nd>0){
       for(int ii=0; ii<order_; ++ii){
@@ -257,7 +257,7 @@ namespace BOOM{
     set_cursor(x);
     double ans(0);
     if(curs < order_ || curs > (nknots() - order_) ){
-      throw std::runtime_error("a bad bad thing happened in NaturalSpline::predict");
+      throw_exception<std::runtime_error>("a bad bad thing happened in NaturalSpline::predict");
     } else {
       memcpy(a.data(), beta.data() + curs - order_, order_);
       ans = eval_derivs(x, 0);
@@ -313,11 +313,3 @@ namespace BOOM{
 //   }
 
 }
-
-
-
-
-
-
-
-

@@ -27,7 +27,7 @@ namespace BOOM{
   // ======================================================================
   // MH_Proposal models a proposal distribution for a
   // MetropolisHastings sampler
-  class MH_Proposal : private RefCounted, public LinAlgTypes{
+  class MH_Proposal : private RefCounted{
   public:
     MH_Proposal();
     virtual ~MH_Proposal(){}
@@ -105,7 +105,7 @@ namespace BOOM{
 
   // ======================================================================
   // scalar proposals for Metropolis-Hastings algorithms
-  class MH_ScalarProposal : private RefCounted, public LinAlgTypes{
+  class MH_ScalarProposal : private RefCounted{
   public:
     MH_ScalarProposal();
     virtual ~MH_ScalarProposal(){}

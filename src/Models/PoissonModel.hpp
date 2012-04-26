@@ -47,14 +47,14 @@ namespace BOOM{
     void add_mixture_data(double y, double prob);
     void combine(Ptr<PoissonSuf>);
     void combine(const PoissonSuf &);
-    PoissonSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s); }
+    PoissonSuf * abstract_combine(Sufstat *s);
 
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
+    virtual ostream &print(ostream &out)const;
 
   private:
     double sum_, n_, lognc_;  // log nc is the log product of x-factorials
@@ -84,6 +84,7 @@ namespace BOOM{
 
     // probability calculations
     virtual double pdf(Ptr<Data> x, bool logscale) const;
+    virtual double pdf(const Data * x, bool logscale) const;
     double pdf(uint x, bool logscale) const;
 
     // moments and summaries:

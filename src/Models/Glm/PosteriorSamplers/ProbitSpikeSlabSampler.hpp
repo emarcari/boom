@@ -25,7 +25,7 @@ class ProbitSpikeSlabSampler : public ProbitRegressionSampler{
   // inheriting from ProbitRegressionSampler gives impute_latent_data
   // and access to complete data sufficient statistics
  public:
-  ProbitSpikeSlabSampler(Ptr<ProbitRegressionModel> model,
+  ProbitSpikeSlabSampler(ProbitRegressionModel *model,
                          Ptr<MvnBase> prior,
                          Ptr<VariableSelectionPrior> vspri,
                          bool check_initial_condition = true);
@@ -42,7 +42,7 @@ class ProbitSpikeSlabSampler : public ProbitRegressionSampler{
   bool keep_flip(double logp_new, double logp_old)const;
   double log_model_prob(const Selector &inc);
 
-  Ptr<ProbitRegressionModel> m_;
+  ProbitRegressionModel *m_;
   Ptr<MvnBase> beta_prior_;
   Ptr<VariableSelectionPrior> gamma_prior_;
 

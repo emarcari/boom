@@ -38,7 +38,7 @@ namespace BOOM{
     ostringstream msg;
     msg << "illegal_parameter_value in " << fname << endl
 	<< prm_name << " = " << n << endl;
-    throw std::runtime_error(msg.str());
+    throw_exception<std::runtime_error>(msg.str());
   }
 
   //======================================================================
@@ -47,7 +47,7 @@ namespace BOOM{
     ostringstream err;
     err <<  "element " << j << " was zero in rdirichlet, with nu = "
         << nu << endl;
-    throw std::runtime_error(err.str());
+    throw_exception<std::runtime_error>(err.str());
     return false;
   }
 
@@ -73,7 +73,7 @@ namespace BOOM{
       err << "infinite, NaN, or denormalized sum in rdirichlet_impl.  sum = " << sum << endl
           << "x = " << x << endl
           << "nu = " << nu << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
     if(sum<=0){
       ostringstream err;

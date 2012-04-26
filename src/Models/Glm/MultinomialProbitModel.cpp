@@ -147,7 +147,7 @@ namespace BOOM{
   //============================================================
   double MNP::pdf(Ptr<Data> dp, bool logsc)const{ return pdf(DAT(dp), logsc);}
   double MNP::pdf(Ptr<ChoiceData>, bool )const{
-    throw std::runtime_error("MultinomialProbit::pdf has not been defined");
+    throw_exception<std::runtime_error>("MultinomialProbit::pdf has not been defined");
     return 0.0;
   }
 
@@ -256,7 +256,7 @@ namespace BOOM{
   void MNP::impute_u(Vec &u, Ptr<ChoiceData> dp, TrunMvnTF & target){
     if(imp_method==Slice) impute_u_slice(u, dp, target);
     else if(imp_method==Gibbs) impute_u_Gibbs(u, dp, target);
-    else throw std::runtime_error("unrecognized method in impute_u");
+    else throw_exception<std::runtime_error>("unrecognized method in impute_u");
   }
 
   void MNP::impute_u_slice(Vec &u, Ptr<ChoiceData> dp, TrunMvnTF & target){

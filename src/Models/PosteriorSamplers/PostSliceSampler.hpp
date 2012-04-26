@@ -32,15 +32,17 @@ namespace BOOM{
   class PosteriorSliceSampler : virtual public PosteriorSampler{
   public:
     PosteriorSliceSampler(Ptr<Params>,
-			  Ptr<LoglikeModel>,
-			  Ptr<VectorModel>,
-			  bool unimodal=false);
-    PosteriorSliceSampler(const ParamVec &,
-			  Ptr<LoglikeModel>,
+			  LoglikeModel *,
 			  Ptr<VectorModel>,
 			  bool unimodal=false);
 
-    PosteriorSliceSampler(Ptr<LoglikeModel>, Ptr<VectorModel>,
+    PosteriorSliceSampler(const ParamVec &,
+			  LoglikeModel *,
+			  Ptr<VectorModel>,
+			  bool unimodal=false);
+
+    PosteriorSliceSampler(LoglikeModel *,
+                          Ptr<VectorModel>,
                           bool unimodal=false);
     virtual void draw();
     virtual double logpri()const;

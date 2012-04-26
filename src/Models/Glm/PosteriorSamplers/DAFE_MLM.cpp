@@ -38,7 +38,7 @@ namespace BOOM{
 
   //------------------------------------------------------------
 
-  DafeMlmBase::DafeMlmBase(Ptr<MultinomialLogitModel> mod,
+  DafeMlmBase::DafeMlmBase(MultinomialLogitModel *mod,
 			   Ptr<MvnModel> SubjectPri,  // each subject beta has this prior
 			   Ptr<MvnModel> ChoicePri,
 			   bool draw_b0)
@@ -90,7 +90,7 @@ namespace BOOM{
   // Target function for use with Metropolis Hastings samplers
   class LesSubjectTarget : public TargetFun{
   public:
-    LesSubjectTarget(uint Which, Mat & bigU, Ptr<MLM> mod)
+    LesSubjectTarget(uint Which, Mat & bigU, MLM *mod)
       : which(Which),
 	U(bigU),
 	mlm_(mod)
@@ -100,10 +100,10 @@ namespace BOOM{
   private:
     uint which;
     Mat &U;
-    Ptr<MLM> mlm_;
+    MLM *mlm_;
   };
   double LesSubjectTarget::operator()(const Vec &b)const{
-    const LinAlg::VectorView Uvec(U.col(which));
+    const VectorView Uvec(U.col(which));
     uint n = Uvec.size();
     const std::vector<Ptr<ChoiceData> > & dat(mlm_->dat());
     double ans=0;
@@ -119,14 +119,14 @@ namespace BOOM{
   // ======================================================================
   class LesChoiceTarget : public TargetFun{
   public:
-    LesChoiceTarget(Mat &bigU, Ptr<MLM> mod)
+    LesChoiceTarget(Mat &bigU, MLM *mod)
       : U(bigU),
         mlm_(mod){}
     LesChoiceTarget * clone()const{return new LesChoiceTarget(*this);}
     double operator()(const Vec &b)const;
   private:
     Mat &U;
-    Ptr<MLM> mlm_;
+    MLM *mlm_;
   };
   double LesChoiceTarget::operator()(const Vec &b)const{
     const std::vector<Ptr<ChoiceData> > & dat(mlm_->dat());
@@ -143,7 +143,7 @@ namespace BOOM{
     return ans;
   }
   // ======================================================================
-  DafeMlm::DafeMlm(Ptr<MultinomialLogitModel> mod,
+  DafeMlm::DafeMlm(MultinomialLogitModel *mod,
 		   Ptr<MvnModel> SubjectPri,
 		   Ptr<MvnModel> ChoicePri,
 		   double Tdf,
@@ -208,7 +208,7 @@ namespace BOOM{
 
     for(uint i=0; i<n; ++i){
       Ptr<ChoiceData> dp = dat[i];
-      mlm_->fill_eta(dp, eta);
+      mlm_->fill_eta(*dp, eta);
       uint y = dp->value();
       double loglam = lse(eta);
       double logzmin = rlexp(loglam);
@@ -277,18 +277,18 @@ namespace BOOM{
 
   class DafeLoglike{
   public:
-    DafeLoglike(Ptr<MLM>, uint m, bool choice=false);
+    DafeLoglike(MLM *, uint m, bool choice=false);
     double operator()(const Vec &Beta)const;
     //    virtual DafeLoglike * clone()const;
   private:
-    mutable Ptr<MLM> mlm_;
+    mutable MLM *mlm_;
     mutable Vec x;
     uint m;
     bool choice;
   };
 
 
-  DafeLoglike::DafeLoglike(Ptr<MLM> mod, uint which_choice, bool is_choice)
+  DafeLoglike::DafeLoglike(MLM *mod, uint which_choice, bool is_choice)
     : mlm_(mod),
       m(which_choice),
       choice(is_choice)
@@ -324,7 +324,7 @@ namespace BOOM{
 
   //______________________________________________________________________
 
-  DafeRMlm::DafeRMlm(Ptr<MultinomialLogitModel> mod,
+  DafeRMlm::DafeRMlm(MultinomialLogitModel *mod,
 			 Ptr<MvnModel> SubjectPri,
 			 Ptr<MvnModel> ChoicePri,
 			 double Tdf)

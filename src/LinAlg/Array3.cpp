@@ -19,36 +19,35 @@
 #include "Matrix.hpp"
 
 namespace BOOM{
-  namespace LinAlg{
-    typedef Array3 A3;
+    typedef DeprecatedArray3 A3;
     typedef std::vector<double> dvector;
 
-    A3::Array3()
+    A3::DeprecatedArray3()
       : n1(0),
 	n2(0),
 	n3(0),
 	V()
     {}
 
-    A3::Array3(uint dim, double x)
+    A3::DeprecatedArray3(uint dim, double x)
       : n1(dim),
 	n2(dim),
 	n3(dim),
 	V(n1, Matrix(n2,n3, x))
     {}
 
-    A3::Array3(uint d1, uint d2, uint d3, double x)
+    A3::DeprecatedArray3(uint d1, uint d2, uint d3, double x)
       : n1(d1),
 	n2(d2),
 	n3(d3),
 	V(n1, Matrix(d2, d3, x))
     {}
 
-    A3::Array3(const A3 & rhs)
+    A3::DeprecatedArray3(const A3 & rhs)
       : n1(rhs.n1),
 	n2(rhs.n2),
 	n3(rhs.n3),
-	V(V)
+	V(rhs.V)
     {}
 
 
@@ -81,7 +80,4 @@ namespace BOOM{
     const Matrix & A3::operator[](uint i)const{
       return V[i];}
 
-
-
-  } // namespace LinAlg
-} // namespace LinAlg
+} // namespace BOOM

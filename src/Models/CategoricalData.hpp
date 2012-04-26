@@ -21,6 +21,7 @@
 
 #include <Models/DataTypes.hpp>
 #include <cpputil/RefCounted.hpp>
+#include <stats/FreqDist.hpp>
 #include <vector>
 #include <set>
 
@@ -164,7 +165,10 @@ namespace BOOM{
   };
   //======================================================================
 
-
+  class CategoricalFreqDist : public FreqDist {
+   public:
+    CategoricalFreqDist(const std::vector<Ptr<CategoricalData> > &data);
+  };
 
   std::vector<Ptr<CategoricalData> > make_catdat_ptrs(const std::vector<string> &);
   std::vector<Ptr<CategoricalData> > make_catdat_ptrs(const std::vector<uint> &);

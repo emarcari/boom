@@ -39,10 +39,10 @@ namespace BOOM{
     double n()const{return n_;}
     double sumlog()const{return sumlog_;}
     double sumlogc()const{return sumlogc_;}
-    BetaSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this, s);}
+    BetaSuf * abstract_combine(Sufstat *s);
     void combine(Ptr<BetaSuf> s);
     void combine(const BetaSuf & s);
+    virtual ostream &print(ostream &out)const;
 
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,

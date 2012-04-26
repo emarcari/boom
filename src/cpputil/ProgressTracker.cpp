@@ -79,7 +79,7 @@ namespace BOOM{
       ostringstream out;
       out << "cannot use ProgressTracker to restart without first "
 	  << "setting history directory";
-      throw std::logic_error(out.str());
+      throw_exception<std::logic_error>(out.str());
     }
     ifstream in(fname.c_str());
     gll(in);   // put msg to start of final line

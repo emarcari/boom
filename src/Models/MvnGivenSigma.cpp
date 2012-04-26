@@ -136,7 +136,7 @@ namespace BOOM{
     ostringstream err;
     err << "Sigma has not been set in instance of MvnGivenSigma."
 	<< endl;
-    throw std::runtime_error(err.str());
+    throw_exception<std::runtime_error>(err.str());
   }
 
   const Spd & MGS::Sigma()const{

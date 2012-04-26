@@ -19,23 +19,34 @@
 #define BOOM_FREQ_DIST_HPP
 
 #include <vector>
-#include <BOOM.hpp>
-#include <cpputil/Ptr.hpp>
+#include <string>
 
 namespace BOOM{
 
-  class CategoricalData;
-
   class FreqDist{
-  public:
-    FreqDist(const std::vector<Ptr<CategoricalData> > &y);
-    FreqDist(const std::vector<uint> &y);
-  private:
-    std::vector<string> labs_;
-    std::vector<uint> counts_;
-    friend ostream & operator<<(ostream &,const FreqDist &);
+   public:
+    FreqDist(const std::vector<unsigned int> &y);
+    FreqDist(const std::vector<int> &y);
+    FreqDist(const std::vector<long> &y);
+    FreqDist(const std::vector<unsigned long> &y);
+
+    const std::vector<std::string> & labels()const{
+      return labs_;}
+    const std::vector<int> & counts()const{
+      return counts_; }
+
+    ostream & print(ostream &out)const;
+   private:
+    std::vector<std::string> labs_;
+    std::vector<int> counts_;
+   protected:
+    FreqDist(){}
+    void reset(const std::vector<int> &counts,
+               const std::vector<std::string> &labels);
   };
 
-  ostream & operator<<(ostream &, const FreqDist &);
+  inline ostream & operator<<(ostream &out, const FreqDist &f){
+    return f.print(out);
+  }
 }
 #endif// BOOM_FREQ_DIST_HPP

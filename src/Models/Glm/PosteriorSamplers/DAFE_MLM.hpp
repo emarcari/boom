@@ -33,7 +33,7 @@ namespace BOOM{
 
   class DafeMlmBase : public PosteriorSampler{
    public:
-    DafeMlmBase(Ptr<MultinomialLogitModel> mod,
+    DafeMlmBase(MultinomialLogitModel *mod,
 		Ptr<MvnModel> SubjectPri,  // each subject beta has this prior
 		Ptr<MvnModel> ChoicePri,
 		bool draw_b0=false);
@@ -45,7 +45,7 @@ namespace BOOM{
     Ptr<MvnModel> subject_pri()const;
     Ptr<MvnModel> choice_pri()const;
    private:
-    Ptr<MultinomialLogitModel> mlm_;
+    MultinomialLogitModel *mlm_;
     Ptr<MvnModel> subject_pri_;
     Ptr<MvnModel> choice_pri_;
 
@@ -58,7 +58,7 @@ namespace BOOM{
   //------------------------------------------------------------
   class DafeMlm : public DafeMlmBase{
   public:
-    DafeMlm(Ptr<MultinomialLogitModel> mod,
+    DafeMlm(MultinomialLogitModel *mod,
 	    Ptr<MvnModel> SubjectPri,  // each subject beta has this prior
 	    Ptr<MvnModel> ChoicePri,
 	    double tdf,
@@ -68,7 +68,7 @@ namespace BOOM{
     void draw_subject(uint i);
     void impute_latent_data();
   private:
-    Ptr<MultinomialLogitModel> mlm_;
+    MultinomialLogitModel *mlm_;
     const double mu; //( -0.577215664902), negative Euler's constant
     const double sigsq; // (1.64493406685); pi^2/6
     std::vector<Ptr<MetropolisHastings> > subject_samplers_;
@@ -86,7 +86,7 @@ namespace BOOM{
   //------------------------------------------------------------
   class DafeRMlm : public DafeMlmBase{
   public:
-    DafeRMlm(Ptr<MultinomialLogitModel> mod,
+    DafeRMlm(MultinomialLogitModel *mod,
 	     Ptr<MvnModel> SubjectPri,  // each subject beta has this prior
 	     Ptr<MvnModel> ChoicePri,
 	     double tdf);
@@ -94,7 +94,7 @@ namespace BOOM{
     void draw_choice();
     void draw_subject(uint i);
   private:
-    Ptr<MultinomialLogitModel> mlm_;
+    MultinomialLogitModel *mlm_;
     std::vector<Ptr<MetropolisHastings> > subject_samplers_;
     std::vector<Ptr<MvtRwmProposal> > subject_proposals_;
     Ptr<MetropolisHastings> choice_sampler_;

@@ -92,7 +92,7 @@ unsigned int rbinom(int  nin, double pp)
       err << "must have 0<= p <= 1 in rbinom" << endl
           << "n = " << nin << endl
           << "p = " << pp <<endl;
-      throw std::runtime_error(err.str());
+      BOOM::throw_exception<std::runtime_error>(err.str());
     }
 	/* n=0, p=0, p=1 are not errors <TSL>*/
 

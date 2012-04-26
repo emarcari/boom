@@ -20,33 +20,32 @@
 
 namespace BOOM{
 
-  typedef CompositeData CD;
-  CD::CompositeData(const std::vector<Ptr<Data> > &d)
-    : dat(d)
+  CompositeData::CompositeData() {}
+
+  CompositeData::CompositeData(const std::vector<Ptr<Data> > &d)
+    : dat_(d)
   {}
 
-  CD * CD::clone()const{return new CD(*this);}
+  CompositeData * CompositeData::clone()const{
+    return new CompositeData(*this);}
 
-  ostream & CD::display(ostream &out)const{
-    uint n = dat.size();
-    for(uint i=0; i<n; ++i) dat[i]->display(out) << " ";
+  ostream & CompositeData::display(ostream &out)const{
+    uint n = dat_.size();
+    for(uint i=0; i<n; ++i) dat_[i]->display(out) << " ";
     return out;
   }
 
-//   istream & CD::read(istream & in){
-//     uint n = dat.size();
-//     for(uint i=0; i<n ;++i) dat[i]->read(in);
-//     return in;
-//   }
-
-  uint CD::size(bool minimal)const{
-    uint ans=0;
-    uint n = dat.size();
-    for(uint i=0; i<n; ++i) ans += dat[i]->size(minimal);
-    return ans;
+  void CompositeData::add(Ptr<Data> dp){
+    dat_.push_back(dp);
   }
 
-  uint CD::dim()const{ return dat.size();}
+  uint CompositeData::dim()const{ return dat_.size();}
 
-  Ptr<Data> CD::get(uint i){return dat[i];}
+  Ptr<Data> CompositeData::get_ptr(uint i){
+    return dat_[i];
+  }
+
+  const Data * CompositeData::get(uint i)const{
+    return dat_[i].get();
+  }
 }

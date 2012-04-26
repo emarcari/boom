@@ -59,9 +59,6 @@ namespace BOOM{
   ostream & VectorData::display(ostream &out)const{
     out << x ; return out;}
 
-//   istream & VectorData::read(istream &in) {
-//     in >> x; return in;}
-
   void VectorData::set(const Vec &rhs, bool Signal){
     x =rhs;
     if(Signal) signal();
@@ -97,9 +94,6 @@ namespace BOOM{
     out << x << endl;
     return out;}
 
-//   istream & MatrixData::read(istream &in) {
-//     in >> x; return in;}
-
   void MatrixData::set(const Mat &rhs, bool sig){
     x = rhs;
     if(sig) signal();
@@ -124,9 +118,6 @@ namespace BOOM{
   ostream & CorrData::display(ostream &out) const{
     out << R << endl;
     return out;}
-
-//   istream & CorrData::read(istream &in){
-//     return in;}
 
   const Corr & CorrData::value()const{return R;}
   void CorrData::set(const Corr &rhs, bool sig){
@@ -187,38 +178,6 @@ namespace BOOM{
       out << (dat[i] ? '1' : '0');
       if(space_output_) out << ' ';}
     return out;}
-
-
-//   istream & BPD::read(istream &in){
-//     if(space_output_){
-//       dat.clear();
-//       char c;
-//       while(in >> c){
-// 	if(c=='0') dat.push_back(false);
-// 	else if(c=='1') dat.push_back(true);
-// 	else break;
-//       }
-//       if(dat.size()==0){
-// 	throw std::runtime_error("no data read in BinomialProcessData");
-//       }
-//     }else{
-//       string s;
-//       in >> s;
-//       uint n = s.size();
-//       if(size()!=n) dat = Vb(n);
-//       for(uint i=0; i<n; ++i){
-// 	if(s[i]=='0') dat[i]=false;
-// 	else if(s[i]=='1') dat[i]=true;
-// 	else{
-// 	  ostringstream msg(s);
-// 	  msg << " is an illegal input value for"
-// 	      << " 'BinomialProcessData'. ";
-// 	  throw std::invalid_argument(msg.str());
-// 	}
-//       }
-//     }
-//     return in;
-//   }
 
   const Vb & BPD::value()const{ return dat; }
   void BPD::set(const Vb &rhs, bool sig){

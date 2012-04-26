@@ -42,32 +42,32 @@ namespace BOOM{
     return F.solve(R);
   }
 
+  // returns the probability that a markov chain with initial
+  // distribution pi0 and transition matrix Q enters state r before
+  // entering state s
+  double preceeds(const Selector & r, const Selector &s,
+                  const Vec &pi0, const Mat & P){
+    assert(P.ncol()==P.nrow());
+    assert(pi0.size()==P.nrow());
+    assert(r.nvars_possible()==P.nrow());
+    assert(s.nvars_possible()==P.nrow());
+    Selector absorbing = r.Union(s);
+    Selector transient = absorbing.complement();
 
-// returns the probability that a markov chain with initial
-// distribution pi0 and transition matrix Q enters state r before
-// entering state s
-double preceeds(const Selector & r, const Selector &s, const Vec &pi0, const Mat & P){
-  assert(P.ncol()==P.nrow());
-  assert(pi0.size()==P.nrow());
-  assert(r.nvars_possible()==P.nrow());
-  assert(s.nvars_possible()==P.nrow());
-  Selector absorbing = r.Union(s);
-  Selector transient = absorbing.complement();
+    Mat Q = transient.select_square(P);
+    Mat R = absorbing.select_cols(transient.select_rows(P));
+    Mat F = Q.Id() - Q;;
 
-  Mat Q = transient.select_square(P);
-  Mat R = absorbing.select_cols(transient.select_rows(P));
-  Mat F = Q.Id() - Q;;
+    Vec pi0_trans = transient.select(pi0);
+    Vec pi0_abs = absorbing.select(pi0);
+    Vec subtotal =  pi0_trans * F.solve(R);
 
-  Vec pi0_trans = transient.select(pi0);
-  Vec pi0_abs = absorbing.select(pi0);
-  Vec subtotal =  pi0_trans * F.solve(R);
-
-  // rmask is a 0/1 vector of length absorbing.nvars(), with 1's
-  // inidcating an 'r' position and 0 indicating an 's' position
-  Vec rmask = absorbing.select(r.vec());
-  double ans =  subtotal.dot(rmask) + pi0_abs.dot(rmask);
-  return ans;
-}
+    // rmask is a 0/1 vector of length absorbing.nvars(), with 1's
+    // inidcating an 'r' position and 0 indicating an 's' position
+    Vec rmask = absorbing.select(r.vec());
+    double ans =  subtotal.dot(rmask) + pi0_abs.dot(rmask);
+    return ans;
+  }
 
   double preceeds(uint r, uint s, const Vec &pi0, const Mat &P){
     // returns the probability that state r happens before state s in

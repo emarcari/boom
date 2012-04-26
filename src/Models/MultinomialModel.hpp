@@ -44,14 +44,14 @@ namespace BOOM{
     const Vec &n()const;
     void combine(Ptr<MultinomialSuf>);
     void combine(const MultinomialSuf &);
-    MultinomialSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s); }
+    MultinomialSuf * abstract_combine(Sufstat *s);
 
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
+    virtual ostream &print(ostream &out)const;
   private:
     Vec counts;
   };
@@ -88,6 +88,7 @@ namespace BOOM{
     uint size()const;         // number of potential outcomes;
     double loglike()const;
     void mle();
+    double pdf(const Data * dp, bool logscale) const;
     double pdf(Ptr<Data> dp, bool logscale) const;
     void add_mixture_data(Ptr<Data>, double prob);
 
@@ -96,6 +97,12 @@ namespace BOOM{
     void set_conjugate_prior(Ptr<MultinomialDirichletSampler>);
 
     uint simdat()const;
+   private:
+    mutable Vec logp_;
+    mutable bool logp_current_;
+    void observe_logp();
+    boost::function<void(void)> create_logp_observer();
+    void check_logp()const;
   };
 
   template <class Fwd> // iterator promotable to uint

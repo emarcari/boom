@@ -22,18 +22,36 @@
 #include <Models/DataTypes.hpp>
 namespace BOOM{
 
+// CompositeData is a multivariate observation (on a single subject)
+// of potentially disparate data types.  This is the data type for a
+// CompositeModel.
   class CompositeData : virtual public Data{
   public:
-    CompositeData(const std::vector<Ptr<Data> > &d);
-    CompositeData * clone()const;
 
+    // Use this constructor to create a new CompositeData and add() in
+    // elements one at a time.  This approach is more flexible than
+    // the vector constructor because add() can take advantage of
+    // polymorphic arguments.
+    CompositeData();
+
+    // Use this constructor to create a new Composite Data when you've
+    // already got the component data stored away in a vector.
+    CompositeData(const std::vector<Ptr<Data> > &d);
+
+    virtual CompositeData * clone()const;
     virtual ostream & display(ostream &)const;
-    //    virtual istream & read(istream &);
-    virtual uint size(bool minimal=true)const;
+
+    // Number of composite data elements.  This can be smaller than
+    // size() when some elements are vectors, matrices, regression
+    // data, etc.
     uint dim()const;
-    Ptr<Data> get(uint n);
+
+    Ptr<Data> get_ptr(uint n);
+    const Data * get(uint n)const;
+    void add(Ptr<Data> dp);
+
   private:
-    std::vector<Ptr<Data> > dat;
+    std::vector<Ptr<Data> > dat_;
   };
 
 }

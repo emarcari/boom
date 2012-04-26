@@ -34,7 +34,7 @@ namespace BOOM{
     : public PosteriorSampler
   {
   public:
-    LogitSampler(Ptr<LogisticRegressionModel> mod,
+    LogitSampler(LogisticRegressionModel *mod,
 		 Ptr<MvnBase> pri);
     virtual void draw();
     virtual double logpri()const;
@@ -46,7 +46,7 @@ namespace BOOM{
     double draw_lambda(double r)const;
     void draw_beta();
 
-    Ptr<LogisticRegressionModel> mod_;
+    LogisticRegressionModel *mod_;
     Ptr<MvnBase> pri_;
     Ptr<WeightedRegSuf> suf_;
 

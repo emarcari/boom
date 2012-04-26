@@ -22,7 +22,7 @@
 #include <Models/TimeSeries/TimeSeries.hpp>
 #include <Models/ModelTypes.hpp>
 #include <vector>
-#include <stdexcept>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
   //======================================================================
@@ -37,11 +37,6 @@ namespace BOOM{
     TimeSeriesDataInfoPolicy * clone()const=0;
     Ptr<DataSeriesType> DAT(dPtr dp)const;
     Ptr<DataPointType> DAT_1(dPtr dp)const;
-
-//     virtual DataSeriesType & dat()=0;
-//     virtual const DataSeriesType & dat()const=0;
-//     virtual DataPointType * dat(uint i)const=0;
-
   };
   //======================================================================
   template <class D, class SER=TimeSeries<D> >
@@ -127,18 +122,6 @@ namespace BOOM{
     }
   }
 
-//   template<class D, class TS>
-//   void TimeSeriesDataPolicy<D,TS>::add_data_point (Ptr<D> d){
-//      if(ts_.empty()){
-//        ostringstream err;
-//        err << "TimeSeriesDataPolicy cannot add_data_point to an empty "
-// 	   << "series unless TS is a standard TimeSeries";
-//        throw std::runtime_error(err.str());
-//      }else{
-//        ts_.back()->add_1(d);
-//      }
-//   }
-
   template<class D, class TS>
   void TimeSeriesDataPolicy<D,TS>::add_data(Ptr<Data> d){
     Ptr<DataSeriesType> tsp = this->DAT(d);
@@ -157,8 +140,7 @@ namespace BOOM{
     err << "data value " << *d << " could not be cast to a "
 	<< "time series or a time series data point.  "
 	<< endl;
-    throw std::runtime_error(err.str());
-
+    report_error(err.str());
   }
 
   template<class D, class TS>

@@ -26,7 +26,6 @@
 
 using namespace std;
 namespace BOOM{
-  namespace LinAlg{
 
     typedef CorrelationMatrix CM;
     typedef SpdMatrix Spd;
@@ -137,5 +136,4 @@ namespace BOOM{
 
 
 
-  }
 }

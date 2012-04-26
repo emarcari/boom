@@ -21,8 +21,7 @@
 #include <LinAlg/Givens.hpp>
 #include <cpputil/seq.hpp>
 #include <cpputil/nyi.hpp>
-
-#include <boost/math/special_functions/round.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
 
 namespace BOOM{
 
@@ -114,6 +113,9 @@ namespace BOOM{
     sym_ = sym_ && s.sym_;
   }
 
+  GlmMvnSuf * GMS::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s);}
+
   Vec GMS::vectorize(bool minimal)const{
     Vec ans = bbt_.vectorize(minimal);
     ans.concat(ggt_.vectorize(minimal));
@@ -134,7 +136,7 @@ namespace BOOM{
     bgt_ = tmp;
     vnobs_.assign(v, v+dim);
     v+=dim;
-    nobs_ = boost::math::iround(*v);
+    nobs_ = lround(*v);
     ++v;
     sym_ = false;
     return v;
@@ -146,6 +148,17 @@ namespace BOOM{
     return unvectorize(it, minimal);
   }
 
+  ostream & GMS::print(ostream &out)const{
+    out << "bbt_ = " << endl << bbt_
+        << "ggt_ = " << endl << ggt_
+        << "bgt_ = " << bgt_ << endl
+        << "vnobs_ = " << vnobs_ << endl
+        << "nobs_ = " << nobs_ << endl
+        << "b = " << b << endl
+        << "gam = " << gam << endl
+        << "sym_ = " << sym_ << endl;
+    return out;
+  }
 
   //______________________________________________________________________
 
@@ -186,29 +199,6 @@ namespace BOOM{
   //------------------------------------------------------------
   void GMP::mle(){
     nyi("GlmMvnPrior::mle");
-//     uint d = dim();
-//     Spd ivar(d,0.0);
-//     Vec B(d,0.0);
-//     const std::vector<Ptr<GlmCoefs> > & dat(this->dat());
-//     uint n = dat.size();
-
-//     for(uint i=0; i<n; ++i){
-//       set_local_suf(dat[i]);
-//       ivar+= ivar_;
-//       B+= wsp_;
-//     }
-
-//     LinAlg::Chol L(ivar);
-//     if(!L.is_pos_def()){
-//       ostringstream err;
-//       err << "error in GlmMvnPrior:  Matrix is not positive definite."
-// 	  << endl
-// 	  << "This most likely means that one or more variables were never observed."
-// 	  << endl;
-//       throw std::runtime_error(err.str());
-//     }
-//     set_mu(L.solve(B));
-//     set_Sigma(L.inv());
   }
   //------------------------------------------------------------
 

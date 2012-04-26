@@ -21,15 +21,12 @@
 #include "Matrix.hpp"
 
 namespace BOOM{
-  namespace LinAlg{
-    struct matrix_not_positive_definite
-        : public std::exception, public LinAlgTypes{
-      Mat m;
-      std::string msg;
-      matrix_not_positive_definite(const Mat &M, const std::string &err_msg);
-      ~matrix_not_positive_definite()throw(){}
-      const char * what()const throw();
-    };
-
-  }
+  struct matrix_not_positive_definite
+      : public std::exception{
+    Mat m;
+    std::string msg;
+    matrix_not_positive_definite(const Mat &M, const std::string &err_msg);
+    ~matrix_not_positive_definite()throw(){}
+    const char * what()const throw();
+  };
 }

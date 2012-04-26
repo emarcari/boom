@@ -24,7 +24,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/convenience.hpp>
 #include <iostream>
-#include <stdexcept>
+#include <cpputil/ThrowException.hpp>
 //----------------------------------------------------------------------
 
 namespace BOOM{
@@ -35,7 +35,11 @@ namespace BOOM{
   void clear_file(const string &fname){
     path p(fname);
     if(exists(p)){
-      if(is_directory(p)) throw bad_file_name(fname);
+      if(is_directory(p)){
+        ostringstream err;
+        err << "clear_file called with the name of a directory:  " << fname;
+        throw_exception<std::runtime_error>(err.str());
+      }
     }else{
       path d(get_dpath(fname));
       if(!exists(d)) create_directories(d); }
@@ -56,7 +60,11 @@ namespace BOOM{
       std::ifstream in(fname.c_str());
       gll(in);
       for(int i =lo; i<=hi; ++i) in >> obj[i];
-    }else throw bad_io(io_prm);
+    }else{
+      ostringstream err;
+      err << "io_raw_data called with a bad 'io' parameter: " << io_prm;
+      throw_exception<std::runtime_error>(err.str());
+    }
   }
   //----------------------------------------------------------------------
 
@@ -67,7 +75,7 @@ namespace BOOM{
     else if(io_prm==FLUSH) out << "FLUSH";
     else if(io_prm==STREAM) out << "STREAM";
     else if(io_prm==COUNT) out << "COUNT";
-    else throw std::logic_error("unrecognized io_prm in operator<<");
+    else throw_exception<std::logic_error>("unrecognized io_prm in operator<<");
     return out;
   }
 
@@ -80,9 +88,8 @@ namespace BOOM{
     else if(s=="FLUSH") io_prm=FLUSH;
     else if(s=="STREAM") io_prm=STREAM;
     else if(s=="COUNT") io_prm=COUNT;
-    else throw std::logic_error("unrecognized io_prm in operator>>");
+    else throw_exception<std::logic_error>("unrecognized io_prm in operator>>");
     return in;
   }
 
 }
-

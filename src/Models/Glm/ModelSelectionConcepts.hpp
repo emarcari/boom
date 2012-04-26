@@ -35,6 +35,8 @@ namespace BOOM{
 
       virtual ostream & print(ostream &)const;
       virtual double logp(const Selector &g)const;
+      // pug g is in a valid state (where logp > -infinity)
+      virtual void make_valid(Selector &g)const=0;
       void set_prob(double prob);
       uint pos()const;
       double prob()const;
@@ -62,6 +64,7 @@ namespace BOOM{
       virtual bool observed()const;
       virtual bool parents_are_present(const Selector &g)const;
       virtual void add_to(VariableSelectionPrior &)const;
+      virtual void make_valid(Selector &g)const;
     };
     //______________________________________________________________________
     class MissingMainEffect : public MainEffect {
@@ -70,6 +73,7 @@ namespace BOOM{
       MissingMainEffect(const MissingMainEffect &rhs);
       MissingMainEffect * clone()const;
       virtual double logp(const Selector &inc)const;
+      virtual void make_valid(Selector &g)const;
       virtual bool observed()const;
       virtual bool parents_are_present(const Selector &g)const;
       virtual void add_to(VariableSelectionPrior &)const;
@@ -77,21 +81,13 @@ namespace BOOM{
       uint obs_ind_pos_;
     };
     //______________________________________________________________________
-//     class ObsIndicator : public MainEffect{
-//     public:
-//       ObsIndicator(uint pos, double prob, uint child_pos);
-//       ObsIndicator * clone()const;
-//       bool child_is_present(const Selector &g)const;
-//     private:
-//       uint child_pos_;
-//     };
-    //______________________________________________________________________
     class Interaction : public Variable {
     public:
       Interaction(uint pos, double prob, const std::vector<uint> &parents, const string &name="");
       Interaction(const Interaction & rhs);
       Interaction * clone()const;
       virtual double logp(const Selector &inc)const;
+      virtual void make_valid(Selector &g)const;
       uint nparents()const;
       virtual bool parents_are_present(const Selector &g)const;
       virtual void add_to(VariableSelectionPrior &)const;

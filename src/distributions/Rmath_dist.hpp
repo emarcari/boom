@@ -248,7 +248,6 @@ namespace BOOM{
 //   double bessel_k(double x, double a, double expo);
 //   double bessel_y(double x, double a);
 
-
   /* General Support Functions */
 
   double  pythag(double, double);
@@ -264,11 +263,7 @@ namespace BOOM{
   double fsign(double, double);
   double ftrunc(double);
 
-
-  struct illegal_distribution_params{};
   struct unknown_error{};
-
-
 } // ends namespace BOOM
 
 #endif  // BOOM_RMATH_DISTRIBUTIONS_HPP

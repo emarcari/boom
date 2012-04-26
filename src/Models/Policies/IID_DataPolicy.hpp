@@ -72,6 +72,13 @@ namespace BOOM{
   // things directly to dat_.  doing so allows models to overload
   // add_data, instead of having to modify the whole thing.
 
+  // Except, you shouldn't call a virtual function from a constructor,
+  // because the object is not yet fully formed.  Thus, when an
+  // IID_DataPolicy is copied, the default action is to simply copy
+  // over the data.  If a class overloads add_data, then the data
+  // should be cleared and recopied from that class's copy
+  // constructor.
+
   template <class D>
   IID_DataPolicy<D>::IID_DataPolicy(){
   }

@@ -39,13 +39,15 @@ namespace BOOM{
   }
 
   SamplerBase::SamplerBase(const SamplerBase & rhs)
-      : RefCounted(rhs),
-        LinAlgTypes(rhs) //,
-        //        rng_(seed_rng(rhs.rng()))
+      : RefCounted(rhs)
   {}
 
   void SamplerBase::set_seed(unsigned long s){
-    if(rng_) rng_->seed(s);
+    try{
+      if(rng_) rng_->seed(s);
+    } catch(...) {
+      exit(0);
+    }
   }
 
 }

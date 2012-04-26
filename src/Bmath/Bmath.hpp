@@ -45,9 +45,7 @@
 #ifndef BOOM_BMATH_HPP
 #define BOOM_BMATH_HPP
 
-#include <cmath>  // for tr1 functions
-#include <boost/math/tr1.hpp>  // for tr1 functions
-#include <boost/numeric/conversion/cast.hpp>
+#include <cmath>
 #include <distributions/rng.hpp>
 #include <vector>
 
@@ -391,7 +389,8 @@ namespace Rmath{
   inline double	gammafn(double x){return ::tgamma(x);}
   inline double	lgammafn(double x){return ::lgamma(x);}
   inline double	lgammafn2(double x, int &i){
-    int ix(boost::numeric_cast<int>(-x));
+    int ix(lround(-x));
+    // boost::numeric_cast<int>(-x));
     i = (x<=0 && (ix%2==0)) ? -1 : 1;
     return ::lgamma(x);
   }
@@ -410,31 +409,6 @@ namespace Rmath{
 
   double	choose(double, double);
   double	lchoose(double, double);
-
-  /* Bessel Functions */
-
-  //  double	bessel_i(double, double, double);
-  //double	bessel_j(double, double);
-  //  double	bessel_k(double, double, double);
-  //  double	bessel_y(double, double);
-
-//   inline double bessel_i(double x, double alpha, double expo){
-//     bool scale(expo);
-//     double ans = std::tr1::cyl_bessel_i(alpha, x);
-//     return scale ? ans * exp(-x) : ans;
-//   }
-//   inline double bessel_j(double x, double alpha){
-//     return std::tr1::cyl_bessel_j(alpha, x);}
-
-//   inline double bessel_k(double x, double alpha, double expo){
-//     bool scale(expo);
-//     double ans = std::tr1::cyl_bessel_k(alpha, x);
-//     return scale ? ans * exp(x) : ans;
-//   }
-
-//   inline double bessel_y(double x, double alpha){
-//     return std::tr1::cyl_neumann(alpha, x); }
-
 
   /* General Support Functions */
 

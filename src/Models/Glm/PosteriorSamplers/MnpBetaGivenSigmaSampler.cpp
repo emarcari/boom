@@ -26,16 +26,18 @@ namespace BOOM{
   typedef MnpBetaGivenSigmaSampler MBS;
   typedef MultinomialProbitModel MNP;
 
-  MBS::MnpBetaGivenSigmaSampler
-  (Ptr<MNP> Mod, Ptr<VectorParams> B, Ptr<UnivParams> K)
+  MBS::MnpBetaGivenSigmaSampler(MNP *Mod,
+                                Ptr<VectorParams> B,
+                                Ptr<UnivParams> K)
     : mnp(Mod),
       b(B),
       kappa(K),
       b0_fixed(true)
   {}
 
-  MBS::MnpBetaGivenSigmaSampler
-  (Ptr<MNP> Mod, const Vec &B, double K)
+  MBS::MnpBetaGivenSigmaSampler(MNP *Mod,
+                                const Vec &B,
+                                double K)
     : mnp(Mod),
       b(new VectorParams(B)),
       kappa(new UnivParams(K)),

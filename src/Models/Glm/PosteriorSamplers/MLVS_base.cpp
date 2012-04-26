@@ -25,7 +25,7 @@
 namespace BOOM{
   typedef MLVS_base MLVSB;
 
-  MLVSB::MLVS_base(Ptr<MLogitBase> mod, bool do_select)
+  MLVSB::MLVS_base(MLogitBase *mod, bool do_select)
     : log_sampling_probs_(mod->log_sampling_probs()),
       downsampling_ (log_sampling_probs_.size() == mod->Nchoices()),
       select_(do_select),

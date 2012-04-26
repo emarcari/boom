@@ -39,6 +39,8 @@ namespace BOOM{
     SpdParams(const SpdData &rhs);
     SpdParams * clone()const;
 
+    virtual uint size(bool minimal = true)const{
+      return SpdData::size(minimal);}
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
  					    bool minimal=true);
@@ -51,4 +53,3 @@ namespace BOOM{
 
 }
 #endif// BOOM_SPD_PARAMS_HPP
-

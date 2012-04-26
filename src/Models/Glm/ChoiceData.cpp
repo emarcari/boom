@@ -204,7 +204,7 @@ namespace BOOM{
     const Vec & xcu(Xsubject());
     for(uint m=0; m<M; ++m){
       const Vec & xch(Xchoice(m));
-      LinAlg::VectorViewIterator it = X.row_begin(m);
+      VectorViewIterator it = X.row_begin(m);
       if(inc || m>0){
 	it+= (inc ? m : m-1)*psub;
 	std::copy(xcu.begin(), xcu.end(), it); }

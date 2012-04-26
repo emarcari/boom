@@ -20,6 +20,8 @@
 #include <cassert>
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
+#include <Models/PosteriorSamplers/BetaBinomialSampler.hpp>
 
 namespace BOOM{
 
@@ -42,6 +44,7 @@ namespace BOOM{
   BS * BS::clone()const{return new BS(*this);}
 
   void BS::clear(){ nobs_ = sum_ = 0;}
+
   void BS::Update(const IntData &d){
     int y = d.value();
     sum_ += y;
@@ -51,6 +54,16 @@ namespace BOOM{
   void BS::update_raw(double y){
     sum_ += y;
     nobs_ += 1;
+  }
+
+  void BS::batch_update(double n, double y){
+    sum_ += y;
+    nobs_ += n;
+  }
+
+  void BS::add_mixture_data(double y, double prob){
+    sum_ += y*prob;
+    nobs_ += prob;
   }
 
   double BS::sum()const{return sum_;}
@@ -64,6 +77,10 @@ namespace BOOM{
     sum_ += s.sum_;
     nobs_ += s.nobs_;
   }
+
+  BinomialSuf * BS::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this, s);}
+
 
   Vec BS::vectorize(bool)const{
     Vec ans(2);
@@ -84,10 +101,13 @@ namespace BOOM{
     return unvectorize(it, minimal);
   }
 
+  ostream & BS::print(ostream &out)const{
+    return out << sum_ << " " << nobs_;
+  }
+
   BM::BinomialModel(uint n, double p)
     : ParamPolicy(new UnivParams(p)),
       DataPolicy(new BS),
-      PriorPolicy(),
       NumOptModel(),
       n_(n)
   {
@@ -99,7 +119,7 @@ namespace BOOM{
       MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
-      PriorPolicy(rhs),
+      ConjPriorPolicy(rhs),
       NumOptModel(rhs),
       n_(rhs.n_)
   {}
@@ -152,5 +172,25 @@ namespace BOOM{
   double BM::pdf(Ptr<Data> dp, bool logscale)const{
     return pdf(DAT(dp)->value(), logscale);}
 
+  double BM::pdf(const Data * dp, bool logscale)const{
+    return pdf(DAT(dp)->value(), logscale);}
+
   uint BM::sim()const{ return rbinom(n_, prob()); }
+
+  void BM::add_mixture_data(Ptr<Data> dp, double prob){
+    suf()->add_mixture_data(DAT(dp)->value(), prob);
+  }
+
+  void BM::set_conjugate_prior(double a, double b){
+    NEW(BetaModel, prior)(a, b);
+    NEW(BetaBinomialSampler, sampler)(this, prior);
+    ConjPriorPolicy::set_conjugate_prior(sampler);
+  }
+
+  void BM::set_conjugate_prior(Ptr<BetaBinomialSampler> sampler){
+    ConjPriorPolicy::set_conjugate_prior(sampler);
+  }
+
+  void BM::find_posterior_mode(){ConjPriorPolicy::find_posterior_mode();}
+
 }

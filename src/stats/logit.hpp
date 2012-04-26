@@ -19,11 +19,23 @@
 #ifndef STATS_LOGIT_HPP
 #define STATS_LOGIT_HPP
 
-#include <distributions.hpp>
+#include <distributions/Rmath_dist.hpp>
 #include <cmath>
 namespace BOOM{
   inline double logit(double x){ return qlogis(x);}
   inline double logit_inv(double x){ return plogis(x);}
+
+  inline Vec logit(const Vec &x){
+    Vec ans(x);
+    for(int i = 0; i < ans.size(); ++i) ans[i] = logit(ans[i]);
+    return ans;
+  }
+
+  inline Vec logit_inv(const Vec &x){
+    Vec ans(x);
+    for(int i = 0; i < ans.size(); ++i) ans[i] = logit_inv(ans[i]);
+    return ans;
+  }
 
   inline double lope(double x){
     // "lope" = log one plus exp..

@@ -37,7 +37,7 @@ namespace BOOM{
   using std::ostringstream;
 
 
-  MLVS::MLVS(Ptr<MLM> Mod, Ptr<MvnBase> Pri,
+  MLVS::MLVS(MLM *Mod, Ptr<MvnBase> Pri,
 	     Ptr<VariableSelectionPrior> Vpri,
 	     uint nthreads, bool check_initial_condition)
     : MLVS_base(Mod),
@@ -55,7 +55,7 @@ namespace BOOM{
 	    << mod_->coef()->inc() << endl
 	    << *vpri << endl;
 
-	throw std::runtime_error(err.str());
+	throw_exception<std::runtime_error>(err.str());
       }
     }
 
@@ -71,10 +71,12 @@ namespace BOOM{
     const Selector &g = mod_->coef()->inc();
     double ans = vpri->logp(g);
     if(ans==BOOM::infinity(-1)) return ans;
-    ans += dmvn(g.select(mod_->beta()),
-		g.select(pri->mu()),
-		g.select(pri->siginv()),
-		true);
+    if(g.nvars() > 0){
+      ans += dmvn(g.select(mod_->beta()),
+                  g.select(pri->mu()),
+                  g.select(pri->siginv()),
+                  true);
+    }
     return ans;
   }
 
@@ -108,7 +110,7 @@ namespace BOOM{
       ostringstream err;
       err << "could not convert MlvsCdSuf to proper type in MLVS.cpp"
 	  << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
     this->add(news);
   }
@@ -163,7 +165,7 @@ namespace BOOM{
       err << "MLVS did not start with a legal configuration." << endl
 	  << "Selector vector:  " << inc << endl
 	  << "beta: " << mod_->beta() << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
 
     std::vector<uint> flips = seq<uint>(0, nv-1);

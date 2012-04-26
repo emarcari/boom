@@ -21,6 +21,7 @@
 
 #include <Models/TimeSeries/TimeSeriesDataPolicy.hpp>
 #include <Models/TimeSeries/AugmentedTimeSeries.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 
@@ -123,7 +124,7 @@ namespace BOOM{
       ostringstream err;
       err << "You need at least one data series before you add a data point."
 	  << endl;
-      throw  std::runtime_error(err.str());
+      report_error(err.str());
     }
     this->dat(n-1).add_1(dp);
   }
@@ -153,7 +154,7 @@ namespace BOOM{
 	<< "time series, an element of the augmented time series, or "
 	<< "the initial data for an augmented time series."
 	<< endl;
-    throw std::runtime_error(err.str());
+    report_error(err.str());
   }
 
   template <class D, class F>

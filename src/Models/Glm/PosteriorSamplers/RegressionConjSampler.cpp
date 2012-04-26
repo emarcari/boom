@@ -22,7 +22,7 @@
 
 namespace BOOM{
   typedef RegressionConjSampler RCS;
-  RCS::RegressionConjSampler(Ptr<RegressionModel> M,
+  RCS::RegressionConjSampler(RegressionModel *M,
 			     Ptr<MvnGivenXandSigma> Mu,
 			     Ptr<GammaModelBase> Siginv)
     : m_(M),

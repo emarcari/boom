@@ -23,11 +23,11 @@
 #include <cpputil/Ptr.hpp>
 #include <uint.hpp>
 #include <cpputil/RefCounted.hpp>
-#include <stdexcept>
+#include <string>
 
 namespace BOOM{
   class Data;
-  class Sufstat : public LinAlgTypes{ // abstract base class
+  class Sufstat{ // abstract base class
   public:
     virtual void clear()=0;
     virtual void update(Ptr<Data>)=0;
@@ -41,6 +41,7 @@ namespace BOOM{
 					    bool minimal=true)=0;
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true)=0;
+    virtual ostream & print(ostream &)const = 0;
   private:
     RefCounted rc_;
     void up_count(){rc_.up_count();}
@@ -48,20 +49,15 @@ namespace BOOM{
     unsigned int ref_count(){return rc_.ref_count();}
     friend void intrusive_ptr_add_ref(Sufstat *s);
     friend void intrusive_ptr_release(Sufstat *s);
+   protected:
+    void error(const std::string &s)const;
   };
+
+  inline ostream & operator<<(ostream &out, const Sufstat &s){
+    return s.print(out);}
 
   Vec vectorize(const std::vector<Ptr<Sufstat> > &v, bool minimal=true);
   void unvectorize(std::vector<Ptr<Sufstat> > &, const Vec &v, bool minimal=true);
-
-  template <class ConcreteSuf>
-  ConcreteSuf * abstract_combine_impl(ConcreteSuf *me, Sufstat *s){
-    ConcreteSuf * cs = dynamic_cast<ConcreteSuf *>(s);
-    if(!cs){
-      throw std::runtime_error("Cannot cast Sufstat to concrete type");
-    }
-    me->combine(*cs);
-    return me;
-  }
 
   void intrusive_ptr_add_ref(Sufstat *s);
   void intrusive_ptr_release(Sufstat *s);
@@ -112,18 +108,22 @@ namespace BOOM{
       Ptr<DataSeriesType> ds = DAT(dp);
       if(!!ds){
         update_series(*ds);
-        return;}
-      throw std::logic_error("'update' failed due to unknown type");
+        return;
+      }
+      error("TimeSeriesSfustatDetails::update failed due to unknown type");
     }
     virtual void update(Ptr<DataPointType> dp){Update(*dp);}
 
     virtual void update(const Data &d){
-      try{
-        const D &dp(dynamic_cast<const D &>(d));
-        Update(dp);
-      }catch(std::bad_cast &){
-        const SER &ds(dynamic_cast<const SER &>(d));
-        update_series(ds);
+      // pointer contortions to get around using exceptions resulting
+      // from a bad dynamic_cast of a reference
+      const Data *data_ptr = &d;
+      const D *dp(dynamic_cast<const D*>(data_ptr));
+      if(dp){  // if the dynamic cast failed then this block gets skipped
+        Update(*dp);
+      }else{
+        const SER *ds(dynamic_cast<const SER *>(data_ptr));
+        update_series(*ds);
       }
     }
   };

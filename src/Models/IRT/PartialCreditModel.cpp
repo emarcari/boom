@@ -293,7 +293,7 @@ namespace BOOM{
       }else if(a_current && b_current && d_current){
 	if(!beta_current) fill_beta();
       }else{
-	throw std::runtime_error("No current params in sync_params");
+	throw_exception<std::runtime_error>("No current params in sync_params");
       }
     }
 

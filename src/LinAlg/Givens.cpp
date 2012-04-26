@@ -28,7 +28,6 @@ extern "C"{
 }
 
 namespace BOOM{
-  namespace LinAlg{
     using std::setw;
     using std::endl;
     typedef GivensRotation GR;
@@ -121,6 +120,4 @@ namespace BOOM{
       return ans;
     }
 
-
-  }
 }

@@ -17,6 +17,7 @@
 */
 
 #include "moments.hpp"
+#include <cpputil/report_error.hpp>
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/SpdMatrix.hpp>
@@ -60,6 +61,8 @@ namespace BOOM{
     return sumsq/(n-1);
   }
 
+  double sd(const Vec &x){return sqrt(var(x));}
+
   double mean(const std::vector<double> &x){
     if(x.size()==0) return 0.0;
     double ans = 0;
@@ -75,4 +78,89 @@ namespace BOOM{
     return ans/(x.size()-1);
   }
 
+  double sd(const std::vector<double> &x){
+    return sqrt(var(x));
+  }
+
+  double mean(const std::vector<double> &x, double missing){
+    if(x.size() == 0) return 0.0;
+    double total = 0;
+    int count = 0;
+    for(int i = 0; i < x.size(); ++i) {
+      if(x[i] != missing) {
+        total += x[i];
+        ++count;
+      }
+    }
+    if(count == 0) return 0.0;
+    return total / count;
+  }
+
+  double var(const std::vector<double> &x, double missing_value_code) {
+    if(x.size() <= 1) return 0.0;
+    double sumsq = 0;
+    double mu = mean(x, missing_value_code);
+    int count = 0;
+    for(int i = 0; i < x.size(); ++i) {
+      if(x[i] != missing_value_code){
+        sumsq += SQ(x[i] - mu);
+        ++count;
+      }
+    }
+    if(count <= 1) return 0.0;
+    return sumsq / (count - 1);
+  }
+
+  double sd(const std::vector<double> &x, double missing) {
+    return sqrt(var(x, missing));
+  }
+
+  double mean(const std::vector<double> &x, const std::vector<bool> &observed){
+    if(observed.empty()) return mean(x);
+    if(x.size() == 0) return 0.0;
+    if(x.size() != observed.size()){
+      ostringstream err;
+      err << "error in mean():  x.size() = " << x.size()
+          << " observed.size() = " << observed.size()
+          << endl;
+      report_error(err.str());
+    }
+    double sum = 0;
+    int count = 0;
+    for(int i = 0; i < x.size(); ++i){
+      if(observed[i]){
+        sum += x[i];
+        ++count;
+      }
+    }
+    if(count == 0) return 0.0;
+    return sum / count;
+  }
+
+  double var(const std::vector<double> &x, const std::vector<bool> &observed){
+    if(observed.empty()) return var(x);
+    if(x.size() <= 1) return 0.0;
+    if(x.size() != observed.size()){
+      ostringstream err;
+      err << "error in var():  x.size() = " << x.size()
+          << " observed.size() = " << observed.size()
+          << endl;
+      report_error(err.str());
+    }
+    double mu = mean(x, observed);
+    int count = 0;
+    double sumsq = 0;
+    for(int i = 0; i < x.size(); ++i){
+      if(observed[i]){
+        sumsq += SQ(x[i] - mu);
+        ++count;
+      }
+    }
+    if(count <= 1) return 0.0;
+    return sumsq / (count - 1);
+  }
+
+  double sd(const std::vector<double> &x, const std::vector<bool> &observed){
+    return sqrt(var(x, observed));
+  }
 }

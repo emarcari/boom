@@ -32,6 +32,7 @@
 
 #include <numopt/Integral.hpp>
 #include <boost/function.hpp>
+#include <cpputil/ThrowException.hpp>
 #include <stdexcept>
 #include <cfloat>
 #include <limits>
@@ -48,7 +49,7 @@ class integr_fn{
     for (int i = 0; i < n; ++i) {
       x[i] = f_(x[i]);
       if(!finite(x[i])){
-        throw std::runtime_error("non-finite function value in numerical integration");
+        BOOM::throw_exception<std::runtime_error>("non-finite function value in numerical integration");
       }
     }
   }
@@ -2433,7 +2434,7 @@ namespace BOOM{
       err << "error in Integral::set_work_vector_size.  " << endl
           << "lenw = " << lenw << endl
           << "must be at least " << 4 * iwork_.size() << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
   }
 
@@ -2526,7 +2527,7 @@ namespace BOOM{
              work_.data());
     }
     if(error_code_!=0 && throw_on_error_){
-      throw std::runtime_error(error_message());
+      throw_exception<std::runtime_error>(error_message());
     }
     return result_;
   } // Integral::integrate
@@ -2591,5 +2592,21 @@ namespace BOOM{
     }
     return msg.str();
   }
+
+  std::string Integral::debug_string()const{
+    std::ostringstream out;
+    out << "lo                : " << lo_ << endl
+        << "hi                : " << hi_ << endl
+        << "relative tolerance: " << rel_tol_ << endl
+        << "absolute tolerance: " << abs_tol_ << endl
+        << "result            : " << result_ << endl
+        << "absolute error    : " << abs_err_ << endl
+        << "number of evals   : " << neval_ << endl
+        << "number of partitions " << npartitions_ << endl
+        << "error code        : " << error_code_ << endl
+        ;
+    return out.str();
+  }
+
 
 } // namespace BOOM

@@ -23,7 +23,7 @@
 namespace BOOM{
   typedef ExponentialGammaSampler EGS;
 
-  EGS::ExponentialGammaSampler(Ptr<ExponentialModel> Mod,
+  EGS::ExponentialGammaSampler(ExponentialModel *Mod,
 			    Ptr<GammaModel> Pri)
       : mod(Mod),
 	pri(Pri)

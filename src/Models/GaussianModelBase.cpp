@@ -17,9 +17,102 @@
 */
 #include <Models/GaussianModelBase.hpp>
 #include <distributions.hpp>
-
+#include <Models/SufstatAbstractCombineImpl.hpp>
 
 namespace BOOM{
+
+  typedef GaussianSuf GS;
+
+  GS::GaussianSuf()
+      : sum_(0),
+        sumsq_(0),
+        n_(0)
+  {}
+
+  GS::GaussianSuf(double Sum, double Sumsq, double N)
+    : sum_(Sum), sumsq_(Sumsq), n_(N)
+  {}
+  GS::GaussianSuf(const GS &rhs)
+    : Sufstat(rhs),
+      SufstatDetails<DataType>(rhs),
+      sum_(rhs.sum_),
+      sumsq_(rhs.sumsq_),
+      n_(rhs.n_)
+  {}
+
+  GS* GS::clone()const{return new GS(*this);}
+
+  void GS::Update(const DoubleData &X){
+    const double & x = X.value();
+    update_raw(x);}
+
+  void GS::update_raw(double y){
+    n_ += 1;
+    sum_ += y;
+    sumsq_ += y*y;
+  }
+
+  void GS::add_mixture_data(double y, double prob){
+    n_+= prob;
+    prob*=y;
+    sum_+= prob;
+    prob*=y;
+    sumsq_ += prob;
+  }
+
+  double GS::sum()const{return sum_;}
+  double GS::sumsq()const{return sumsq_;}
+  double GS::n()const{return n_;}
+  double GS::ybar()const{
+    if(n_>0) return sum()/n();
+    return 0.0; }
+
+  double GS::sample_var()const{
+    if(n_<=1)  return 0;
+    double ss = sumsq()-n()*pow(ybar(),2);
+    return ss/(n_-1);
+  }
+
+  void GS::clear(){ sum_ = sumsq_ = n_=0;}
+
+  void GS::combine(Ptr<GS> s){
+    n_ += s->n_;
+    sum_ += s->sum_;
+    sumsq_ += s->sumsq_;
+  }
+
+  void GS::combine(const GS & rhs){
+    n_ += rhs.n_;
+    sum_ += rhs.sum_;
+    sumsq_ += rhs.sumsq_;
+  }
+
+  GaussianSuf * GS::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this, s);}
+
+  Vec GS::vectorize(bool)const{
+    Vec ans(3);
+    ans[0] = n_;
+    ans[1] = sum_;
+    ans[2] = sumsq_;
+    return ans;
+  }
+
+  Vec::const_iterator GS::unvectorize(Vec::const_iterator &v, bool){
+    n_ = *v;     ++v;
+    sum_ = *v;   ++v;
+    sumsq_ = *v; ++v;
+    return v;
+  }
+
+  Vec::const_iterator GS::unvectorize(const Vec &v, bool minimal){
+    Vec::const_iterator it = v.begin();
+    return unvectorize(it,minimal);
+  }
+
+  ostream & GS::print(ostream &out)const{
+    return out << n_ << " " << sum_ << " " << sumsq_;
+  }
 
   GaussianModelBase::GaussianModelBase()
     : DataPolicy(new GaussianSuf())
@@ -29,6 +122,16 @@ namespace BOOM{
       : DataPolicy(new GaussianSuf())
   {
     DataPolicy::set_data_raw(y.begin(), y.end());
+  }
+
+  double GaussianModelBase::pdf(Ptr<Data> dp, bool logscale)const{
+    double ans = logp(DAT(dp)->value());
+    return logscale ? ans : exp(ans);
+  }
+
+  double GaussianModelBase::pdf(const Data * dp, bool logscale)const{
+    double ans = logp(DAT(dp)->value());
+    return logscale ? ans : exp(ans);
   }
 
   double GaussianModelBase::Logp(double x, double &g, double &h, uint nd)const{

@@ -57,6 +57,12 @@ namespace BOOM{
     double ans = logp(DAT(dp)->value());
     return logscale ? ans : exp(ans);
   }
+
+  double MvnModel::pdf(const Data * dp, bool logscale)const{
+    double ans = logp(DAT(dp)->value());
+    return logscale ? ans : exp(ans);
+  }
+
   double MvnModel::pdf(const Vec &x, bool logscale)const{
     double ans = logp(x);
     return logscale ? ans : exp(ans);

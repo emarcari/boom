@@ -68,10 +68,10 @@ namespace BOOM{
 
   void DBARS::add_point(double z){
     if(z > x.back()){
-      throw std::runtime_error("z out of bounds (too large) in DBARS::add_point");
+      throw_exception<std::runtime_error>("z out of bounds (too large) in DBARS::add_point");
     }
     if(z < x[0]){
-      throw std::runtime_error("z out of bounds (too small) in DBARS::add_point");
+      throw_exception<std::runtime_error>("z out of bounds (too small) in DBARS::add_point");
     }
     IT it = std::lower_bound(x.begin(), x.end(), z);
     int k = it - x.begin();

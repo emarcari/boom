@@ -76,7 +76,7 @@ double pnchisq_raw(double x, double f, double theta,
       ostringstream err;
       err << "non centrality parameter (=" << theta
 	  << ") too large for current algorithm" << endl;
-      throw std::runtime_error(err.str());
+      BOOM::throw_exception<std::runtime_error>(err.str());
     }
     /* evaluate the first term */
 

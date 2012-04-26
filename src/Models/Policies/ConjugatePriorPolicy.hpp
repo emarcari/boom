@@ -19,7 +19,7 @@
 #ifndef BOOM_CONJUGATE_PRIOR_POLICY_HPP
 #define BOOM_CONJUGATE_PRIOR_POLICY_HPP
 #include "PriorPolicy.hpp"
-#include <stdexcept>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
   template <class CONJ>
@@ -65,7 +65,7 @@ namespace BOOM{
     ostringstream err;
     err << "conjugate prior has not been set" << endl
 	<< typeid(*c_).name() << endl;
-    throw std::runtime_error(err.str());
+    report_error(err.str());
     return c_;
   }
 

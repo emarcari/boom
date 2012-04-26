@@ -30,7 +30,7 @@ namespace BOOM{
       : public PosteriorSampler
   {
    public:
-    CumulativeProbitSampler(Ptr<CumulativeProbitModel> m,
+    CumulativeProbitSampler(CumulativeProbitModel *m,
                             Ptr<MvnBase> beta_prior);
 
     void impute_latent_data();
@@ -39,7 +39,7 @@ namespace BOOM{
     virtual void draw();
     virtual double logpri()const;
    private:
-    Ptr<CumulativeProbitModel> m_;
+    CumulativeProbitModel *m_;
     Ptr<MvnBase> beta_prior_;
     NeRegSuf suf_;
     Spd ivar_;

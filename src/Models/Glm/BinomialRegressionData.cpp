@@ -17,6 +17,7 @@
 */
 #include <Models/Glm/BinomialLogitModel.hpp>
 #include <stdexcept>
+#include <cpputil/ThrowException.hpp>
 
 namespace BOOM{
   typedef BinomialRegressionData BRD;
@@ -34,6 +35,11 @@ namespace BOOM{
     if(check_n) check();
   }
 
+  void BRD::set_y(uint y, bool check_n){
+    GlmData<IntData>::set_y(y);
+    if(check_n) check();
+  }
+
   uint BRD::n()const{return n_;}
 
   void BRD::check()const{
@@ -43,7 +49,12 @@ namespace BOOM{
           << "  n = " << n_ << endl
           << "  y = " << y() << endl
           ;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
+  }
+
+  ostream & BRD::display(ostream &out)const{
+    out << n_ << " ";
+    return GlmData<IntData>::display(out);
   }
 }

@@ -50,6 +50,7 @@ namespace BOOM{
 
     // Params can be 'vectorized' which allows for coherent io and
     // serialization
+    virtual uint size(bool minimal = true)const=0;
     virtual Vec vectorize(bool minimal=true)const=0;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true)=0;
@@ -105,6 +106,8 @@ namespace BOOM{
     UnivParams(const UnivParams &rhs);
     UnivParams * clone() const;
 
+
+    virtual uint size(bool=true)const {return 1;}
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
@@ -123,6 +126,7 @@ namespace BOOM{
     VectorParams(const VectorParams &rhs); // copies data
     VectorParams * clone()const;
 
+    virtual uint size(bool minimal=true)const {return VectorData::size(minimal);}
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
@@ -140,6 +144,7 @@ namespace BOOM{
     MatrixParams(const MatrixParams &rhs); // copies data
     MatrixParams * clone()const;
 
+    virtual uint size(bool minimal=true)const{return MatrixData::size(minimal);}
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
@@ -149,41 +154,6 @@ namespace BOOM{
     //    MatrixParams & operator=(const MatrixParams &rhs);
   };
   //------------------------------------------------------------
-//   class SpdParams : public SpdData, virtual public Params {
-//   public:
-//     explicit SpdParams(uint p, double diag=1.0);  // identity
-//     SpdParams(const Spd &V, bool ivar);     // copies V's data
-//     SpdParams(const SpdParams &rhs);
-//     SpdParams(const SpdData &rhs);
-//     SpdParams * clone()const;
-
-//     virtual Vec vectorize(bool minimal=true)const;
-//     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-// 					    bool minimal=true);
-//     virtual Vec::const_iterator unvectorize(const Vec &v,
-// 					    bool minimal=true);
-//     double ldsi()const;
-//     const Spd & var()const;
-//     const Spd & ivar()const;
-//     const Mat & ivar_chol()const;
-
-//     void set_var(const Spd &v);
-//     void set_ivar(const Spd &iv);
-//     void set_ivar_chol(const Mat &L);
-//     virtual void set_S_Rchol(const Vec &S, const Mat & Rchol,
-// 			     bool signal=true);
-//     //    virtual void set(const Spd &v){set_var(v);}
-
-//   private:
-//     //    SpdParams & operator=(const SpdParams &rhs);
-//     void set_ivar();
-//     void set_var();
-
-//     Spd Siginv;
-//     Mat ivar_chol_;
-//     double ldsi_;
-//   };
-  //------------------------------------------------------------
   class CorrParams : public CorrData, virtual public Params{
   public:
     CorrParams(const Corr &y);
@@ -191,7 +161,9 @@ namespace BOOM{
     CorrParams(const CorrParams &rhs);
     CorrParams * clone()const;
 
-    Vec vectorize(bool minimal=true)const;
+    virtual uint size(bool minimal = true)const{
+      return CorrData::size(minimal);}
+    virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,

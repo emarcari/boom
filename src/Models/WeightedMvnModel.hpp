@@ -52,14 +52,14 @@ namespace BOOM{
     Spd center_sumsq()const;
     void combine(Ptr<WeightedMvnSuf>);
     void combine(const WeightedMvnSuf &);
-    WeightedMvnSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s); }
+    WeightedMvnSuf * abstract_combine(Sufstat *s);
 
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
+    virtual ostream &print(ostream &out)const;
   private:
     Vec sum_;
     Spd sumsq_;

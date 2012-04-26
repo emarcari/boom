@@ -20,6 +20,8 @@
 #include <distributions.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <cpputil/math_utils.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
+
 namespace BOOM{
 
   typedef BetaSuf BS;
@@ -32,6 +34,9 @@ namespace BOOM{
     sumlog_ += log(p);
     sumlogc_ += log(1-p);
   }
+
+  BetaSuf * BS::abstract_combine(Sufstat *s){
+      return abstract_combine_impl(this, s);}
 
   void BS::combine(Ptr<BS> s){
     n_ += s->n_;
@@ -64,6 +69,11 @@ namespace BOOM{
   Vec::const_iterator BS::unvectorize(const Vec &v, bool minimal){
     Vec::const_iterator it = v.begin();
     return unvectorize(it, minimal);
+  }
+
+  ostream & BS::print(ostream &out)const{
+    out << n_ << " " << sumlog_ << " " << sumlogc_;
+    return out;
   }
 
   BM::BetaModel()
@@ -153,7 +163,7 @@ namespace BOOM{
     double a_inf = a()==inf;
     double b_inf = b()==inf;
     if(a_inf && b_inf)
-      throw std::runtime_error("both a and b are finite in BetaModel::Logp");
+      throw_exception<std::runtime_error>("both a and b are finite in BetaModel::Logp");
     if(nd>0){
       d1=0;
       if(nd>1) d2=0;}

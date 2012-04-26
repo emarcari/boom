@@ -29,18 +29,18 @@ namespace BOOM{
     // assumes y~N(mu, Sig) with mu~N(mu0, Sig/kappa)
     // draws mu given y, Sigma, mu0, kappa
   public:
-    MvnConjMeanSampler(Ptr<MvnModel> Mod);  // improper: mu0 = 0 kappa = 0;
-    MvnConjMeanSampler(Ptr<MvnModel> Mod,
-			    Ptr<VectorParams> Mu0,
-			    Ptr<UnivParams> Kappa);
-    MvnConjMeanSampler(Ptr<MvnModel> Mod,
-			    const Vec &Mu0,
-			    double Kappa);
+    MvnConjMeanSampler(MvnModel *Mod);  // improper: mu0 = 0 kappa = 0;
+    MvnConjMeanSampler(MvnModel *Mod,
+                       Ptr<VectorParams> Mu0,
+                       Ptr<UnivParams> Kappa);
+    MvnConjMeanSampler(MvnModel *Mod,
+                       const Vec &Mu0,
+                       double Kappa);
 
     virtual double logpri()const;  // p(mu|Sig)
     virtual void draw();
   private:
-    Ptr<MvnModel> mvn;
+    MvnModel *mvn;
     Ptr<VectorParams> mu0;
     Ptr<UnivParams> kappa;
   };
@@ -50,20 +50,20 @@ namespace BOOM{
     // assumes y~N(mu, Sigma) with mu~N(mu0, Omega)
   public:
 
-    MvnMeanSampler(Ptr<MvnModel> Mod,
+    MvnMeanSampler(MvnModel *Mod,
 		   Ptr<VectorParams> Mu0,
 		   Ptr<SpdParams> Omega);
 
-    MvnMeanSampler(Ptr<MvnModel> Mod,
+    MvnMeanSampler(MvnModel *Mod,
 		   Ptr<MvnModel> Pri);
 
-    MvnMeanSampler(Ptr<MvnModel> Mod,
+    MvnMeanSampler(MvnModel *Mod,
 		   const Vec & Mu0,
 		   const Spd & Omega);
     double logpri()const;
     void draw();
   private:
-    Ptr<MvnModel> mvn;
+    MvnModel *mvn;
     Ptr<VectorParams> mu0;
     Ptr<SpdParams> omega;
   };

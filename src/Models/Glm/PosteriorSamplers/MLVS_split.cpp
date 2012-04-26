@@ -100,7 +100,7 @@ namespace BOOM{
 
   //----------------------------------------------------------------------
 
-  MLVSS::MLVS_split(Ptr<MLogitSplit> m,
+  MLVSS::MLVS_split(MLogitSplit *m,
 		    std::vector<Ptr<MvnBase> > b,
 		    std::vector<Ptr<VSP> > v,
 		    uint nthreads)
@@ -117,7 +117,7 @@ namespace BOOM{
     setup();
   }
   //----------------------------------------------------------------------
-  MLVSS::MLVS_split(Ptr<MLogitSplit> m, Ptr<MvnBase> b, Ptr<VSP>  v,
+  MLVSS::MLVS_split(MLogitSplit *m, Ptr<MvnBase> b, Ptr<VSP>  v,
 		    uint nthreads)
     : MLVS_base(m),
       mod_(m),
@@ -167,7 +167,7 @@ namespace BOOM{
     return ans;
   }
   //----------------------------------------------------------------------
-  inline bool keep_flip(double logp_old, double logp_new){
+  static inline bool keep_flip(double logp_old, double logp_new){
     double pflip = logit_inv(logp_new - logp_old);
     double u = runif(0,1);
     return u < pflip ? true : false;
@@ -201,13 +201,14 @@ namespace BOOM{
     for(uint m=1; m<M; ++m){
       Ptr<GlmCoefs> beta = mod_->Beta_subject_prm(m);
       uint which = m-1;
-      Selector g(beta->inc());
+      const Selector &g(beta->inc());
       ans+= vpri_[which]->logp(g);
-
-      Ptr<MvnBase> pri = bpri_[which];
-      b = g.select(beta->beta());
-      ans += dmvn(g.select(b), g.select(pri->mu()),
-		  g.select(pri->siginv()), true);
+      if(g.nvars() > 0){
+        Ptr<MvnBase> pri = bpri_[which];
+        b = g.select(beta->beta());
+        ans += dmvn(g.select(b), g.select(pri->mu()),
+                    g.select(pri->siginv()), true);
+      }
     }
     return ans;
   }

@@ -20,6 +20,7 @@
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
 
 namespace BOOM{
 
@@ -78,6 +79,9 @@ namespace BOOM{
     n_ += s.n_;
   }
 
+  GammaSuf * GS::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s);    }
+
   Vec GS::vectorize(bool)const{
     Vec ans(3);
     ans[0] = sum_;
@@ -98,7 +102,9 @@ namespace BOOM{
     return unvectorize(it, minimal);
   }
 
-
+  ostream & GS::print(ostream &out)const{
+    return out << n_ << " " << sum_ << " " << sumlog_;
+  }
   //======================================================================
   GMB::GammaModelBase()
     : DataPolicy(new GammaSuf())
@@ -112,6 +118,14 @@ namespace BOOM{
       NumOptModel(rhs),
       EmMixtureComponent(rhs)
   {}
+
+  double GMB::pdf(Ptr<Data> dp, bool logscale)const{
+    double ans = logp(DAT(dp)->value());
+    return logscale ? ans : exp(ans);}
+
+  double GMB::pdf(const Data * dp, bool logscale)const{
+    double ans = logp(DAT(dp)->value());
+    return logscale ? ans : exp(ans);}
 
   double GMB::Logp(double x, double &g, double &h, uint nd) const{
      double a = alpha();

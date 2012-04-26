@@ -9,7 +9,7 @@ namespace BOOM{
 
   double dusp(double x, double z0, bool logscale){
     if(z0<=0)
-      throw std::invalid_argument("non-positive z0 in  dusp");
+      throw_exception<std::invalid_argument>("non-positive z0 in  dusp");
 
     if(x<=0)
       return logscale ? infinity(-1) : 0.0;
@@ -25,7 +25,7 @@ namespace BOOM{
   double pusp(double x, double z0, bool logscale){
     if(x<=0) return logscale ? BOOM::infinity(-1) : 0;
     if(z0<=0)
-      throw std::invalid_argument("error: non-positive z0 in  pusp");
+      throw_exception<std::invalid_argument>("error: non-positive z0 in  pusp");
     if(logscale) return log(x) - log(x+z0);
     else return x/(x+z0);
   }
@@ -35,13 +35,13 @@ namespace BOOM{
     if(z0<=0){
       ostringstream msg;
       msg << "error: non-positive z0 in qusp:  z0 = " << z0;
-      throw std::invalid_argument(msg.str());
+      throw_exception<std::invalid_argument>(msg.str());
     }
 
     if(p<=0 && p>=1){
       ostringstream msg;
       msg << "probability out of range in qusp: p = " << p;
-      throw std::domain_error(msg.str());
+      throw_exception<std::domain_error>(msg.str());
     }
     return z0*p/(1-p);
   }

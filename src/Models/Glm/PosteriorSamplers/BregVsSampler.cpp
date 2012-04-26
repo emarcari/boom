@@ -16,19 +16,21 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-#include <Models/Glm/PosteriorSamplers/BregVsSampler.hpp>
 #include <cpputil/math_utils.hpp>
 #include <cpputil/seq.hpp>
 #include <distributions.hpp>
+#include <Models/Glm/PosteriorSamplers/BregVsSampler.hpp>
+#include <Models/MvnGivenScalarSigma.hpp>
 
 namespace BOOM{
 
   typedef BregVsSampler BVS;
-
-  BVS::BregVsSampler(Ptr<RegressionModel> mod,
+  //----------------------------------------------------------------------
+  BVS::BregVsSampler(RegressionModel * mod,
 		     double prior_nobs,
 		     double expected_rsq,
-		     double expected_model_size)
+		     double expected_model_size,
+                     bool first_term_is_intercept)
     : m_(mod),
       indx(seq<uint>(0, m_->nvars_possible()-1)),
       max_nflips_(indx.size()),
@@ -37,33 +39,98 @@ namespace BOOM{
   {
     uint p = m_->nvars_possible();
     Vec b = Vec(p, 0.0);
+    if(first_term_is_intercept){
+      b[0] = m_->suf()->ybar();
+    }
     Spd ominv(m_->suf()->xtx());
     double n = m_->suf()->n();
     ominv *= prior_nobs/n;
 
-    bpri_ = new GlmMvnPrior(b, ominv, true);
+    bpri_ = new MvnGivenScalarSigma(ominv, mod->Sigsq_prm());
 
     double v = m_->suf()->SST()/(n-1);
     assert(expected_rsq > 0 && expected_rsq < 1);
-    double sigma_guess = v * (1-expected_rsq);
+    double sigma_guess = sqrt(v * (1-expected_rsq));
 
-    spri_ = new GammaModel(prior_nobs/2, pow(sigma_guess, 2)*prior_nobs/2);
+    spri_ = new GammaModel(prior_nobs, pow(sigma_guess, 2)*prior_nobs/2);
 
     double prob = expected_model_size/p;
     if(prob>1) prob = 1.0;
     Vec pi(p, prob);
-    pi[0] = 1.0;
+    if(first_term_is_intercept){
+      pi[0] = 1.0;
+    }
 
     vpri_ = new VariableSelectionPrior(pi);
-
   }
-
-  BVS::BregVsSampler(Ptr<RegressionModel> mod, const Vec & b,
-		const Spd & Omega_inverse,
-		double sigma_guess, double df,
-		const Vec &prior_inclusion_probs)
+  //----------------------------------------------------------------------
+  BVS::BregVsSampler(RegressionModel *mod,
+		     double prior_sigma_nobs,
+                     double prior_sigma_guess,
+                     double prior_beta_nobs,
+                     double diagonal_shrinkage,
+		     double prior_inclusion_probability,
+                     bool force_intercept)
     : m_(mod),
-      bpri_(new GlmMvnPrior(b, Omega_inverse, true)),
+      indx(seq<uint>(0, m_->nvars_possible()-1)),
+      max_nflips_(indx.size()),
+      draw_beta_(true),
+      draw_sigma_(true)
+  {
+    uint p = m_->nvars_possible();
+    Vec b = Vec(p, 0.0);
+    double ybar = mod->suf()->ybar();
+    b[0] = ybar;
+    Spd ominv(m_->suf()->xtx());
+    double n = m_->suf()->n();
+
+    if(prior_sigma_guess <= 0){
+      ostringstream msg;
+      msg << "illegal value of prior_sigma_guess in constructor to BregVsSampler"
+          << endl
+          << "supplied value:  " << prior_sigma_guess << endl
+          << "legal values are strictly > 0";
+      throw_exception<std::runtime_error>(msg.str());
+    }
+    ominv *= prior_beta_nobs/n;
+
+    // handle diagonal shrinkage:  ominv =alpha*diag(ominv) + (1-alpha)*ominv
+    // This prevents a perfectly singular ominv.
+    double alpha = diagonal_shrinkage;
+    if(alpha > 1.0 || alpha < 0.0){
+      ostringstream msg;
+      msg << "illegal value of 'diagonal_shrinkage' in "
+          << "BregVsSampler constructor.  Supplied value = "
+          << alpha << ".  Legal values are [0, 1].";
+      throw_exception<std::runtime_error>(msg.str());
+    }
+
+    if(alpha < 1.0){
+      diag(ominv).axpy(diag(ominv), alpha/(1-alpha));
+      ominv *= (1-alpha);
+    }else{
+      ominv.set_diag(diag(ominv));
+    }
+
+    bpri_ = new MvnGivenScalarSigma(b, ominv, m_->Sigsq_prm());
+
+    double prior_ss = pow(prior_sigma_guess, 2)*prior_sigma_nobs;
+    spri_ = new GammaModel(prior_sigma_nobs/2, prior_ss/2);
+
+    Vec pi(p, prior_inclusion_probability);
+    if(force_intercept) pi[0] = 1.0;
+
+    vpri_ = new VariableSelectionPrior(pi);
+  }
+  //----------------------------------------------------------------------
+  BVS::BregVsSampler(RegressionModel *mod,
+                     const Vec & b,
+                     const Spd & Omega_inverse,
+                     double sigma_guess,
+                     double df,
+                     const Vec &prior_inclusion_probs)
+    : m_(mod),
+      bpri_(new MvnGivenScalarSigma(b, Omega_inverse, m_->Sigsq_prm())),
       spri_(new GammaModel(df/2, pow(sigma_guess, 2)*df/2)),
       vpri_(new VariableSelectionPrior(prior_inclusion_probs)),
       indx(seq<uint>(0, m_->nvars_possible()-1)),
@@ -71,9 +138,9 @@ namespace BOOM{
       draw_beta_(true),
       draw_sigma_(true)
   {}
-
-  BVS::BregVsSampler(Ptr<RegressionModel> mod,
-		     Ptr<GlmMvnPrior> bpri,
+  //----------------------------------------------------------------------
+  BVS::BregVsSampler(RegressionModel * mod,
+		     Ptr<MvnGivenScalarSigma> bpri,
 		     Ptr<GammaModel> spri,
 		     Ptr<VariableSelectionPrior> vpri)
     : m_(mod),
@@ -85,7 +152,7 @@ namespace BOOM{
       draw_beta_(true),
       draw_sigma_(true)
   {}
-
+  //----------------------------------------------------------------------
   void BVS::limit_model_selection(uint n){ max_nflips_ =n;}
   void BVS::allow_model_selection(){ max_nflips_ = indx.size();}
   void BVS::supress_model_selection(){max_nflips_ =0;}
@@ -94,18 +161,25 @@ namespace BOOM{
   void BVS::supress_sigma_draw(){draw_sigma_ = false;}
   void BVS::allow_sigma_draw(){draw_sigma_ = false;}
 
-  double BVS::prior_df()const{ return spri_->alpha()/2.0; }
-  double BVS::prior_ss()const{ return spri_->beta()/2.0;}
+  //  since alpha = df/2 df is 2 * alpha, likewise for beta
+  double BVS::prior_df()const{ return 2 * spri_->alpha(); }
+  double BVS::prior_ss()const{ return 2 * spri_->beta(); }
 
   double BVS::log_model_prob(const Selector &g)const{
-    if(g.nvars()==0) return BOOM::infinity(-1);
+    //    if(g.nvars()==0) return BOOM::infinity(-1);
+    if(g.nvars()==0){
+      // integrate out sigma
+      double ss = m_->suf()->yty() + prior_ss();
+      double df = m_->suf()->n() + prior_df();
+      double ans = vpri_->logp(g) - (.5*df-1)*log(ss);
+      return ans;
+    }
     double ldoi = set_reg_post_params(g, true);
     double ans = vpri_->logp(g)+ .5*(ldoi - iV_tilde_.logdet());
     ans -=  (.5*DF_-1)*log(SS_);
     return ans;
   }
-
-
+  //----------------------------------------------------------------------
   double BVS::mcmc_one_flip(Selector &mod, uint which_var, double logp_old){
     mod.flip(which_var);
     double logp_new = log_model_prob(mod);
@@ -116,7 +190,7 @@ namespace BOOM{
     }
     return logp_new;
   }
-
+  //----------------------------------------------------------------------
   void BVS::draw(){
     if(max_nflips_>0) draw_model_indicators();
     if(draw_beta_ || draw_sigma_){
@@ -125,18 +199,30 @@ namespace BOOM{
     if(draw_sigma_) draw_sigma();
     if(draw_beta_) draw_beta();
   }
-
+  //----------------------------------------------------------------------
+  bool BVS::model_is_empty()const{
+    return m_->coef()->inc().nvars()==0;
+  }
+  //----------------------------------------------------------------------
   void BVS::draw_sigma(){
-    double siginv = rgamma(DF_/2.0, SS_/2.0);
+    double siginv = 0;
+    if(model_is_empty()){
+      double ss = m_->suf()->yty() + prior_ss();
+      double df = m_->suf()->n() + prior_df();
+      siginv = rgamma(df/2.0, ss/2.0);
+    }else{
+      siginv = rgamma(DF_/2.0, SS_/2.0);
+    }
     m_->set_sigsq(1.0/siginv);
   }
-
+  //----------------------------------------------------------------------
   void BVS::draw_beta(){
+    if(model_is_empty()) return;
     iV_tilde_ /= m_->sigsq();
     beta_tilde_ = rmvn_ivar(beta_tilde_, iV_tilde_);
     m_->set_beta(beta_tilde_);
   }
-
+  //----------------------------------------------------------------------
   void BVS::draw_model_indicators(){
     Selector g = m_->coef()->inc();
     std::random_shuffle(indx.begin(), indx.end());
@@ -147,7 +233,7 @@ namespace BOOM{
       err << "BregVsSampler did not start with a legal configuration." << endl
 	  << "Selector vector:  " << g << endl
 	  << "beta: " << m_->beta() << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
 
     uint n = std::min<uint>(max_nflips_, g.nvars_possible());
@@ -156,40 +242,55 @@ namespace BOOM{
     }
     m_->coef()->set_inc(g);
   }
-
-
+  //----------------------------------------------------------------------
   double BVS::logpri()const{
-    double ans = vpri_->logp(m_->coef()->inc());  // p(gamma)
-    if(ans == BOOM::infinity(-1)) return ans;
+    const Selector &g(m_->coef()->inc());
+    double ans = vpri_->logp(g);  // p(gamma)
+    if(ans <= BOOM::infinity(-1)) return ans;
 
     double sigsq = m_->sigsq();
     ans += spri_->logp(1.0/sigsq);               // p(1/sigsq)
-    Selector g = m_->coef()->inc();
-    ans += dmvn(m_->beta(), g.select(bpri_->mu()),
-		g.select(bpri_->siginv())/sigsq, true);
+
+    if(g.nvars() > 0){
+      ans += dmvn(g.select(m_->Beta()),
+                  g.select(bpri_->mu()),
+                  g.select(bpri_->siginv()), true);
+    }
     return ans;
   }
-
+  //----------------------------------------------------------------------
   double BVS::set_reg_post_params(const Selector &g, bool do_ldoi)const{
+    if(g.nvars()==0){
+      return 0;
+    }
     Vec b = g.select(bpri_->mu());
+    Spd Ominv = g.select(bpri_->ominv());
+    double ldoi = do_ldoi ? Ominv.logdet() : 0.0;
 
-    Spd Ominv = g.select(bpri_->siginv());
-    double ldoi(0);
-    if(do_ldoi) ldoi = Ominv.logdet();
+    Ptr<RegSuf> s = m_->suf();
 
-    Spd xtx = m_->suf()->xtx(g);
-    Vec xty = m_->suf()->xty(g);
+    Spd xtx = s->xtx(g);
+    Vec xty = s->xty(g);
 
+    // iV_tilde_ / sigsq is the inverse of the posterior precision
+    // matrix, given g.
     iV_tilde_ = Ominv + xtx;
+    // beta_tilde_ is the posterior mean, given g
     beta_tilde_ = Ominv * b + xty;
     beta_tilde_ = iV_tilde_.solve(beta_tilde_);
 
-    DF_ = m_->suf()->n() + prior_df();
-    SS_ = prior_ss() + m_->suf()->yty() + Ominv.Mdist(b);
-    SS_ -= iV_tilde_.Mdist(beta_tilde_);
+    DF_ = s->n() + prior_df();
+    SS_ = prior_ss();
+
+    // Add in the sum of squared errors around beta_tilde_
+    double likelihood_ss = s->yty() - 2*beta_tilde_.dot(xty)
+        + xtx.Mdist(beta_tilde_);
+    SS_ +=likelihood_ss;
+
+    // Add in the sum of squares from the prior
+    double prior_ss = Ominv.Mdist(beta_tilde_, b);
+    SS_ += prior_ss;
+
     return ldoi;
   }
-
-
-
 }

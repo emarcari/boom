@@ -28,7 +28,7 @@ namespace BOOM{
       : public PosteriorSampler
   {
    public:
-    ProbitRegressionSampler(Ptr<ProbitRegressionModel> model,
+    ProbitRegressionSampler(ProbitRegressionModel *model,
                             Ptr<MvnBase> prior);
     void draw();
     double logpri()const;
@@ -43,7 +43,7 @@ namespace BOOM{
    protected:
     virtual void draw_beta();
    private:
-    Ptr<ProbitRegressionModel> mod_;
+    ProbitRegressionModel *mod_;
     Ptr<MvnBase> pri_;
     Spd xtx_;
     Vec xtz_;

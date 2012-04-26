@@ -27,7 +27,7 @@ namespace BOOM{
   class LogitSamplerBma
     : public LogitSampler{
   public:
-    LogitSamplerBma(Ptr<LogisticRegressionModel>,
+    LogitSamplerBma(LogisticRegressionModel *mod,
 		    Ptr<MvnBase>,
 		    Ptr<VariableSelectionPrior>);
 
@@ -40,7 +40,7 @@ namespace BOOM{
     void draw_beta_given_gamma();
     void draw_gamma();
 
-    Ptr<LogisticRegressionModel> mod_;
+    LogisticRegressionModel *mod_;
     Ptr<MvnBase> pri_;
     Ptr<VariableSelectionPrior> vs_;
     uint max_nflips_;

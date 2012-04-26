@@ -23,7 +23,6 @@
 #include "Matrix.hpp"
 
 namespace BOOM{
-  namespace LinAlg{
     using std::ostream;
     using std::istream;
 
@@ -123,7 +122,5 @@ namespace BOOM{
       std::copy(v.begin(), v.end(), dbegin());
     }
 
-
-  }
 }
 #endif // BOOM_NEWLA_MATRIX_HPP

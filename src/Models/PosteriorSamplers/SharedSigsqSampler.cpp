@@ -23,15 +23,15 @@ namespace BOOM{
 
   typedef SharedSigsqSampler SSS;
 
-  SSS::SharedSigsqSampler(const std::vector<Ptr<GaussianModelBase> > &models,
-			  Ptr<UnivParams> sigsq, Ptr<GammaModelBase> pri)
+  SSS::SharedSigsqSampler(const std::vector<GaussianModelBase*> &models,
+			  Ptr<UnivParams> sigsq,
+                          Ptr<GammaModelBase> pri)
     : models_(models),
       sigsq_(sigsq),
       pri_(pri)
   {}
 
   void SSS::draw(){
-
     double df = pri_->alpha()*2;
     double ss = pri_->beta()*2;
 
@@ -46,7 +46,6 @@ namespace BOOM{
     double siginv = rgamma_mt(rng(), df/2, ss/2);
     sigsq_->set(1.0/siginv);
   }
-
 
   double SSS::logpri()const{
     double sigsq = sigsq_->value();

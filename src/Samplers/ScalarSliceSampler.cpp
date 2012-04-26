@@ -28,18 +28,21 @@
 
 namespace BOOM{
   typedef ScalarSliceSampler SSS;
-  typedef ScalarSliceSamplerException SSSE;
 
 //  SSS::ScalarSliceSampler(const ScalarTargetFun &F, bool Unimodal, double dx)
   SSS::ScalarSliceSampler(const Fun &F, bool Unimodal, double dx)
     : logf_(F),
       suggested_dx_(dx),
+      min_dx_(-1),
       lo_set_manually_(false),
       hi_set_manually_(false),
-      unimodal_(Unimodal)
+      unimodal_(Unimodal),
+      estimate_dx_(true)
   {}
 
   void SSS::set_suggested_dx(double dx){suggested_dx_ = dx;}
+  void SSS::set_min_dx(double dx){min_dx_ = dx;}
+  void SSS::estimate_dx(bool yn){ estimate_dx_ = yn; }
 
   void SSS::set_limits(double Lo, double Hi){
     assert(Hi>Lo);
@@ -94,6 +97,10 @@ namespace BOOM{
     }else{
       lo_ = x_cand;
       logplo_ = logp;
+    }
+    if(estimate_dx_){
+      suggested_dx_ = hi_ - lo_;
+      if (suggested_dx_ < min_dx_) suggested_dx_ = min_dx_;
     }
   }
 
@@ -179,9 +186,20 @@ namespace BOOM{
     check_lower_limit(x);
   }
 
+  std::string SSS::error_message(double lo, double hi, double x,
+                                 double logplo, double logphi,
+                                 double logp_slice) const {
+    ostringstream err;
+    err << " lo = " << lo << "  logp(lo) = " << logplo << endl
+	<< "hi = " << hi << "  logp(hi) = " << logphi << endl
+	<< "x  = " << x  << "  logp(x)  = " << logp_slice << endl;
+    return err.str().c_str();
+  }
+
   void SSS::throw_exception(const std::string & msg, double x)const{
-    throw SSSE(msg + " in ScalarSliceSampler",
-               lo_, hi_, x, logplo_, logphi_, logp_slice_);
+    BOOM::throw_exception<std::runtime_error>(
+        msg + " in ScalarSliceSampler" +
+        error_message(lo_, hi_, x, logplo_, logphi_, logp_slice_));
   }
 
 // makes the upper end of the slice twice as far away from x, and
@@ -242,26 +260,4 @@ namespace BOOM{
     if(isnan(logplo_)) throw_exception("lower limit givs NaN probability", x);
   }
 
-  typedef ScalarSliceSamplerException SSSE;
-  SSSE::ScalarSliceSamplerException(const std::string & msg,
-                                    double lo, double hi, double x,
-                                    double logplo, double logphi,
-                                    double logp_slice)
-      : msg_(msg),
-        lo_(lo),
-        hi_(hi),
-        x_(x),
-        logplo_(logplo),
-        logphi_(logphi),
-        logp_slice_(logp_slice)
-  {}
-
-  const char * SSSE::what()const throw(){
-    ostringstream err;
-    err << msg_ << endl
-        << "lo_ = " << lo_ << "  logp(lo) = " << logplo_ << endl
-	<< "hi_ = " << hi_ << "  logp(hi) = " << logphi_ << endl
-	<< "x_  = " << x_  << "  logp(x)  = " << logp_slice_ << endl;
-    return err.str().c_str();
-  }
 }

@@ -179,7 +179,9 @@ namespace BOOM{
   template<class D, class S>
   void SufstatDataPolicy<D,S>::add_data(const Ptr<DataType> d){
     if(!only_keep_suf_) DPBase::add_data(d);
-    suf()->update(d);
+    // Add data to the vector of pointers in the data policy, but
+    // don't update the sufficient statistics if d is missing.
+    if(!d->missing()) suf()->update(d);
   }
 
   template<class D, class S>

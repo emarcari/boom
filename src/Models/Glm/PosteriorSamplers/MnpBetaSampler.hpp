@@ -25,12 +25,12 @@ namespace BOOM{
     // draws beta given Sigma for the multinomial probit model
     // assuming the prior beta|Sigma ~ N(b, Ominv)
   public:
-    MnpBetaSampler(Ptr<MultinomialProbitModel> Mod, Ptr<MvnModel> Pri);
+    MnpBetaSampler(MultinomialProbitModel *Mod, Ptr<MvnModel> Pri);
     virtual void draw();
     virtual double logpri()const;
     void fix_beta0(bool=true);
   private:
-    Ptr<MultinomialProbitModel> mnp;
+    MultinomialProbitModel *mnp;
     Ptr<MvnModel> pri;
     bool b0_fixed;
   };

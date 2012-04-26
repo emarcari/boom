@@ -27,7 +27,7 @@ namespace BOOM{
   class ExponentialGammaSampler
     : public PosteriorSampler{
   public:
-    ExponentialGammaSampler(Ptr<ExponentialModel> Mod,
+    ExponentialGammaSampler(ExponentialModel *Mod,
 			    Ptr<GammaModel> Pri);
     virtual void draw();
     virtual double logpri()const;
@@ -35,7 +35,7 @@ namespace BOOM{
     double b()const;
     void find_posterior_mode();
   private:
-    Ptr<ExponentialModel> mod;
+    ExponentialModel* mod;
     Ptr<GammaModel> pri;
   };
 }

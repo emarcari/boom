@@ -47,20 +47,27 @@
  */
 
 #include "nmath.hpp"
+#include <cpputil/report_error.hpp>
+#include <sstream>
+
 namespace Rmath{
 
-double rnorm_mt(BOOM::RNG & rng, double mu, double sigma)
-{
-    if(!R_FINITE(mu) || !R_FINITE(sigma) || sigma < 0.)	
-	ML_ERR_return_NAN;
-
+  double rnorm_mt(BOOM::RNG & rng, double mu, double sigma)
+  {
+    if(!R_FINITE(mu) || !R_FINITE(sigma) || sigma < 0.){
+      std::ostringstream err;
+      err << "Illegal value for mu: " << mu << " or sigma: " << sigma
+          << " in rnorm_mt." << std::endl;
+      BOOM::report_error(err.str());
+    }
     if (sigma == 0.)
-	return mu;
+      return mu;
     else
-	return mu + sigma * norm_rand(rng);
-}
-double rnorm(double mu, double sigma){
-  return rnorm_mt(BOOM::GlobalRng::rng, mu, sigma);
-}
+      return mu + sigma * norm_rand(rng);
+  }
+
+  double rnorm(double mu, double sigma){
+    return rnorm_mt(BOOM::GlobalRng::rng, mu, sigma);
+  }
 
 }

@@ -22,6 +22,7 @@
 #include <Models/GammaModel.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <Models/PosteriorSamplers/PoissonGammaSampler.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
 
 namespace BOOM{
 
@@ -65,6 +66,9 @@ namespace BOOM{
     lognc_ += s.lognc_;
   }
 
+  PoissonSuf * PoissonSuf::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s); }
+
   Vec PoissonSuf::vectorize(bool)const{
     Vec ans(3);
     ans[0] = sum_;
@@ -86,6 +90,9 @@ namespace BOOM{
     return unvectorize(it, minimal);
   }
 
+  ostream &PoissonSuf::print(ostream &out)const{
+    return out << sum_ << " " << n_;
+  }
 
   //======================================================================
 
@@ -153,6 +160,9 @@ namespace BOOM{
     return dpois(x, lam(), logscale); }
 
   double PoissonModel::pdf(Ptr<Data> dp, bool logscale) const{
+    return dpois(DAT(dp)->value(), lam(), logscale); }
+
+  double PoissonModel::pdf(const Data * dp, bool logscale) const{
     return dpois(DAT(dp)->value(), lam(), logscale); }
 
   double PoissonModel::mean()const{return lam();}

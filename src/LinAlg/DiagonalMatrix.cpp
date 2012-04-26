@@ -28,7 +28,6 @@ extern "C"{
 }
 
 namespace BOOM{
-  namespace LinAlg{
     typedef DiagonalMatrix DM;
 
     DM::DiagonalMatrix()
@@ -258,5 +257,4 @@ namespace BOOM{
     double DM::prod()const{
       return std::accumulate(dbegin(), dend(), 1.0,
                              std::multiplies<double>());}
-  }
 }

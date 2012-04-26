@@ -126,7 +126,7 @@ namespace BOOM{
 // 	ostringstream msg;
 // 	msg << "item " << item_id << "not found by subject "<< id()
 // 	    << " during Subject::read()";
-// 	throw std::runtime_error(msg.str().c_str());
+// 	throw_exception<std::runtime_error>(msg.str().c_str());
 //       }
 //       response(it)->set(r->value());
 //       return in;
@@ -140,7 +140,7 @@ namespace BOOM{
 	  ostringstream msg;
 	  msg << "item with id "<< item_id
 	    << " not found in Subject::find_item";
-	  throw std::runtime_error(msg.str());
+	  throw_exception<std::runtime_error>(msg.str());
 	}
 	return Ptr<Item>();
       }

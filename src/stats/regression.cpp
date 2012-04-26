@@ -23,7 +23,7 @@ namespace BOOM{
 
     uint n = y.size();
     uint p = X.ncol();
-    LinAlg::QR qr(X);
+    QR qr(X);
     Vec b = qr.solve(y);
     Vec e = y-X*b;
     double SSE = e.normsq();

@@ -32,10 +32,11 @@ namespace BOOM{
 
   ZGS::ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel * mod,
                                    double df, double sigma_guess)
-      : GaussianVarSampler(mod, new GammaModel(df/2, df* sigma_guess * sigma_guess/2)),
+      : GaussianVarSampler(mod, new GammaModel(df/2, df* pow(sigma_guess, 2))),
         mod(mod)
   {}
 
+  ZGS * ZGS::clone()const{ return new ZGS(*this);}
 
   void ZGS::find_posterior_mode(){
     //
@@ -43,4 +44,6 @@ namespace BOOM{
     double b = ivar()->beta() + .5 * mod->suf()->sumsq();
     mod->set_sigsq(b/(1+a));   // with respect to sigsq
   }
+
+
 }

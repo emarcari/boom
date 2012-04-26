@@ -52,7 +52,7 @@ namespace BOOM{
     mutable Vec wsp;
     const bool icpt;
 
-    LinAlg::QR qr_const;   // for removing the constant term
+    QR qr_const;   // for removing the constant term
     Vec basis_left;
     Vec deriv_left;
     Vec basis_right;
@@ -69,7 +69,7 @@ namespace BOOM{
     void basis_funcs(double x, Vec &ans)const;
     void diff_table(double x, int ordm1)const;
     bool in_outer_knots(double x)const;
-    LinAlg::QR make_qr_const(double lo, double hi)const;
+    QR make_qr_const(double lo, double hi)const;
 
     void too_few_knots()const;
   };

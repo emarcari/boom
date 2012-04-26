@@ -30,17 +30,13 @@
 namespace BOOM{
 
   typedef GlmMvnSiginvSepStratSampler GMSSS;
-  using LinAlg::chol2inv;
-  using LinAlg::GivensRotation;
-  using LinAlg::traceAB;
-  using LinAlg::ConstVectorView;
 
   class LTF : public ScalarTargetFun{
   public:
     typedef std::vector<Ptr<GlmCoefs> > DVEC;
     typedef std::vector<Ptr<GammaModel> > PVEC;
     LTF(uint i, uint j,
-	Ptr<GlmMvnPrior> mod,
+	GlmMvnPrior *mod,
 	const DVEC &d,
 	const PVEC &Spri,
 	const Mat & sumsq_chol,
@@ -59,17 +55,17 @@ namespace BOOM{
     void compute_S()const;
 
     uint i,j;
-    Ptr<GlmMvnPrior> mod_;
+    GlmMvnPrior *mod_;
     const DVEC & dat;         // used for eval_logdet
     const PVEC & Spri;
     const Mat & sumsq_chol;
-    mutable Mat & LT;
-    mutable Mat & Wsp;
-    mutable Spd & Sigma;
-    mutable Vec & S;
+    Mat & LT;
+    Mat & Wsp;
+    Spd & Sigma;
+    Vec & S;
   };
 
-  GMSSS::GlmMvnSiginvSepStratSampler(Ptr<GlmMvnPrior> Mod,
+  GMSSS::GlmMvnSiginvSepStratSampler(GlmMvnPrior *Mod,
 				     std::vector<Ptr<GammaModel> > S_pri)
     : mod_(Mod),
       Spri(S_pri),
@@ -136,7 +132,7 @@ namespace BOOM{
 
 
   LTF::LTF(uint I, uint J,
-	   Ptr<GlmMvnPrior> mod,
+	   GlmMvnPrior *mod,
 	   const DVEC & D,
 	   const PVEC &SPRI,
 	   const Mat & SumsqChol,
@@ -174,7 +170,7 @@ namespace BOOM{
 	  << " logdet = " << logdet
 	  << "  qform = " << qform
 	  << "  prior = " << prior << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
     return ans;
   }

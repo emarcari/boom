@@ -26,6 +26,7 @@ ModelTypes.cpp
 MultinomialModel.cpp
 MvnBase.cpp
 MvnGivenSigma.cpp
+MvnGivenScalarSigma.cpp
 MvnModel.cpp
 MvtModel.cpp
 ParamTypes.cpp

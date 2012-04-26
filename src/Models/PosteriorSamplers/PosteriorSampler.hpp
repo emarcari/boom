@@ -30,8 +30,7 @@ namespace BOOM{
   class Params;
 
   class PosteriorSampler
-    : private RefCounted,
-      public LinAlgTypes{
+    : private RefCounted{
   public:
     PosteriorSampler();
     PosteriorSampler(const PosteriorSampler &);

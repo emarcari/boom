@@ -20,8 +20,9 @@
 #include <distributions.hpp>
 #include <LinAlg/Types.hpp>
 #include <LinAlg/Vector.hpp>
+#include <LinAlg/VectorView.hpp>
 
-#include <stdexcept>
+#include <cpputil/report_error.hpp>
 #include <sstream>
 
 using namespace std;
@@ -35,38 +36,51 @@ namespace BOOM{
     double tmp = runif_mt(rng, lo+0.0,hi+1.0);
     return (int)floor(tmp);
   }
-  uint rmulti(const Vec &prob){
-    return rmulti_mt(GlobalRng::rng, prob);}
 
-  uint rmulti_mt(RNG & rng, const Vec &prob){
+  namespace {
+    template <class VEC>
+    uint rmulti_mt_impl(RNG & rng, const VEC &prob){
 
-    /* This function draws a deviate from the multiBernoulli
-       distribution with states from lo to hi.  The probability
-       vector need not sum to 1, it only needs to be specified up to a
-       proportionality constant */
+      /* This function draws a deviate from the multiBernoulli
+         distribution with states from lo to hi.  The probability
+         vector need not sum to 1, it only needs to be specified up to a
+         proportionality constant */
 
-    double probsum = prob.abs_norm();
-    if(!finite(probsum)){
-      std::ostringstream err;
-      err << "infinite or NA probabilities supplied to rmulti:  prob = " << prob << endl;
-      throw std::runtime_error(err.str());
+      uint n = prob.size();
+      // The magic number 35 is probably platform specific.  It is the
+      // point at which the BLAS routine starts to outperform the
+      // STL accumulate algorithm.
+      double probsum = n > 35 ? prob.abs_norm() : prob.sum();
+      if(!finite(probsum)){
+        std::ostringstream err;
+        err << "infinite or NA probabilities supplied to rmulti:  prob = " << prob << endl;
+        report_error(err.str());
+      }
+      if(probsum <= 0){
+        std::ostringstream err;
+        err << "zero or negative normalizing constant in rmulti:  prob = " << prob << endl;
+        report_error(err.str());
+      }
+      double tmp=runif_mt(rng, 0,probsum);
+
+      double psum=0;
+      for(uint i = 0; i<n; ++i){
+        psum+=prob(i);
+        if(tmp<=psum) return i;}
+      ostringstream msg;
+      msg << "rmulti failed:  prob = " << prob << endl
+          << "psum = " << psum << endl;
+      report_error(msg.str());
+      return 0;
     }
-    if(probsum<=0){
-      std::ostringstream err;
-      err << "zero or negative normalizing constant in rmulti:  prob = " << prob << endl;
-      throw std::runtime_error(err.str());
-    }
-    double tmp=runif_mt(rng, 0,probsum);
-
-    double psum=0;
-    uint n = prob.size();
-    for(uint i = 0; i<n; ++i){
-      psum+=prob(i);
-      if(tmp<=psum) return i;}
-    ostringstream msg;
-    msg << "rmulti failed:  prob = " << prob << endl
-	<< "psum = " << psum << endl;
-    throw std::runtime_error(msg.str());
-    return 0;
   }
+
+  uint rmulti_mt(RNG &rng, const Vec &prob){ return rmulti_mt_impl(rng, prob); }
+  uint rmulti_mt(RNG &rng, const VectorView &prob){ return rmulti_mt_impl(rng, prob); }
+  uint rmulti_mt(RNG &rng, const ConstVectorView &prob){ return rmulti_mt_impl(rng, prob); }
+
+  uint rmulti(const Vec &prob){return rmulti_mt_impl(GlobalRng::rng, prob);}
+  uint rmulti(const VectorView &prob){return rmulti_mt_impl(GlobalRng::rng, prob);}
+  uint rmulti(const ConstVectorView &prob){return rmulti_mt_impl(GlobalRng::rng, prob);}
+
 }

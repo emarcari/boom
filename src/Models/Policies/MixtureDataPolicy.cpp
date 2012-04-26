@@ -18,14 +18,13 @@
 
 #include <Models/Policies/MixtureDataPolicy.hpp>
 #include <distributions.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
   MixtureDataPolicy::MixtureDataPolicy(uint S)
     : dat_(new std::vector<Ptr<Data> >),
       pkey_(new CatKey(S))
-  {
-  }
-
+  {}
 
   MixtureDataPolicy::MixtureDataPolicy(const MixtureDataPolicy &rhs)
     : Model(rhs),
@@ -50,15 +49,13 @@ namespace BOOM{
     return *this;
   }
 
-
   void MixtureDataPolicy::clear_data(){
     dat().clear();
     latent_data().clear();
+    known_data_source_.clear();
   }
 
   //------------------------------------------------------------
-
-
   void MixtureDataPolicy::set_data(const DatasetType &d){
     clear_data();
     for(uint i=0; i<d.size(); ++i) add_data(d[i]);
@@ -70,8 +67,6 @@ namespace BOOM{
   const std::vector<Ptr<CategoricalData> >  &
   MixtureDataPolicy::latent_data()const{ return latent_;}
 
-
-
   void MixtureDataPolicy::set_data(const dsetPtr d){
     clear_data();
     for(uint i=0; i<d->size(); ++i) add_data((*d)[i]);
@@ -82,17 +77,61 @@ namespace BOOM{
     uint h = random_int(0, pkey_->size()-1);
     NEW(CategoricalData, pcat)(h, pkey_);
     latent_data().push_back(pcat);
+    if(!known_data_source_.empty()){
+      known_data_source_.push_back(-1);
+    }
   }
 
-void MixtureDataPolicy::combine_data(const Model & other, bool){
-  const MixtureDataPolicy & m(dynamic_cast<const MixtureDataPolicy &>(other));
-  const std::vector<Ptr<Data> > & d(*m.dat_);
-  dat_->reserve(dat_->size() + d.size());
-  dat_->insert(dat_->end(), d.begin(), d.end());
+  void MixtureDataPolicy::add_data_with_known_source(Ptr<DataType> d, int source){
+    if(known_data_source_.empty()){
+      known_data_source_.assign(dat().size(), -1);
+    }
+    add_data(d);
+    known_data_source_.push_back(source);
+  }
 
-  const std::vector<Ptr<CategoricalData> > & mis(m.latent_);
-  latent_.reserve(latent_.size() + mis.size());
-  latent_.insert(latent_.end(), mis.begin(), mis.end());
-}
+  int MixtureDataPolicy::which_mixture_component(int observation_number)const{
+    if(known_data_source_.empty()) return -1;
+    return known_data_source_[observation_number];
+  }
 
+  void MixtureDataPolicy::set_data_source(
+      const std::vector<int> &known_data_source){
+    if(dat().size() != known_data_source.size()){
+      ostringstream err;
+      err << "Error in MixtureDataPolicy::set_data_source.  "
+          << "The size of known_data_source (" << known_data_source.size()
+          << ") does not match that of the data (" << dat().size() << ").";
+      report_error(err.str());
+    }
+    known_data_source_ = known_data_source;
+  }
+
+
+  void MixtureDataPolicy::combine_data(const Model & other, bool){
+    const MixtureDataPolicy & m(dynamic_cast<const MixtureDataPolicy &>(other));
+    const std::vector<Ptr<Data> > & d(*m.dat_);
+    dat_->reserve(dat_->size() + d.size());
+    dat_->insert(dat_->end(), d.begin(), d.end());
+
+    const std::vector<Ptr<CategoricalData> > & mis(m.latent_);
+    latent_.reserve(latent_.size() + mis.size());
+    latent_.insert(latent_.end(), mis.begin(), mis.end());
+
+    if(known_data_source_.empty()){
+      if(!m.known_data_source_.empty()){
+        known_data_source_.assign(dat().size(), -1);
+        std::copy(m.known_data_source_.begin(),
+                  m.known_data_source_.end(),
+                  std::back_inserter(known_data_source_));
+      }
+    }else{
+      bool other_empty = m.known_data_source_.empty();
+      known_data_source_.reserve(dat().size() + m.dat().size());
+      for(int i = 0; i < m.dat().size(); ++i){
+        known_data_source_.push_back(
+            other_empty ? -1 : m.known_data_source_[i]);
+      }
+    }
+  }
 }

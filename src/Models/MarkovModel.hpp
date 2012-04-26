@@ -103,8 +103,7 @@ namespace BOOM{
     std::ostream &print(std::ostream &)const;
     void combine(Ptr<MarkovSuf>);
     void combine(const MarkovSuf &);
-    MarkovSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s); }
+    MarkovSuf * abstract_combine(Sufstat *s);
 
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
@@ -205,6 +204,7 @@ namespace BOOM{
     bool pi0_fixed()const;
 
     double pdf(Ptr<Data> dp, bool logscale) const;
+    double pdf(const Data * dp, bool logscale) const;
     double pdf(Ptr<DataPointType> dp, bool logscale) const;
     double pdf(Ptr<DataSeriesType> dp, bool logscale) const;
     double pdf(const DataPointType &dat, bool logscale) const;

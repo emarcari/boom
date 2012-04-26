@@ -2,22 +2,23 @@ Import('env')
 
 file_list = Split("""
 Array3.cpp
-Array4.cpp
+Array.cpp
 Cholesky.cpp
-CorrelationMatrix.cpp  
-DiagonalMatrix.cpp     
+CorrelationMatrix.cpp
+DiagonalMatrix.cpp
 LinAlgExceptions.cpp
 Givens.cpp
 Kronecker.cpp
-LU.cpp                 
-Matrix.cpp     
-QR.cpp         
-SpdMatrix.cpp  
+LU.cpp
+Matrix.cpp
+MatrixPartition.cpp
+QR.cpp
+SpdMatrix.cpp
 SVD.cpp
 SWEEP.cpp
 SubMatrix.cpp
-Vector.cpp      
-VectorView.cpp  
+Vector.cpp
+VectorView.cpp
 stack_columns.cpp
 """)
 

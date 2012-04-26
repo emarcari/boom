@@ -27,13 +27,11 @@
 #include <Models/Policies/ConjugatePriorPolicy.hpp>
 #include <Models/EmMixtureComponent.hpp>
 #include <Models/MvnBase.hpp>
-// #include <Models/PosteriorSamplers/MvnConjSampler.hpp>
+#include <Models/MvnGivenSigma.hpp>
+#include <Models/PosteriorSamplers/MvnConjSampler.hpp>
+#include <Models/WishartModel.hpp>
 
 namespace BOOM{
-
-  class MvnConjSampler;
-  class MvnGivenSigma;
-  class WishartModel;
 
   class MvnModel:
     public MvnBaseWithParams,
@@ -57,6 +55,7 @@ namespace BOOM{
 
     void add_raw_data(const Vec &y);
     double pdf(Ptr<Data>, bool logscale)const;
+    double pdf(const Data *, bool logscale)const;
     double pdf(const Vec &x, bool logscale)const;
 
     void set_conjugate_prior(Ptr<MvnGivenSigma>, Ptr<WishartModel>);

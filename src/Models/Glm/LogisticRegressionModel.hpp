@@ -45,6 +45,7 @@ namespace BOOM{
   class LogisticRegressionModel
       : public GlmModel,
         public NumOptModel,
+        public MixtureComponent,
         public ParamPolicy_1<GlmCoefs>,
         public IID_DataPolicy<BinaryRegressionData>,
         public PriorPolicy
@@ -60,8 +61,8 @@ namespace BOOM{
     const Ptr<GlmCoefs> coef()const{return ParamPolicy::prm();}
 
     virtual double pdf(dPtr dp, bool logscale)const;
-    virtual double pdf(Ptr<BinaryRegressionData>, bool)const;
-    virtual double pdf(bool y, const Vec &x, bool logscale)const;
+    virtual double pdf(const Data * dp, bool logscale)const;
+    double logp(bool y, const Vec &x)const;
 
     virtual double Loglike(Vec &g, Mat &h, uint nd)const;
     virtual double log_likelihood(const Vec &beta, Vec *g, Mat *h,
@@ -95,6 +96,10 @@ namespace BOOM{
     virtual double Loglike(Vec &g, Mat &h, uint nd)const;
     virtual void add_mixture_data(Ptr<Data>, double prob);
     virtual void clear_data();
+    virtual double pdf(Ptr<Data> dp, bool logscale)const{
+      return LogisticRegressionModel::pdf(dp, logscale);}
+    virtual double pdf(const Data *dp, bool logscale)const{
+      return LogisticRegressionModel::pdf(dp, logscale);}
     void set_prior(Ptr<MvnBase>);
     void find_posterior_mode();
     virtual Spd xtx()const;    // incorporates probs

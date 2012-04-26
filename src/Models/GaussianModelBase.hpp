@@ -43,14 +43,14 @@ namespace BOOM{
     void update_raw(double y);
     void add_mixture_data(double y, double prob);
     double sum()const;
+    // sumsq is the uncentered (raw) sum of squared y's.
     double sumsq()const;
     double n()const;
 
     double ybar()const;
     double sample_var()const;
 
-    GaussianSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this, s);}
+    GaussianSuf * abstract_combine(Sufstat *s);
     void combine(Ptr<GaussianSuf>);
     void combine(const GaussianSuf &);
     virtual Vec vectorize(bool minimal=true)const;
@@ -58,7 +58,7 @@ namespace BOOM{
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
-
+    virtual ostream &print(ostream &out)const;
   };
 
 
@@ -77,7 +77,8 @@ class GaussianModelBase
     virtual double sigma()const=0;
 
     virtual void set_sigsq(double sigsq)=0;
-
+    virtual double pdf(Ptr<Data> dp, bool logscale)const;
+    virtual double pdf(const Data * dp, bool logscale)const;
     double Logp(double x, double &g, double &h, uint nd)const;
     double Logp(const Vec & x, Vec &g, Mat &h, uint nd)const;
 

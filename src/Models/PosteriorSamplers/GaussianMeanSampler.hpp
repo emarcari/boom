@@ -27,15 +27,15 @@ namespace BOOM{
   class UnivParams;
 
   class GaussianMeanSampler : public PosteriorSampler {
-    Ptr<UnivParams> mu_;
-    Ptr<GaussianModel> mod;
-    Ptr<GaussianModel> pri;
-  public:
+   public:
     // mu ~ N(mu_bar, tausq), independent of sigma^2
-    GaussianMeanSampler(Ptr<GaussianModel> Mod, double expected_mu, double prior_sd_mu);
-    GaussianMeanSampler(Ptr<GaussianModel> Mod, Ptr<GaussianModel> Pri);
+    GaussianMeanSampler(GaussianModel *Mod, double expected_mu, double prior_sd_mu);
+    GaussianMeanSampler(GaussianModel *Mod, Ptr<GaussianModel> Pri);
     double logpri()const;
     virtual void draw();
+   private:
+    GaussianModel *mod_;
+    Ptr<GaussianModel> pri;
   };
 }
 #endif // BOOM_DRAW_GAUSSIAN_MEAN_HPP

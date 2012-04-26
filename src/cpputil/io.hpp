@@ -53,12 +53,6 @@ namespace BOOM{
   // FLUSH clears a buffer
   // COUNT counts the number of elements a file contains
 
-  struct bad_io{
-    IO io;
-    bad_io(){}
-    bad_io(IO io_param):io(io_param){}
-  };
-
   void clear_file(const std::string &);
   void io_raw_data(const std::string &fname, double *obj, int lo, int hi,
 		   IO io_prm, bool ask=true, bool endl=true);

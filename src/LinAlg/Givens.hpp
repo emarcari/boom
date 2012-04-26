@@ -22,7 +22,6 @@
 
 namespace BOOM{
   class Selector;
-  namespace LinAlg{
     using std::ostream;
     class Matrix;
 
@@ -45,6 +44,5 @@ namespace BOOM{
     Matrix & operator*(Matrix &A,const GivensRotation &G);
     Matrix triangulate(const Matrix &U, const Selector &inc,
 		       bool chop_zero_rows=false);
-  }
 }
 #endif// BOOM_GIVENS_HPP

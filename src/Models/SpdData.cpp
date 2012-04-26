@@ -20,6 +20,7 @@
 #include <LinAlg/Cholesky.hpp>
 #include <stdexcept>
 #include <boost/bind.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 
@@ -32,11 +33,10 @@ namespace BOOM{
     Storage::Storage(const Storage &rhs)
       : current_(rhs.current_)
     {
-      // signals_ not copied
+      // signals are not copied
     }
 
     Storage::~Storage(){}
-
 
     uint Storage::size(bool min)const{
       uint d = dim();
@@ -72,7 +72,7 @@ namespace BOOM{
 
     CholStorage::CholStorage(const Spd &S)
       : Storage(true),
-	L(LinAlg::Chol(S).getL())
+	L(Chol(S).getL())
     {
     }
 
@@ -98,7 +98,7 @@ namespace BOOM{
     }
 
     void CholStorage::refresh(const SpdStorage &S){
-      LinAlg::Chol chol(S.value());
+      Chol chol(S.value());
       L = chol.getL();
       set_current();
     }
@@ -162,8 +162,8 @@ namespace BOOM{
       ivar_chol_(new CholStorage)
   {
     setup_storage();
+    current_rep_ = ivar ? ivar_ : var_;
   }
-
 
   SD::SpdData(const Spd & S, bool ivar)
     : var_(ivar ? new SpdStorage : new SpdStorage(S)),
@@ -172,6 +172,7 @@ namespace BOOM{
       ivar_chol_(new CholStorage)
   {
     setup_storage();
+    current_rep_ = ivar ? ivar_ : var_;
   }
 
   SD::SpdData(const SD & rhs)
@@ -183,6 +184,10 @@ namespace BOOM{
       ivar_chol_(rhs.ivar_chol_->clone())
   {
     setup_storage();
+    if(rhs.current_rep_ == rhs.var_) current_rep_ = var_;
+    else if(rhs.current_rep_ == rhs.ivar_) current_rep_ = ivar_;
+    else if(rhs.current_rep_ == rhs.var_chol_) current_rep_ = var_chol_;
+    else if(rhs.current_rep_ == rhs.ivar_chol_) current_rep_ = ivar_chol_;
   }
 
   SD * SD::clone()const{return new SD(*this);}
@@ -193,21 +198,18 @@ namespace BOOM{
   uint SD::dim()const{ return current_rep_->dim();}
 
   void SD::setup_storage(){
-    //    typedef boost::shared_ptr<SPD::Storage> SpPtr;
     std::vector<StoragePtr> storage;
 
     storage.push_back(var_);
     storage.push_back(ivar_);
     storage.push_back(ivar_chol_);
     storage.push_back(var_chol_);
-    //    storage.push_back(RS);
 
-    for(uint i =0; i< storage.size(); ++i){
+    for(uint i = 0; i < storage.size(); ++i){
       StoragePtr obs = storage[i];
-      for(uint j=0; j< storage.size(); ++j){
+      for(uint j = 0; j < storage.size(); ++j){
 	if(j!=i){
           obs->add_observer(storage[j]->create_observer());
-          //obs->add_observer(storage[j]);
         }
       }
     }
@@ -217,22 +219,6 @@ namespace BOOM{
     out << var() << endl;
     return out;
   }
-
-//   istream & SD::read(istream &in){
-//     string line;
-//     getline(in,line);
-//     Vec v(line);
-//     uint n = v.size();
-//     Spd ans(n);
-//     ans.col(0) = v;
-//     for(uint i=1; i<n; ++i){
-//       getline(in,line);
-//       v = LinAlg::str2vec(line);
-//       ans.col(i) = v;
-//     }
-//     set_var(ans);
-//     return in;
-//   }
 
   const Spd & SD::value()const{ return var();}
 
@@ -260,9 +246,7 @@ namespace BOOM{
       siginv_chol->refresh(*siginv);
       sig->refresh_from_chol(*siginv_chol,true);
     }else{
-      ostringstream err;
-      err << "I'm lost in SpdData::ensure_current" << endl;
-      throw std::runtime_error(err.str());
+      report_error("I'm lost in SpdData::ensure_current");
     }
   }
 
@@ -272,8 +256,7 @@ namespace BOOM{
 			var_chol_);}
 
   void SD::ensure_var_current()const{
-    ensure_current(var_, var_chol_, ivar_,
-			ivar_chol_);}
+    ensure_current(var_, var_chol_, ivar_, ivar_chol_);}
 
 
   void SD::ensure_chol_current(CholPtr chol, SpdPtr sig,
@@ -290,7 +273,7 @@ namespace BOOM{
       std::ostringstream err;
       err << "I'm lost in SpdData::ensure_chol_current"
 	  << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
     ensure_chol_current(chol, sig, siginv_chol, siginv);
   }
@@ -312,17 +295,6 @@ namespace BOOM{
     ensure_var_chol_current();
     return var_chol_->value();
   }
-
-
-
-  //  const Corr & SD::R()const{
-    //    RS_->ensure_current();
-    //    return RS_->R();
-  //  }
-  //  const Vec & SD::sd()const{
-    //    RS_->ensure_current();
-    //    return RS_->S();
-  //  }
 
   double SD::ldsi()const{
     bool inv = (ivar_->current() || ivar_chol_->current());
@@ -359,9 +331,5 @@ namespace BOOM{
     for(uint i=0; i<n; ++i) C.row(i)*=sd[i];
     set_var_chol(C);
   }
-
-  //  void SD::set_R_S(const Corr & R, const Vec &S){ RS_->set(R,S);}
-  //  void SD::set_R(const Corr & R){RS_->set(R);}
-  //  void SD::set_sd(const Vec &S){RS_->set(S);}
 
 }

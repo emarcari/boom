@@ -34,7 +34,7 @@ namespace BOOM{
 
 
   public:
-    RegressionConjSampler(Ptr<RegressionModel>,
+    RegressionConjSampler(RegressionModel *,
                           Ptr<MvnGivenXandSigma>,
 			  Ptr<GammaModelBase>);
     virtual void draw();
@@ -47,7 +47,7 @@ namespace BOOM{
     double prior_df()const;
     double prior_ss()const;
   private:
-    Ptr<RegressionModel> m_;
+    RegressionModel *m_;
     Ptr<MvnGivenXandSigma> mu_;
     Ptr<GammaModelBase> siginv_;
     Vec beta_tilde;

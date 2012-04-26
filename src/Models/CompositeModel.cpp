@@ -39,19 +39,18 @@ namespace BOOM{
     setup();
   }
 
-
   CM * CM::clone()const{return new CM(*this);}
 
-//   void CM::initialize_params(){
-//     for(uint s=0; s<m_.size(); ++s) m_[s]->initialize_params();}
-
-
+  void CM::add_model(Ptr<MixtureComponent> new_model){
+    m_.push_back(new_model);
+    ParamPolicy::add_model(new_model);
+  }
 
   void CM::add_data(Ptr<CompositeData> dp){
     DataPolicy::add_data(dp);
     uint n = dp->dim();
     assert(n == m_.size());
-    for(uint i=0; i<n; ++i) m_[i]->add_data(dp->get(i));
+    for(uint i=0; i<n; ++i) m_[i]->add_data(dp->get_ptr(i));
   }
 
   void CM::add_data(Ptr<Data> dp){
@@ -59,15 +58,33 @@ namespace BOOM{
     add_data(d);
   }
 
-  double CM::pdf(Ptr<Data> dp, bool logscale)const{
-    return pdf(DAT(dp), logscale); }
+  void CM::clear_data(){
+    int n = m_.size();
+    for(int i = 0; i < n; ++i){
+      m_[i]->clear_data();
+    }
+    DataPolicy::clear_data();
+  }
 
-  double CM::pdf(Ptr<CompositeData> dp, bool logscale)const{
-    uint n = dp->dim();
+  double CM::pdf(Ptr<Data> dp, bool logscale)const{
+    return pdf(*DAT(dp), logscale); }
+
+  double CM::pdf(const Data *dp, bool logscale)const{
+    return pdf(*DAT(dp), logscale);
+  }
+
+
+  double CM::pdf(const CompositeData & dp, bool logscale)const{
+    uint n = dp.dim();
     assert(n==m_.size());
     double ans=0;
-    for(uint i=0; i<n; ++i) ans+= m_[i]->pdf(dp->get(i), true);
+    for(uint i=0; i<n; ++i){
+      if(!dp.get(i)->missing()) ans+= m_[i]->pdf(dp.get(i), true);
+    }
     return logscale ? ans : exp(ans);
   }
+
+  std::vector<Ptr<MixtureComponent> > &CM::components(){return m_;}
+  const std::vector<Ptr<MixtureComponent> > &CM::components()const{return m_;}
 
 }

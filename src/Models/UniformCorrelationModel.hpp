@@ -37,7 +37,7 @@ namespace BOOM{
 
     void initialize_params();
     double pdf(Ptr<Data>, bool logscale)const;
-    double pdf(const Corr &, bool logscale)const;
+    double logp(const Corr &)const;
 
     uint dim()const;
     Corr sim()const;

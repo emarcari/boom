@@ -21,7 +21,7 @@
 namespace BOOM{
 
   typedef FixedProbBinomialSampler FBS;
-  FBS::FixedProbBinomialSampler(Ptr<BinomialModel> mod, double prob)
+  FBS::FixedProbBinomialSampler(BinomialModel *mod, double prob)
     : m_(mod),
       p_(prob)
   {}

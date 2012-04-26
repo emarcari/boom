@@ -25,7 +25,7 @@
 namespace BOOM{
 
   class Params;
-  class ParamHolder : public LinAlgTypes{
+  class ParamHolder{
 
   private:
     Vec & v;

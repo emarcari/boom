@@ -30,36 +30,33 @@
 
 
 namespace BOOM{
-  namespace LinAlg{
+  class SweptVarianceMatrix{
+    // sweeping a variable is equivalent to conditioning on it.
+    // i.e. when a variable is swept it changes from 'y' to 'x'.
+    SpdMatrix S;
+    std::vector<bool> swept_;
+    uint nswept_;
+   public:
+    SweptVarianceMatrix();
+    SweptVarianceMatrix(uint d);
+    SweptVarianceMatrix(const SpdMatrix &m);
+    SweptVarianceMatrix(const SweptVarianceMatrix &sm);
 
-    class SweptVarianceMatrix{
-      // sweeping a variable is equivalent to conditioning on it.
-      // i.e. when a variable is swept it changes from 'y' to 'x'.
-      SpdMatrix S;
-      std::vector<bool> swept_;
-      uint nswept_;
-    public:
-      SweptVarianceMatrix();
-      SweptVarianceMatrix(uint d);
-      SweptVarianceMatrix(const SpdMatrix &m);
-      SweptVarianceMatrix(const SweptVarianceMatrix &sm);
+    void SWP(uint m);
+    void SWP(const std::vector<bool> &);
+    void RSW(uint m);
 
-      void SWP(uint m);
-      void SWP(const std::vector<bool> &);
-      void RSW(uint m);
+    Matrix Beta()const;  // to compute E(unswept | swept)
+    Vector E_y_given_x(const Vector &x, const Vector &mu);
+    SpdMatrix V_y_given_x()const;
+    SpdMatrix ivar_x()const;
 
-      Matrix Beta()const;  // to compute E(unswept | swept)
-      Vector E_y_given_x(const Vector &x, const Vector &mu);
-      SpdMatrix V_y_given_x()const;
-      SpdMatrix ivar_x()const;
+    uint ydim()const;
+    uint xdim()const;
 
-      uint ydim()const;
-      uint xdim()const;
-
-      SpdMatrix & swept_matrix(){return S;}
-      const SpdMatrix & swept_matrix()const{return S;}
-    };
-  }
+    SpdMatrix & swept_matrix(){return S;}
+    const SpdMatrix & swept_matrix()const{return S;}
+  };
 }
 
 #endif // BOOM_SWEEP_HPP

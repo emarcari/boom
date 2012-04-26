@@ -20,25 +20,26 @@
 #include <distributions.hpp>
 namespace BOOM{
 
- double scalar_kalman_update(double y, Vec &a, Spd &P, Vec &K, double &F, double &v, bool missing,
-                             const Vec & Z, double H, const Mat & T, Mat & L, const Spd & RQR){
-       // y is y[t]
-
-    // a starts as a[t] and ends as a[t+1]  a[t] = E(alpha[t]| Y^{t-1})
-    // P starts as P[t] and ends as P[t+1]  P[t] = V(alpha[t]| Y^{t-1})
-    // K is output as K[t]
-    // Finv is output as Finv[t]
-    // v is output as v[t]
-
+  double scalar_kalman_update(double y,
+                              Vec &a,
+                              Spd &P,
+                              Vec &K,
+                              double &F,
+                              double &v,
+                              bool missing,
+                              const Vec & Z,
+                              double H,
+                              const Mat & T,
+                              Mat & L,
+                              const Spd & RQR){
     F = P.Mdist(Z) + H;
     double ans=0;
     if(!missing){
-      K = T* (P * Z);
+      K = T * (P * Z);
       K /= F;
       double mu = Z.dot(a);
       v = y-mu;
-      ans =dnorm(y, mu, sqrt(F), true);
-
+      ans = dnorm(y, mu, sqrt(F), true);
     }else{
       K = Z * 0;
       v = 0;
@@ -49,17 +50,21 @@ namespace BOOM{
 
     L = T.t();
     L.add_outer(Z, K, -1);  // L is the transpose of Durbin and Koopman's L
-    P = T *P*L  + RQR;
+    P = T*P*L  + RQR;
 
     return ans;
- }
+  }
 
-  void scalar_kalman_smoother_update(Vec &a, Spd &P, const Vec &K, double F, double v, const Vec & Z,
-                                     const Mat &T, Vec & r, Mat &N, Mat & L){
-
-    // updates a[t] and P[t] to condition on all Y
-    // sets up r and N for use in the next recursion
-
+  void scalar_kalman_smoother_update(Vec &a,
+                                     Spd &P,
+                                     const Vec &K,
+                                     double F,
+                                     double v,
+                                     const Vec & Z,
+                                     const Mat &T,
+                                     Vec & r,
+                                     Mat &N,
+                                     Mat & L){
     L = T.t();
     L.add_outer(Z,K, -1);   // L is the transpose of Durbin and Koopman's L
     r = L * r + Z*(v/F);

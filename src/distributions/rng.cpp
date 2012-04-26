@@ -20,6 +20,7 @@
 #include <distributions/rng.hpp>
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
+#include <ctime>
 
 namespace BOOM{
 
@@ -37,5 +38,10 @@ namespace BOOM{
   }
 
   RNG GlobalRng::rng(8675309);
+
+  void GlobalRng::seed_with_timestamp(){
+    long seed = static_cast<long>(time(NULL));
+    rng.seed(seed);
+  }
 
 }

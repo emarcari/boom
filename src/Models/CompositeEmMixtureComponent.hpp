@@ -31,23 +31,26 @@ namespace BOOM{
   public:
     typedef EmMixtureComponent EM;
 
+    CompositeEmMixtureComponent();
+
     template <class MOD>
-    CompositeEmMixtureComponent(const std::vector<Ptr<MOD> > &mod,
-				typename boost::enable_if<
-				boost::is_base_of<EM, MOD>
-				>::type * =0)
-      : CompositeModel(mod),
-	m_(mod.begin(), mod.end())
+    CompositeEmMixtureComponent(const std::vector<Ptr<MOD> > &mod)
+        : CompositeModel(mod),
+          m_(mod.begin(), mod.end())
     {}
 
     CompositeEmMixtureComponent(const CompositeEmMixtureComponent &rhs);
 
     virtual CompositeEmMixtureComponent * clone()const;
-    //    virtual void initialize_params();
     virtual void mle();
+    virtual void find_posterior_mode();
     virtual void add_mixture_data(Ptr<Data>, double prob);
 
-
+    void add_model(Ptr<EmMixtureComponent>);
+    virtual double pdf(Ptr<Data> dp, bool logscale)const{
+      return CompositeModel::pdf(dp, logscale);}
+    virtual double pdf(const Data * dp, bool logscale)const{
+      return CompositeModel::pdf(dp, logscale);}
   private:
     std::vector<Ptr<EmMixtureComponent> > m_;
   };

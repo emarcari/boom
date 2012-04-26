@@ -22,13 +22,13 @@
 #include <Models/ModelTypes.hpp>
 namespace BOOM{
 
-  class DoubleModel : virtual public Model{
+  class DoubleModel : virtual public MixtureComponent{
   public:
     virtual double logp(double x)const=0;
     virtual double sim()const=0;
     DoubleModel *clone()const =0;
     virtual double pdf(Ptr<Data> dp, bool logscale)const;
-    virtual double pdf(const DoubleData &x, bool logscale)const;
+    virtual double pdf(const Data * dp, bool logscale)const;
   };
 
   class dDoubleModel : public DoubleModel{

@@ -34,11 +34,11 @@ namespace BOOM{
 
     typedef VariableSelectionPrior VSP;
   public:
-    VsPriorSampler(Ptr<VSP>, Ptr<BetaModel>);
-    VsPriorSampler(Ptr<VSP>, std::vector<Ptr<BetaModel> >);
-    VsPriorSampler(Ptr<VSP>, const Vec & pi_guess, const Vec & wgt);
+    VsPriorSampler(VSP *, Ptr<BetaModel>);
+    VsPriorSampler(VSP *, std::vector<Ptr<BetaModel> >);
+    VsPriorSampler(VSP *, const Vec & pi_guess, const Vec & wgt);
 
-    VsPriorSampler(Ptr<VSP>, std::vector<Ptr<BetaModel> >,
+    VsPriorSampler(VSP *, std::vector<Ptr<BetaModel> >,
 		   const Selector & forced_in, const Selector &forced_out);
 
     void draw();
@@ -46,7 +46,7 @@ namespace BOOM{
     uint potential_nvars()const;
   private:
 
-    Ptr<VSP> vsp;
+    VSP *vsp;
     Selector forced_in_;
     Selector forced_out_;
     std::vector<Ptr<PosteriorSampler> > sam_;

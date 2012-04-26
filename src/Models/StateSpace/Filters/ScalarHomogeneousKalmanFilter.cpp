@@ -167,12 +167,13 @@ namespace BOOM{
   }
 
   //------------------------------------------------------------
-
   void SHKF::state_mean_smoother(){ this->state_mean_smoother(f_,n_); }
 
-  void SHKF::state_mean_smoother(std::vector<ScalarKalmanStorage> &f, uint n){
+  void SHKF::state_mean_smoother(std::vector<ScalarKalmanStorage> &f,
+                                 uint n){
     Vec r = disturbance_smoother(f,n);
-    f[0].a  = initial_state_distribution_->mu() + initial_state_distribution_->Sigma() * r;
+    f[0].a  = initial_state_distribution_->mu() +
+        initial_state_distribution_->Sigma() * r;
     for(uint i=1; i<n; ++i){
       const Vec & r(f[i-1].K);
       const Vec & a(f[i-1].a);
@@ -191,7 +192,8 @@ namespace BOOM{
     std::vector<ScalarKalmanStorage> g(f_.begin(), f_.begin() + n_);
 
     fwd_vec(sim, g);
-    state_mean_smoother(g, sim.size());   // replaces g[i].a with E(g[i].a | sim)
+    // replaces g[i].a with E(g[i].a | sim)
+    state_mean_smoother(g, sim.size());
 
     alpha.row(0) += (f_[0].a - g[0].a);
     for(uint i=1; i<n_; ++i) alpha.row(i) += (f_[i].a - g[i].a);
@@ -223,7 +225,7 @@ namespace BOOM{
       ts[i] = y;
       alpha.row(i) = a;
     }
-    return std::make_pair<Vec,Mat>(ts,alpha);
+    return std::make_pair(ts,alpha);
   }
 
 }

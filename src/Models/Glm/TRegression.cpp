@@ -103,8 +103,6 @@ namespace BOOM{
   void TRM::set_sigsq(double s2){wreg_->set_sigsq(s2);}
   void TRM::set_nu(double Nu){wgt_->set_nu(Nu);}
 
-  struct no_derivatives_yet{};
-
   double TRM::Loglike(Vec &g, Mat &h, uint nd)const{
     double sigsq =this->sigsq();
     double nu = this->nu();
@@ -134,11 +132,12 @@ namespace BOOM{
 			-log(1+esq_ns) + frac*(nu+1)/nu);
  	g += concat(gbeta, gsignu);
  	if(nd>1){
- 	  throw no_derivatives_yet();
+ 	  throw_exception<std::logic_error>(
+              "derivatives of TRegression are not yet implemented.");
  	  double esq = e*e;
  	  double sn = sigsq*nu;
  	  double esp = esq + sn;
- 	
+
  	  Mat hbb = X.outer()* ((nu+1)*( (esq -sn)/esp));
  	  Vec hbs = (-e*(nu+1)*nu/pow(esp, 2)) * X;
  	  Vec hbn = ((e/esp)*(1-(nu+1)*sigsq/esp)) * X;}}}

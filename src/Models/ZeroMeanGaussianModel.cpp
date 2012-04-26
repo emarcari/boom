@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2008 Steven L. Scott
+  Copyright (C) 2008-2011 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,6 @@ namespace BOOM{
   ZGM::ZeroMeanGaussianModel(double sigma)
       : ParamPolicy(new UnivParams(sigma * sigma))
   {}
-
 
   ZGM::ZeroMeanGaussianModel(const std::vector<double> &y)
       : GaussianModelBase(y),
@@ -90,9 +89,4 @@ namespace BOOM{
     }
     return ans;
   }
-
-
-  
-
-
-}
+} // namespace BOOM

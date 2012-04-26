@@ -19,6 +19,7 @@
 #include <cmath>
 #include <distributions.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
 #include <LinAlg/Matrix.hpp>
 
 namespace BOOM{
@@ -58,6 +59,8 @@ namespace BOOM{
     n_ += s.n_;
   }
 
+  ProductDirichletSuf * PDS::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s); }
 
   Vec PDS::vectorize(bool)const{
     Vec ans(sumlog_.begin(), sumlog_.end());
@@ -79,6 +82,9 @@ namespace BOOM{
     return unvectorize(it, minimal);
   }
 
+  ostream &PDS::print(ostream &out)const{
+    return out << n_ << endl << sumlog_;
+  }
   //============================================================
 
   typedef ProductDirichletModel PDM;

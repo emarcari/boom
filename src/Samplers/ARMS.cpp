@@ -72,7 +72,7 @@ namespace BOOM{
 	    << "log_convex = " << log_convex << endl
 	    << "now   = " << now << endl
 	    << "ans   = " << ans <<endl;
-	throw std::runtime_error(msg.str());
+	throw_exception<std::runtime_error>(msg.str());
       }
       double width = hi-lo;
       if( fabs(hi-ans) < 1.0) upper_limits[i] += .5*width;

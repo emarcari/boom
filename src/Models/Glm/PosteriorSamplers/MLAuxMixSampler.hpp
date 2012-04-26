@@ -39,21 +39,14 @@ namespace BOOM{
     // statistics and some workspace.  It does not store the imputed
     // latent data.
   public:
-    MLAuxMixSampler(Ptr<MultinomialLogitModel> Mod,
+    MLAuxMixSampler(MultinomialLogitModel *Mod,
 		    Ptr<MvnBase> Pri, uint nthreads=1);
     virtual void draw();
     virtual double logpri()const;
   private:
-    Ptr<MultinomialLogitModel> mod_;
+    MultinomialLogitModel *mod_;
     Ptr<MvnBase> pri;
     Ptr<MLVS> sam;
-
-//     virtual void update_suf(Ptr<ChoiceData>);
-//     virtual void clear_suf();
-//     virtual void draw_beta();
-//     virtual void draw_inclusion_vector();  // does nothing
-//     Spd xtwx;
-//     Vec xtwu;
   };
 
 }
