@@ -21,29 +21,27 @@
 #include <limits>
 
 namespace BOOM{
-namespace LinAlg{
-class SVD{
- public:
-  SVD(const Matrix &m);
-  const Vector & values()const;
-  const Matrix & left()const;
-  const Matrix & right()const;
-  Matrix original_matrix()const;
-  Matrix solve(const Matrix &RHS,
-               double tol = std::numeric_limits<double>::epsilon())const;
+  class SVD{
+   public:
+    SVD(const Matrix &m);
+    const Vector & values()const;
+    const Matrix & left()const;
+    const Matrix & right()const;
+    Matrix original_matrix()const;
+    Matrix solve(const Matrix &RHS,
+                 double tol = std::numeric_limits<double>::epsilon())const;
 
-  Vector solve(const Vector &RHS,
-               double tol = std::numeric_limits<double>::epsilon())const;
+    Vector solve(const Vector &RHS,
+                 double tol = std::numeric_limits<double>::epsilon())const;
 
-  Matrix inv()const;  // inverse of the original matrix, if square
+    Matrix inv()const;  // inverse of the original matrix, if square
 
- private:
-  // the SVD is A = U S V.t()
-  Matrix left_;   // U
-  Matrix right_;  // V.t()
-  Vector values_; // diagonal of S
-  Vector work_;
-};
-}
+   private:
+    // the SVD is A = U S V.t()
+    Matrix left_;   // U
+    Matrix right_;  // V.t()
+    Vector values_; // diagonal of S
+    Vector work_;
+  };
 }
 #endif// BOOM_SVD_HPP

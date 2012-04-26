@@ -18,6 +18,7 @@
 #include <Models/PosteriorSamplers/AbsorbingMarkovConjSampler.hpp>
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 typedef AbsorbingMarkovConjSampler AMCS;
@@ -81,8 +82,7 @@ double AMCS::logpri()const{
             << "Nu(" << s << ") = " << Nu().row(s) << endl
             << "ddirichlet(Q,Nu, true) = " << ddirichlet(Q.row(s), Nu().row(s), true)
             << endl;
-        cout << err.str();
-        throw std::runtime_error(err.str());
+        report_error(err.str());
       }
     }
   }

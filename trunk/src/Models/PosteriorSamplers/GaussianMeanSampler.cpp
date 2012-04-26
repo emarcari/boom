@@ -23,28 +23,25 @@
 namespace BOOM{
   typedef GaussianMeanSampler GMS;
 
-  GMS::GaussianMeanSampler(Ptr<GaussianModel> Mod, double mu, double tau)
-    : mu_(Mod->Mu_prm()),
-      mod(Mod),
+  GMS::GaussianMeanSampler(GaussianModel *Mod, double mu, double tau)
+    : mod_(Mod),
       pri(new GaussianModel(mu, tau))
   {}
 
-  GMS::GaussianMeanSampler(Ptr<GaussianModel> Mod, Ptr<GaussianModel> Pri)
-    : mu_(Mod->Mu_prm()),
-      mod(Mod),
+  GMS::GaussianMeanSampler(GaussianModel *Mod, Ptr<GaussianModel> Pri)
+    : mod_(Mod),
       pri(Pri)
   {}
 
-  double GMS::logpri()const{
-    return pri->pdf(mu_, true);  }
+  double GMS::logpri()const{ return pri->logp(mod_->mu()); }
 
   void GMS::draw(){
-    Ptr<GaussianSuf> s = mod->suf();
+    Ptr<GaussianSuf> s = mod_->suf();
 
     double ybar = s->ybar();
     double n = s->n();
 
-    double sigsq = mod->sigsq();
+    double sigsq = mod_->sigsq();
 
     double mu0 = pri->mu();
     double tausq = pri->sigsq();
@@ -54,6 +51,6 @@ namespace BOOM{
     double sd = sqrt(1.0/ivar);
 
     double ans = rnorm_mt(rng(), mean, sd);
-    mu_->set(ans);
+    mod_->set_mu(ans);
   }
 }

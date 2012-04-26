@@ -29,18 +29,17 @@ namespace BOOM{
     : public MarkovConjSampler
   {
   public:
-    AbsorbingMarkovConjSampler(MarkovModel * /*Ptr<MarkovModel>*/ Mod,
+    AbsorbingMarkovConjSampler(MarkovModel * Mod,
                                Ptr<ProductDirichletModel> Q,
                                Ptr<DirichletModel> pi0,
                                std::vector<uint> absorbing_states);
-    AbsorbingMarkovConjSampler(MarkovModel * /*Ptr<MarkovModel>*/ Mod,
+    AbsorbingMarkovConjSampler(MarkovModel * Mod,
                                Ptr<ProductDirichletModel> Q,
                                std::vector<uint> absorbing_states);
-
-    AbsorbingMarkovConjSampler(MarkovModel * /*Ptr<MarkovModel>*/ Mod,
+    AbsorbingMarkovConjSampler(MarkovModel * Mod,
                                const Mat & Nu,
                                std::vector<uint> absorbing_states);
-    AbsorbingMarkovConjSampler(MarkovModel * /*Ptr<MarkovModel>*/ Mod,
+    AbsorbingMarkovConjSampler(MarkovModel * Mod,
                                const Mat & Nu,
                                const Vec & nu,
                                std::vector<uint> absorbing_states);
@@ -52,7 +51,6 @@ namespace BOOM{
     virtual void find_posterior_mode();
 
   private:
-    //    Ptr<MarkovModel> mod_;
     MarkovModel * mod_;
     Selector abs_;
     Selector trans_;

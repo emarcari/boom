@@ -24,6 +24,7 @@
 #include <LinAlg/Types.hpp>
 #include <BOOM.hpp>
 #include <boost/function.hpp>
+#include <cpputil/ThrowException.hpp>
 
 namespace BOOM{
 
@@ -42,6 +43,10 @@ namespace BOOM{
   double max_nd1(Vec &x, Target tf, dTarget dtf, double eps = 1e-5);
   double max_nd2(Vec &x, Vec &g, Mat &h, Target tf, dTarget dtf,
 		 d2Target d2tf, double leps = 1e-5);
+
+  bool max_nd2_careful(Vec &x, Vec &g, Mat &h, double &max_value,
+                       Target tf, dTarget dtf, d2Target d2tf,
+                       double leps, string &error_msg);
 
   double numeric_deriv(const ScalarTarget f, double x);
   double numeric_deriv(const ScalarTarget f, double x,
@@ -116,7 +121,8 @@ namespace BOOM{
                             d2Target f,
                             int &function_call_count,
                             double eps,
-                            bool & happy_ending);
+                            bool & happy_ending,
+                            string &error_message);
 
   inline double newton_raphson_min(Vec &x,
                                    Vec &g,
@@ -125,7 +131,8 @@ namespace BOOM{
                                    double leps = 1e-5){
     int fc=0;
     bool happy_ending = true;
-    return newton_raphson_min(x,g,h,f,fc,leps, happy_ending);
+    string error_msg;
+    return newton_raphson_min(x,g,h,f,fc,leps, happy_ending, error_msg);
   }
 
   double simulated_annealing(Vec &x, Target f,
@@ -184,44 +191,41 @@ namespace BOOM{
   };
 
 
-  class bad_initial_value : public std::runtime_error{
-   public:
-    bad_initial_value(const string &alg, const Vec &X)
-        : std::runtime_error(write_error_message(alg,X))
-    {}
-    ~bad_initial_value() throw() {}
-    const char * write_error_message(const string &alg, const Vec &X){
-      ostringstream out;
-      out << "bad initial value: " << X << " in " << alg;
-      return out.str().c_str();
-    }
-  };
+//   class bad_initial_value : public std::runtime_error{
+//    public:
+//     bad_initial_value(const string &alg, const Vec &X)
+//         : std::runtime_error(write_error_message(alg,X))
+//     {}
+//     ~bad_initial_value() throw() {}
+//     const char * write_error_message(const string &alg, const Vec &X){
+//     }
+//   };
 
 
-  class newton_raphson_failure : public std::exception{
-  public:
-    string msg;
+//   class newton_raphson_failure : public std::exception{
+//   public:
+//     string msg;
 
-    newton_raphson_failure(const Vec &x, double ans, const Vec &g, const Mat &h,
- 	    int nd, const std::string &Msg){
-      ostringstream out;
-      out << "Newton-Raphson failure " << Msg << endl
-	  << "function value: " << ans << endl
-	  << "x=    " << x << endl;
+//     newton_raphson_failure(const Vec &x, double ans, const Vec &g, const Mat &h,
+//  	    int nd, const std::string &Msg){
+//       ostringstream out;
+//       out << "Newton-Raphson failure " << Msg << endl
+// 	  << "function value: " << ans << endl
+// 	  << "x=    " << x << endl;
 
-      if(nd>0) out << "g= " << g << std::endl;
-      if(nd>1){
- 	out << "h= " << endl;
- 	out << h << endl;
- 	out << "eigenvalues of h (should all be positive):" << endl;
- 	out << h.real_evals() << std::endl;
-      }
-      msg = out.str();
-    }
+//       if(nd>0) out << "g= " << g << std::endl;
+//       if(nd>1){
+//  	out << "h= " << endl;
+//  	out << h << endl;
+//  	out << "eigenvalues of h (should all be positive):" << endl;
+//  	out << h.real_evals() << std::endl;
+//       }
+//       msg = out.str();
+//     }
 
-    const char *what()const throw(){return msg.c_str();}
-    ~newton_raphson_failure() throw() {}
-  };
+//     const char *what()const throw(){return msg.c_str();}
+//     ~newton_raphson_failure() throw() {}
+//   };
 
 
 

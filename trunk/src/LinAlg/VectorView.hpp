@@ -24,296 +24,311 @@
 #include <iterator>
 #include <cassert>
 #include "VectorViewIterator.hpp"
-#include "VectorConcept.hpp"
 #include "Vector.hpp"
 
 extern "C"{
 #include <cblas.h>
 }
 namespace BOOM{
-  namespace LinAlg{   // new stuff for linear algebra
-    class Vector;
-    class SpdMatrix;
-    class Matrix;
-    typedef unsigned int uint;
+  class Vector;
+  class SpdMatrix;
+  class Matrix;
+  typedef unsigned int uint;
 
+  //----------------------------------------------------------------------
+  class VectorView{
+    double *V;
+    uint nelem_;
+    uint stride_;
 
-    //----------------------------------------------------------------------
-    class VectorView{
-      double *V;
-      uint nelem_;
-      uint stride_;
+    bool inrange(uint n)const{return n < nelem_;}
+   public:
+    typedef VectorViewIterator iterator;
+    typedef VectorViewConstIterator const_iterator;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
-      bool inrange(uint n)const{return n < nelem_;}
-    public:
-      typedef VectorViewIterator iterator;
-      typedef VectorViewConstIterator const_iterator;
-      typedef std::reverse_iterator<iterator> reverse_iterator;
-      typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+    //--------- constructors, destructor, assigment, operator== ----------
+    VectorView(double *first_elem, uint Nelem, uint Stride);
+    explicit VectorView(Vector &v, uint first = 0);
+    VectorView(Vector &v, uint first, uint len);
 
-      //--------- constructors, destructor, assigment, operator== ----------
-      VectorView(double *first_elem, uint Nelem, uint Stride);
-      explicit VectorView(Vector &v, uint first = 0);
-      VectorView(Vector &v, uint first,uint len);
+    VectorView(VectorView v, uint first, uint len);
 
-      VectorView & operator=(double x);
-      VectorView & operator=(const Vector & x);
-      VectorView & operator=(const VectorView &x);
+    VectorView & operator=(double x);
+    VectorView & operator=(const Vector & x);
+    VectorView & operator=(const VectorView &x);
+    VectorView & operator=(const ConstVectorView &x);
 
-      void randomize();    // fills the Vector with U(0,1) random numbers
+    VectorView & reset(double *first_elem, uint Nelem, uint Stride);
 
-      //-------------- STL Vector stuff ---------------------
-      iterator begin();
-      iterator end();
-      const_iterator begin()const;
-      const_iterator end()const;
+    void randomize();    // fills the Vector with U(0,1) random numbers
 
-      reverse_iterator rbegin();
-      reverse_iterator rend();
-      const_reverse_iterator rbegin()const;
-      const_reverse_iterator rend()const;
+    //-------------- STL Vector stuff ---------------------
+    iterator begin();
+    iterator end();
+    const_iterator begin()const;
+    const_iterator end()const;
 
-      double *data(){return V;}
-      const double *data()const{return V;}
-      uint stride()const{return stride_;}
+    reverse_iterator rbegin();
+    reverse_iterator rend();
+    const_reverse_iterator rbegin()const;
+    const_reverse_iterator rend()const;
 
-      uint size()const{return nelem_;}   // returns number of elements
-      uint length()const{return nelem_;}; // same as size()
+    double *data(){return V;}
+    const double *data()const{return V;}
+    uint stride()const{return stride_;}
 
-      //------------------ subscripting -----------------------
-      const double & operator[](uint n)const{
-	assert(n< nelem_);
-	return *(V+n*stride_);}
-      double & operator[](uint n){
-	assert(n< nelem_);
-	return *(V+n*stride_);}
-      const double & operator()(uint n)const{
-	assert(n< nelem_);
-	return *(V+n*stride_);}
-      double & operator()(uint n){
-	assert(n< nelem_);
-	return *(V+n*stride_);}
-      double & front(){return *V;}
-      const double & front() const{return *V;}
-      double & back(){return *(V+(nelem_-1)*stride_);}
-      const double & back() const{return *(V+(nelem_-1)*stride_);}
+    uint size()const{return nelem_;}   // returns number of elements
+    uint length()const{return nelem_;}; // same as size()
 
-      //---------------- input/output -------------------------
-      std::ostream & write(std::ostream &, bool endl=true)const;
-      std::istream & read(std::istream &);
+    //------------------ subscripting -----------------------
+    const double & operator[](uint n)const{
+      assert(n< nelem_);
+      return *(V+n*stride_);}
+    double & operator[](uint n){
+      assert(n< nelem_);
+      return *(V+n*stride_);}
+    const double & operator()(uint n)const{
+      assert(n< nelem_);
+      return *(V+n*stride_);}
+    double & operator()(uint n){
+      assert(n< nelem_);
+      return *(V+n*stride_);}
+    double & front(){return *V;}
+    const double & front() const{return *V;}
+    double & back(){return *(V+(nelem_-1)*stride_);}
+    const double & back() const{return *(V+(nelem_-1)*stride_);}
 
-      //--------- math ----------------
-      VectorView & operator+=(const double &x);
-      VectorView & operator-=(const double &x);
-      VectorView & operator*=(const double &x);
-      VectorView & operator/=(const double &x);
+    //---------------- input/output -------------------------
+    std::ostream & write(std::ostream &, bool endl=true)const;
+    std::istream & read(std::istream &);
 
-      VectorView & operator+=(const Vector &y);
-      VectorView & operator-=(const Vector &y);
-      VectorView & operator*=(const Vector &y);
-      VectorView & operator/=(const Vector &y);
+    //--------- math ----------------
+    VectorView & operator+=(const double &x);
+    VectorView & operator-=(const double &x);
+    VectorView & operator*=(const double &x);
+    VectorView & operator/=(const double &x);
 
-      VectorView & operator+=(const VectorView &y);
-      VectorView & operator-=(const VectorView &y);
-      VectorView & operator*=(const VectorView &y);
-      VectorView & operator/=(const VectorView &y);
+    VectorView & operator+=(const Vector &y);
+    VectorView & operator-=(const Vector &y);
+    VectorView & operator*=(const Vector &y);
+    VectorView & operator/=(const Vector &y);
 
-      VectorView & operator+=(const ConstVectorView &y);
-      VectorView & operator-=(const ConstVectorView &y);
-      VectorView & operator*=(const ConstVectorView &y);
-      VectorView & operator/=(const ConstVectorView &y);
+    VectorView & operator+=(const VectorView &y);
+    VectorView & operator-=(const VectorView &y);
+    VectorView & operator*=(const VectorView &y);
+    VectorView & operator/=(const VectorView &y);
 
-      VectorView & axpy(const Vector &y, double a=1.0);
-      VectorView & axpy(const VectorView &y, double a=1.0);
+    VectorView & operator+=(const ConstVectorView &y);
+    VectorView & operator-=(const ConstVectorView &y);
+    VectorView & operator*=(const ConstVectorView &y);
+    VectorView & operator/=(const ConstVectorView &y);
 
-      double normsq()const;
-      double normalize_prob();
-      double normalize_logprob();
-      double min() const;
-      double max() const;
-      uint imax()const;  // index of maximal/minmal element
-      uint imin()const;
-      double sum() const;
-      double prod() const;
+    VectorView & axpy(const Vector &y, double a=1.0);
+    VectorView & axpy(const VectorView &y, double a=1.0);
 
-      double dot(const Vector &y)const; // dot product ignores lower bounds
-      double dot(const VectorView &y)const; // dot product ignores lower bounds
-      double affdot(const Vector &y)const;
-      double affdot(const VectorView &y)const;
-      // affine dot product:  dim(y) == dim(x)-1. ignores lower bounds
+    double normsq()const;
+    double normalize_prob();
+    double normalize_logprob();
+    double min() const;
+    double max() const;
+    uint imax()const;  // index of maximal/minmal element
+    uint imin()const;
+    double sum() const;
+    double prod() const;
+    double abs_norm() const;
 
-    };
+    double dot(const Vector &y)const; // dot product ignores lower bounds
+    double dot(const VectorView &y)const; // dot product ignores lower bounds
+    double affdot(const Vector &y)const;
+    double affdot(const VectorView &y)const;
+    // affine dot product:  dim(y) == dim(x)-1. ignores lower bounds
 
-    // IO
-    std::ostream & operator<<(std::ostream & out, const VectorView &x);
-    std::istream & operator>>(std::istream &, VectorView &);
-    // Vector view size is known from construction
+  };
 
-    template <class VEC>
-    VectorView subvector(VEC &v, uint start){
-      assert(start <v.size());
-      return VectorView(v.data()+start, v.size()-start, v.stride());
-    }
+  // IO
+  std::ostream & operator<<(std::ostream & out, const VectorView &x);
+  std::istream & operator>>(std::istream &, VectorView &);
+  // Vector view size is known from construction
 
-    template <class VEC>
-    VectorView subvector(VEC &v, uint start, uint stop){
-      assert(start <=stop && start < v.size());
-      uint size = 1+stop-start;
-      return VectorView(v.data()+start, size, v.stride());
-    }
+  template <class VEC>
+      VectorView subvector(VEC &v, uint start){
+    assert(start <v.size());
+    return VectorView(v.data()+start, v.size()-start, v.stride());
+  }
 
-    //======================================================================
-    class ConstVectorView{
-      const double *V;
-      uint nelem_;
-      uint stride_;
+  template <class VEC>
+      VectorView subvector(VEC &v, uint start, uint stop){
+    assert(start <=stop && start < v.size());
+    uint size = 1+stop-start;
+    return VectorView(v.data()+start, size, v.stride());
+  }
 
-      bool inrange(uint n)const{return n < nelem_;}
-    public:
-      //      typedef VectorViewIterator iterator;
-      typedef VectorViewConstIterator const_iterator;
-      //      typedef std::reverse_iterator<iterator> reverse_iterator;
-      typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+  //======================================================================
+  class ConstVectorView{
+    const double *V;
+    uint nelem_;
+    uint stride_;
 
-      //--------- constructors, destructor, assigment, operator== ----------
-      ConstVectorView(const double *first_elem, uint Nelem, uint Stride);
-      template <class V>
-      explicit ConstVectorView(const V &rhs)
+    bool inrange(uint n)const{return n < nelem_;}
+   public:
+    //      typedef VectorViewIterator iterator;
+    typedef VectorViewConstIterator const_iterator;
+    //      typedef std::reverse_iterator<iterator> reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+    //--------- constructors, destructor, assigment, operator== ----------
+    ConstVectorView(const double *first_elem, uint Nelem, uint Stride);
+
+    // View from first_element to the end
+    explicit ConstVectorView(const Vector &v, uint first_element = 0);
+    // View from first_element to first_lement + length - 1
+    ConstVectorView(const Vector &v, uint first_element, uint length);
+
+    ConstVectorView(const VectorView &v, uint first_element, uint length);
+
+    ConstVectorView(const ConstVectorView &v, uint first_element);
+    ConstVectorView(const ConstVectorView &v, uint first_element, uint length);
+
+    ConstVectorView(const VectorView &rhs);
+
+    template <class V>
+    explicit ConstVectorView(const V &rhs)
 	: V(rhs.data()),
 	  nelem_(rhs.size()),
 	  stride_(rhs.stride())
-      {}
-      // default copy constructor
+    {}
+    // default copy constructor
 
-      //-------------- STL Vector stuff ---------------------
-      const_iterator begin()const;
-      const_iterator end()const;
-      const_reverse_iterator rbegin()const;
-      const_reverse_iterator rend()const;
+    //-------------- STL Vector stuff ---------------------
+    const_iterator begin()const;
+    const_iterator end()const;
+    const_reverse_iterator rbegin()const;
+    const_reverse_iterator rend()const;
 
-      const double *data()const{return V;}
-      uint stride()const{return stride_;}
+    const double *data()const{return V;}
+    uint stride()const{return stride_;}
 
-      uint size()const{return nelem_;}   // returns number of elements
-      uint length()const{return nelem_;}; // same as size()
+    uint size()const{return nelem_;}   // returns number of elements
+    uint length()const{return nelem_;}; // same as size()
 
-      //------------------ subscripting -----------------------
-      const double & operator[](uint n)const{
-	assert(n< nelem_);
-	return *(V+n*stride_);}
-      const double & operator()(uint n)const{
-	assert(n< nelem_);
-	return *(V+n*stride_);}
-      const double & front() const{return *V;}
-      const double & back() const{return *(V+(nelem_-1)*stride_);}
+    //------------------ subscripting -----------------------
+    const double & operator[](uint n)const{
+      assert(n< nelem_);
+      return *(V+n*stride_);}
+    const double & operator()(uint n)const{
+      assert(n< nelem_);
+      return *(V+n*stride_);}
+    const double & front() const{return *V;}
+    const double & back() const{return *(V+(nelem_-1)*stride_);}
 
-      //---------------- input/output -------------------------
-      std::ostream & write(std::ostream &, bool endl=true)const;
+    //---------------- input/output -------------------------
+    std::ostream & write(std::ostream &, bool endl=true)const;
 
-      //--------- math ----------------
-      double normsq()const;
-      double min() const;
-      double max() const;
-      uint imax()const;  // index of maximal/minmal element
-      uint imin()const;
-      double sum() const;
-      double prod() const;
-
-      template<class VEC>
-      double dot(const VEC &y)const{
-	assert(y.size()==size());
-	return cblas_ddot(size(), data(), stride(), y.data(), y.stride()); }
-
-      template<class VEC>
-      double affdot(const VEC &y)const;
-      // affine dot product:  dim(y) == dim(x)-1. ignores lower bounds
-
-    };
-
-    // IO
-    std::ostream & operator<<(std::ostream & out, const ConstVectorView &x);
+    //--------- math ----------------
+    double normsq()const;
+    double min() const;
+    double max() const;
+    uint imax()const;  // index of maximal/minmal element
+    uint imin()const;
+    double sum() const;
+    double abs_norm() const;
+    double prod() const;
 
     template<class VEC>
-    ConstVectorView subvector(const VEC &v, uint start){
-      return ConstVectorView(v.data()+ start, v.size()-start, v.stride());
-    }
+    double dot(const VEC &y)const{
+      assert(y.size()==size());
+      return cblas_ddot(size(), data(), stride(), y.data(), y.stride()); }
 
     template<class VEC>
-    ConstVectorView subvector(const VEC &v, uint start, uint stop){
-      assert(start<=stop && start <v.size());
-      uint size = 1+stop-start;
-      return ConstVectorView(v.data()+ start, size, v.stride());
-    }
+    double affdot(const VEC &y)const;
+    // affine dot product:  dim(y) == dim(x)-1. ignores lower bounds
 
+  };
 
-    template <class VEC>
-    double ConstVectorView::affdot(const VEC &y)const{
-      uint n = size();
-      uint m = y.size();
-      if(m==n) return dot(y);
-      double ans=0.0;
-      const double *v1=0, *v2=0;
-      if(m==n+1){    // y is one unit longer than x
-	ans= y.front();
-	v1 = y.data()+1;
-	v2 = data();
-      }else if (n==m+1){   // x is one unit longer than y
-	ans = front();
-	v1 = y.data();
-	v2 = data()+1;
-      }else{
-	assert(0 && "x and y do not conform in affdot");
-      }
-      const int i(std::min(m,n));
-      return cblas_ddot(i, v1, y.stride(), v2, stride());
-    }
+  // IO
+  std::ostream & operator<<(std::ostream & out, const ConstVectorView &x);
 
-    inline Vector operator+(const VectorView &x, const VectorView &y){
-      Vector ans(x); ans+=y; return ans; }
-    inline Vector operator+(const ConstVectorView &x, const VectorView &y){
-      Vector ans(x); ans+=y; return ans; }
-    inline Vector operator+(const VectorView &x, const ConstVectorView &y){
-      Vector ans(x); ans+=y; return ans; }
-    inline Vector operator+(const ConstVectorView &x, const ConstVectorView &y){
-      Vector ans(x); ans+=y; return ans; }
-
-    inline Vector operator-(const VectorView &x, const VectorView &y){
-      Vector ans(x); ans-=y; return ans; }
-    inline Vector operator-(const ConstVectorView &x, const VectorView &y){
-      Vector ans(x); ans-=y; return ans; }
-    inline Vector operator-(const VectorView &x, const ConstVectorView &y){
-      Vector ans(x); ans-=y; return ans; }
-    inline Vector operator-(const ConstVectorView &x, const ConstVectorView &y){
-      Vector ans(x); ans-=y; return ans; }
-
-    inline Vector operator*(double x, const VectorView &v){
-      Vector ans(v); ans *= x; return ans;}
-    inline Vector operator*(const VectorView &v, double x){
-      Vector ans(v); ans *= x; return ans;}
-    inline Vector operator*(double x, const ConstVectorView &v){
-      Vector ans(v); ans *= x; return ans;}
-    inline Vector operator*(const ConstVectorView &v, double x){
-      Vector ans(v); ans *= x; return ans;}
-
-    inline Vector operator*(const VectorView &x, const VectorView &y){
-      Vector ans(x); ans*=y; return ans; }
-    inline Vector operator*(const ConstVectorView &x, const VectorView &y){
-      Vector ans(x); ans*=y; return ans; }
-    inline Vector operator*(const VectorView &x, const ConstVectorView &y){
-      Vector ans(x); ans*=y; return ans; }
-    inline Vector operator*(const ConstVectorView &x, const ConstVectorView &y){
-      Vector ans(x); ans*=y; return ans; }
-
-    inline Vector operator/(const VectorView &x, const VectorView &y){
-      Vector ans(x); ans/=y; return ans; }
-    inline Vector operator/(const ConstVectorView &x, const VectorView &y){
-      Vector ans(x); ans/=y; return ans; }
-    inline Vector operator/(const VectorView &x, const ConstVectorView &y){
-      Vector ans(x); ans/=y; return ans; }
-    inline Vector operator/(const ConstVectorView &x, const ConstVectorView &y){
-      Vector ans(x); ans/=y; return ans; }
-
-
+  template<class VEC>
+      ConstVectorView subvector(const VEC &v, uint start){
+    return ConstVectorView(v.data()+ start, v.size()-start, v.stride());
   }
-}
+
+  template<class VEC>
+      ConstVectorView subvector(const VEC &v, uint start, uint stop){
+    assert(start<=stop && start <v.size());
+    uint size = 1+stop-start;
+    return ConstVectorView(v.data()+ start, size, v.stride());
+  }
+
+
+  template <class VEC>
+      double ConstVectorView::affdot(const VEC &y)const{
+    uint n = size();
+    uint m = y.size();
+    if(m==n) return dot(y);
+    double ans=0.0;
+    const double *v1=0, *v2=0;
+    if(m==n+1){    // y is one unit longer than x
+      ans= y.front();
+      v1 = y.data()+1;
+      v2 = data();
+    }else if (n==m+1){   // x is one unit longer than y
+      ans = front();
+      v1 = y.data();
+      v2 = data()+1;
+    }else{
+      assert(0 && "x and y do not conform in affdot");
+    }
+    const int i(std::min(m,n));
+    return cblas_ddot(i, v1, y.stride(), v2, stride());
+  }
+
+  inline Vector operator+(const VectorView &x, const VectorView &y){
+    Vector ans(x); ans+=y; return ans; }
+  inline Vector operator+(const ConstVectorView &x, const VectorView &y){
+    Vector ans(x); ans+=y; return ans; }
+  inline Vector operator+(const VectorView &x, const ConstVectorView &y){
+    Vector ans(x); ans+=y; return ans; }
+  inline Vector operator+(const ConstVectorView &x, const ConstVectorView &y){
+    Vector ans(x); ans+=y; return ans; }
+
+  inline Vector operator-(const VectorView &x, const VectorView &y){
+    Vector ans(x); ans-=y; return ans; }
+  inline Vector operator-(const ConstVectorView &x, const VectorView &y){
+    Vector ans(x); ans-=y; return ans; }
+  inline Vector operator-(const VectorView &x, const ConstVectorView &y){
+    Vector ans(x); ans-=y; return ans; }
+  inline Vector operator-(const ConstVectorView &x, const ConstVectorView &y){
+    Vector ans(x); ans-=y; return ans; }
+
+  inline Vector operator*(double x, const VectorView &v){
+    Vector ans(v); ans *= x; return ans;}
+  inline Vector operator*(const VectorView &v, double x){
+    Vector ans(v); ans *= x; return ans;}
+  inline Vector operator*(double x, const ConstVectorView &v){
+    Vector ans(v); ans *= x; return ans;}
+  inline Vector operator*(const ConstVectorView &v, double x){
+    Vector ans(v); ans *= x; return ans;}
+
+  inline Vector operator*(const VectorView &x, const VectorView &y){
+    Vector ans(x); ans*=y; return ans; }
+  inline Vector operator*(const ConstVectorView &x, const VectorView &y){
+    Vector ans(x); ans*=y; return ans; }
+  inline Vector operator*(const VectorView &x, const ConstVectorView &y){
+    Vector ans(x); ans*=y; return ans; }
+  inline Vector operator*(const ConstVectorView &x, const ConstVectorView &y){
+    Vector ans(x); ans*=y; return ans; }
+
+  inline Vector operator/(const VectorView &x, const VectorView &y){
+    Vector ans(x); ans/=y; return ans; }
+  inline Vector operator/(const ConstVectorView &x, const VectorView &y){
+    Vector ans(x); ans/=y; return ans; }
+  inline Vector operator/(const VectorView &x, const ConstVectorView &y){
+    Vector ans(x); ans/=y; return ans; }
+  inline Vector operator/(const ConstVectorView &x, const ConstVectorView &y){
+    Vector ans(x); ans/=y; return ans; }
+
+}  // namespace BOOM;
 #endif //BOOM_NEWLA_VECTOR_HPP

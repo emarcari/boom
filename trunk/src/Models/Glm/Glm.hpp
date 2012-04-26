@@ -113,7 +113,6 @@ namespace BOOM{
   class GlmModel: virtual public Model{
   public:
     typedef std::vector<string> StringVec;
-    typedef Ptr<StringVec, false> vnPtr;  // for variable names
 
     GlmModel();
     GlmModel(const GlmModel &rhs);
@@ -124,6 +123,9 @@ namespace BOOM{
 
     uint xdim()const;
     //---- model selection ----
+    void add_all();
+    void drop_all();
+    void drop_all_but_intercept();
     void add(uint p);
     void drop(uint p);
     void flip(uint p);
@@ -147,32 +149,11 @@ namespace BOOM{
     std::vector<string>  Vnames()const;
 
     virtual double predict(const Vec &x)const;
+    virtual double predict(const VectorView &x)const;
+    virtual double predict(const ConstVectorView &x)const;
   };
 
   //============================================================
-
-  //   void update_outer(Spd &xtx, const Vec &x);
-  //   // xtx is a matrix [0..p][0..p] of sums of outer products.
-  //   // x[1..p] is a vector with an implicit intercept at x[0].  This
-  //   // fuction sets xtx += x x^T after accounting for the implicit
-  //   // intercept
-
-
-  //   void update_select_outer_no_intercept(Spd &btb, const GlmCoefs &Beta);
-  //   // btb is a matrix [0..p-1][0..p-1] of sums of outer products from
-  //   // many glm params Beta[0..p] with some coefficients excluded. This
-  //   // fuction sets btb += Beta Beta^T after ignoring the intercept
-
-
-
-  //   void update_outer_w(Spd &xtx, const Vec &x, double w);
-  //   // xtx is a matrix [0..p][0..p] of sums of outer products.
-  //   // x[1..p] is a vector with an implicit intercept at x[0].
-  //   // w is a scalar weight for the outer product.
-
-  //   // This fuction sets xtx += w* x x^T after accounting for the
-  //   // implicit intercept
-
   template <class D>
   GlmData<D>::GlmData(const value_type &Y, const Vec &X, bool icpt)
     : x_(new VectorData(icpt? concat(1.0, X) : X)),
@@ -240,6 +221,7 @@ namespace BOOM{
     if(allow_any || x_->size()== X.size()) x_->set(X);
     else if(x_->size()== 1+ X.size()) x_->set(concat(1.0, X));
     else incompatible_x(X,x());
+    signal();
   }
 
   template<class D>

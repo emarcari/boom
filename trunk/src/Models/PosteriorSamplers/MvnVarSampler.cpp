@@ -21,7 +21,7 @@
 namespace BOOM{
 
   typedef MvnConjVarSampler MCVS;
-  MCVS::MvnConjVarSampler(Ptr<MvnModel> m)
+  MCVS::MvnConjVarSampler(MvnModel *m)
     : mvn(m),
       pdf(new UnivParams(0.0))
   {
@@ -30,7 +30,7 @@ namespace BOOM{
     pss = new SpdParams(sumsq);
   }
 
-  MCVS::MvnConjVarSampler(Ptr<MvnModel> m, double df, const Spd &sumsq)
+  MCVS::MvnConjVarSampler(MvnModel *m, double df, const Spd &sumsq)
     : mvn(m),
       pdf(new UnivParams(df)),
       pss(new SpdParams(sumsq))
@@ -50,5 +50,4 @@ namespace BOOM{
     Ptr<SpdParams> sp = mvn->Sigma_prm();
     sp->set_ivar(S);
   }
-
 }

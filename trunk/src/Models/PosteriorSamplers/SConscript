@@ -3,8 +3,8 @@ Import('env')
 file_list = Split("""
 BetaBinomialSampler.cpp
 CompositeSampler.cpp
+CompositeModelSampler.cpp
 CorrelationSampler.cpp
-DefaultPosteriorSampler.cpp
 DirichletPosteriorSampler.cpp
 PosteriorSampler.cpp
 ExchangeableDirichletSampler.cpp
@@ -14,6 +14,8 @@ GaussianConjSampler.cpp
 GaussianMeanSampler.cpp
 GaussianVarSampler.cpp
 ZeroMeanGaussianConjSampler.cpp
+ZeroMeanMvnConjSampler.cpp
+ZeroMeanMvnIndependenceSampler.cpp
 AbsorbingMarkovConjSampler.cpp
 MarkovConjSampler.cpp
 MarkovConjShrinkageSampler.cpp

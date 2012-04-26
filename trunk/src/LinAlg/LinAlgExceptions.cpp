@@ -21,28 +21,26 @@
 #include <sstream>
 
 namespace BOOM{
-  namespace LinAlg{
-    using namespace std;
-    using std::string;
-    matrix_not_positive_definite::matrix_not_positive_definite
-    (const Mat &M, const string &err_msg)
+  using namespace std;
+  using std::string;
+  matrix_not_positive_definite::matrix_not_positive_definite
+  (const Mat &M, const string &err_msg)
       : m(M), msg(err_msg)
-    {}
+  {}
 
-    string print_matrix_limits(const Mat &m, const string &name=""){
-      ostringstream out;
-      out << name << "[" << m.nrow() << ","
-	  << m.ncol() << "] = " << endl
-	  << m << endl;
-      return out.str();
-    }
-
-    const char * matrix_not_positive_definite::what()const throw(){
-      ostringstream out;
-      out << msg << endl;
-      out << print_matrix_limits(m);
-      return out.str().c_str();
-    }
-
+  string print_matrix_limits(const Mat &m, const string &name=""){
+    ostringstream out;
+    out << name << "[" << m.nrow() << ","
+        << m.ncol() << "] = " << endl
+        << m << endl;
+    return out.str();
   }
+
+  const char * matrix_not_positive_definite::what()const throw(){
+    ostringstream out;
+    out << msg << endl;
+    out << print_matrix_limits(m);
+    return out.str().c_str();
+  }
+
 }

@@ -26,7 +26,7 @@ namespace BOOM{
 
   typedef CumulativeLogitSampler CLS;
   typedef CumulativeLogitModel CLM;
-  CLS::CumulativeLogitSampler(Ptr<CLM> m, Ptr<MvnBase> prior)
+  CLS::CumulativeLogitSampler(CLM *m, Ptr<MvnBase> prior)
       : m_(m),
         beta_prior_(prior),
         suf_(m->xdim())
@@ -90,6 +90,8 @@ namespace BOOM{
     m_->set_beta(beta_);
   }
 
+  namespace {
+
   class PartialTarget : public ScalarTargetFun{
    public:
     typedef boost::function<double(const Vec &)> TF;
@@ -108,6 +110,8 @@ namespace BOOM{
     uint pos_;
     mutable Vec v_;
   };
+
+  }  // anonymous namespace
 
   void CLS::draw_delta(){
     delta_ = m_->delta();

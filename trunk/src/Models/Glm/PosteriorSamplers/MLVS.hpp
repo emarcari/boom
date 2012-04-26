@@ -32,6 +32,7 @@ namespace BOOM{
   class MvnBase;
   class ChoiceData;
 
+  // An implementation of
   class MlvsCdSuf_ml : public MlvsCdSuf{
   public:
     MlvsCdSuf_ml(uint dim);
@@ -51,6 +52,7 @@ namespace BOOM{
     Vec xtwu_;
     mutable bool sym_;
   };
+
   //------------------------------------------------------------
   class MLVS : public MLVS_base{
     // draws the parameters of a multinomial logit model using the
@@ -61,7 +63,7 @@ namespace BOOM{
     // statistics and some workspace.  It does not store the imputed
     // latent data.
   public:
-    MLVS(Ptr<MultinomialLogitModel> Mod,
+    MLVS(MultinomialLogitModel *Mod,
 	 Ptr<MvnBase> Pri,
 	 Ptr<VariableSelectionPrior> vPri,
 	 uint nthreads=1,
@@ -71,7 +73,7 @@ namespace BOOM{
     virtual void draw_beta();
     //    virtual void find_posterior_mode();
   private:
-    Ptr<MultinomialLogitModel> mod_;
+    MultinomialLogitModel *mod_;
     Ptr<MvnBase> pri;
     Ptr<VariableSelectionPrior> vpri;
     Ptr<MlvsCdSuf_ml> suf;

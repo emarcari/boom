@@ -27,7 +27,7 @@ namespace BOOM{
     // assumes Beta|Sigma ~ N(B, Sigma \otimes I/kappa)
     // and Sigma^{-1} ~ Wishart(prior_df/2, SS/2);
 
-    MvRegSampler(Ptr<MvReg> m, const Mat &B, double kappa, double prior_df, const Spd & Sigma_guess);
+    MvRegSampler(MvReg *m, const Mat &B, double kappa, double prior_df, const Spd & Sigma_guess);
 
     double logpri()const;
     void draw();
@@ -35,7 +35,7 @@ namespace BOOM{
     void draw_Sigma();
 
   private:
-    Ptr<MvReg> mod;
+    MvReg *mod;
     Spd SS;
     double prior_df;
     Spd Ominv;

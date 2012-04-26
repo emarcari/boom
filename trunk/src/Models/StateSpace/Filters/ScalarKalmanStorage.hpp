@@ -16,22 +16,27 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-
 #ifndef BOOM_SCALAR_KALMAN_STORAGE_HPP
 #define BOOM_SCALAR_KALMAN_STORAGE_HPP
 
+#include <LinAlg/Vector.hpp>
 #include <LinAlg/SpdMatrix.hpp>
 #include <LinAlg/Types.hpp>
 
 namespace BOOM{
-
-  struct ScalarKalmanStorage{
-    Vec a;
-    Spd P;
+  struct LightKalmanStorage{
     Vec K;
     double F;
     double v;
+    LightKalmanStorage(){}
+    LightKalmanStorage(int dim) : K(dim) {}
   };
 
+  struct ScalarKalmanStorage : public LightKalmanStorage{
+    Vec a;
+    Spd P;
+    ScalarKalmanStorage() : LightKalmanStorage() {}
+    ScalarKalmanStorage(int dim) : LightKalmanStorage(dim), a(dim), P(dim) {}
+  };
 }
 #endif// BOOM_SCALAR_KALMAN_STORAGE_HPP

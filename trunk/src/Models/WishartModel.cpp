@@ -23,6 +23,8 @@
 #include <numopt.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <TargetFun/Loglike.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
+
 
 namespace BOOM{
   typedef WishartSuf WS;
@@ -67,6 +69,9 @@ namespace BOOM{
     sumW_ += s.sumW_;
   }
 
+  WishartSuf * WishartSuf::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s);}
+
   Vec WishartSuf::vectorize(bool minimal)const{
     Vec ans = sumW_.vectorize(minimal);
     ans.push_back(n_);
@@ -85,6 +90,12 @@ namespace BOOM{
   Vec::const_iterator WishartSuf::unvectorize(const Vec &v, bool minimal){
     Vec::const_iterator it = v.begin();
     return unvectorize(it, minimal);
+  }
+
+  ostream &WishartSuf::print(ostream &out)const{
+    return out << "n_ = " << n_ << endl
+               << "sumldw_ = " << sumldw_ << endl
+               << "sumW_ = " << endl << sumW_;
   }
 
 

@@ -19,21 +19,21 @@
 #ifndef BOOM_GAUSSIAN_MODEL_CONJUGATE_SAMPLER_HPP
 #define BOOM_GAUSSIAN_MODEL_CONJUGATE_SAMPLER_HPP
 
-#include <Models/GaussianModel.hpp>
 #include <Models/GaussianModelGivenSigma.hpp>
 #include <Models/GammaModel.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 
 namespace BOOM{
-  class GaussianConjSampler
-    : public PosteriorSampler
+  class GaussianModel;
+
+  class GaussianConjSampler : public PosteriorSampler
   {
-  public:
-    GaussianConjSampler(Ptr<GaussianModel> m,
+   public:
+    GaussianConjSampler(GaussianModel *m,
 			Ptr<GaussianModelGivenSigma> mu,
-			Ptr<GammaModel> sig);
-    void draw();
-    double logpri()const;
+			Ptr<GammaModelBase> sig);
+    virtual void draw();
+    virtual double logpri()const;
 
     double mu()const;
     double kappa()const;
@@ -42,9 +42,9 @@ namespace BOOM{
 
     void find_posterior_mode();
   private:
-    Ptr<GaussianModel> mod_;
+    GaussianModel *mod_;
     Ptr<GaussianModelGivenSigma> mu_;
-    Ptr<GammaModel> siginv_;
+    Ptr<GammaModelBase> siginv_;
   };
 }
 #endif// BOOM_GAUSSIAN_MODEL_CONJUGATE_SAMPLER_HPP

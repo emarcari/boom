@@ -17,8 +17,7 @@
 */
 
 #include "RegressionModel.hpp"
-#include <cpputil/DataTable.hpp>
-#include <cpputil/DesignMatrix.hpp>
+#include <stats/Design.hpp>
 #include <LinAlg/Types.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <Models/Glm/PosteriorSamplers/RegressionConjSampler.hpp>
@@ -27,6 +26,8 @@
 #include <sstream>
 #include <cmath>
 #include <distributions.hpp>
+#include <cpputil/ThrowException.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
 
 namespace BOOM{
   inline void incompatible_X_and_y(const Mat &X, const Vec &y){
@@ -34,17 +35,15 @@ namespace BOOM{
     out << "incompatible X and Y" << endl
 	<< "X = " << endl << X << endl
 	<< "Y = " << endl << y << endl;
-    throw std::runtime_error(out.str());
+    throw_exception<std::runtime_error>(out.str());
   };
 
   inline void index_out_of_bounds(uint i, uint bound){
     ostringstream out;
     out << "requested index " << i << " out of bounds." << endl
 	<< "bound is " << bound << "."<< endl;
-    throw std::runtime_error(out.str());
+    throw_exception<std::runtime_error>(out.str());
   };
-
-
 
   Mat add_intercept(const Mat &X){
     Vec one(X.nrow(), 1.0);
@@ -115,8 +114,13 @@ namespace BOOM{
     tab.display(out);
     return out;}
   //======================================================================
-
-
+  ostream & RegSuf::print(ostream &out)const{
+    out << "sample size: " << n() << endl
+        << "xty: " << xty() << endl
+        << "xtx: " << endl << xtx();
+    return out;
+  }
+  //======================================================================
   QrRegSuf::QrRegSuf(const Mat&X, const Vec &y, bool add_icpt):
     qr(add_icpt ? add_intercept(X) : X),
     Qty(),
@@ -190,7 +194,7 @@ namespace BOOM{
     ostringstream err;
     err << "use NeRegSuf for regression model mixture components."
 	<< endl;
-    throw std::runtime_error(err.str());
+    throw_exception<std::runtime_error>(err.str());
   }
 
 
@@ -239,21 +243,24 @@ namespace BOOM{
     return qr.nrow();}
 
   void QrRegSuf::combine(Ptr<RegSuf>){
-    throw std::runtime_error("cannot combine QrRegSuf");
+    throw_exception<std::runtime_error>("cannot combine QrRegSuf");
   }
 
   void QrRegSuf::combine(const RegSuf &){
-    throw std::runtime_error("cannot combine QrRegSuf");
+    throw_exception<std::runtime_error>("cannot combine QrRegSuf");
   }
 
+  QrRegSuf * QrRegSuf::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s); }
+
   Vec QrRegSuf::vectorize(bool)const{
-    throw std::runtime_error("cannot combine QrRegSuf");
+    throw_exception<std::runtime_error>("cannot combine QrRegSuf");
     return Vec(1, 0.0);
   }
 
   Vec::const_iterator QrRegSuf::unvectorize(Vec::const_iterator &v,
                                   bool){
-    throw std::runtime_error("cannot combine QrRegSuf");
+    throw_exception<std::runtime_error>("cannot combine QrRegSuf");
     return v;
   }
 
@@ -262,19 +269,43 @@ namespace BOOM{
     return unvectorize(it, minimal);
   }
 
-
+  ostream & QrRegSuf::print(ostream &out)const{
+    return out << "sumsqy = " << yty() << endl
+               << "xty_ = " << xty() << endl
+               << "xtx  = " << endl << xtx();
+  }
   //---------------------------------------------
-  NeRegSuf::NeRegSuf(uint p): xtx_(p), xty_(p), sumsqy(0.0){ }
-  NeRegSuf::NeRegSuf(const Mat &X, const Vec &y, bool add_icpt){
+  NeRegSuf::NeRegSuf(uint p)
+  : xtx_(p),
+    needs_to_reflect_(false),
+    xty_(p),
+    xtx_is_fixed_(false),
+    sumsqy(0.0),
+    n_(0),
+    sumy_(0.0)
+  { }
+
+  NeRegSuf::NeRegSuf(const Mat &X, const Vec &y, bool add_icpt)
+      : needs_to_reflect_(false),
+        xtx_is_fixed_(false),
+        sumsqy(y.normsq()),
+        n_(nrow(X)),
+        sumy_(y.sum())
+  {
     Mat tmpx = add_icpt ? add_intercept(X) : X;
     xty_ =y*tmpx;
     xtx_ = tmpx.inner();
-    sumsqy = y.dot(y); }
+    sumsqy = y.dot(y);
+  }
 
-  NeRegSuf::NeRegSuf(const Spd & XTX, const Vec & XTY, double YTY)
+  NeRegSuf::NeRegSuf(const Spd & XTX, const Vec & XTY, double YTY, double n)
     : xtx_(XTX),
+      needs_to_reflect_(true),
       xty_(XTY),
-      sumsqy(YTY)
+      xtx_is_fixed_(false),
+      sumsqy(YTY),
+      n_(n),
+      sumy_(XTY[0])
   {}
 
   NeRegSuf::NeRegSuf(const NeRegSuf &rhs)
@@ -282,92 +313,156 @@ namespace BOOM{
       RegSuf(rhs),
       SufstatDetails<DataType>(rhs),
       xtx_(rhs.xtx_),
+      needs_to_reflect_(rhs.needs_to_reflect_),
       xty_(rhs.xty_),
-      sumsqy(rhs.sumsqy)
+      xtx_is_fixed_(rhs.xtx_is_fixed_),
+      sumsqy(rhs.sumsqy),
+      n_(rhs.n_),
+      sumy_(rhs.sumy_)
   {}
 
   NeRegSuf * NeRegSuf::clone()const{
     return new NeRegSuf(*this);}
 
-
   void NeRegSuf::add_mixture_data(double y, const Vec &x, double prob){
-    xtx_.add_outer(x,prob);
-    xty_.axpy(x,y*prob);
-    sumsqy+= pow(y,2)*prob;
+    if(!xtx_is_fixed_) {
+      xtx_.add_outer(x, prob, false);
+      needs_to_reflect_ = true;
+    }
+    xty_.axpy(x, y * prob);
+    sumsqy+= y * y * prob;
+    n_ += prob;
+    sumy_ += y * prob;
   }
 
-  void NeRegSuf::clear(){xtx_=0.0; xty_=0.0; sumsqy=0.0;}
+  void NeRegSuf::clear(){
+    if(!xtx_is_fixed_) xtx_=0.0;
+    xty_=0.0;
+    sumsqy=0.0;
+    n_ = 0;
+    sumy_ = 0.0;
+  }
 
   void NeRegSuf::Update(const RegressionData &rdp){
+    ++n_;
     int p = rdp.size();
     if(xtx_.nrow()==0 || xtx_.ncol()==0)
       xtx_ = Spd(p,0.0);
     if(xty_.size()==0) xty_ = Vec(p, 0.0);
-    Vec tmpx = rdp.x();// add_intercept(rdp.x());
+    const Vec & tmpx(rdp.x());  // add_intercept(rdp.x());
     double y = rdp.y();
-    xty_+= y*tmpx;
-    xtx_.add_outer(tmpx);
-    sumsqy+= y*y;  }
+    xty_.axpy(tmpx, y);
+    if(!xtx_is_fixed_) {
+      xtx_.add_outer(tmpx, 1.0, false);
+      needs_to_reflect_ = true;
+    }
+    sumsqy+= y*y;
+    sumy_ += y;
+  }
 
   uint NeRegSuf::size()const{ return xtx_.ncol();}  // dim(beta)
-  Spd NeRegSuf::xtx()const{ return xtx_;}
+  Spd NeRegSuf::xtx()const{
+    reflect();
+    return xtx_;
+  }
   Vec NeRegSuf::xty()const{ return xty_;}
 
   Spd NeRegSuf::xtx(const Selector &inc)const{
-    return inc.select(xtx_);}
+    reflect();
+    return inc.select(xtx_);
+  }
   Vec NeRegSuf::xty(const Selector &inc)const{
     return inc.select(xty_);}
   double NeRegSuf::yty()const{ return sumsqy;}
 
-  Vec NeRegSuf::beta_hat()const{ return xtx_.solve(xty_); }
+  Vec NeRegSuf::beta_hat()const{
+    reflect();
+    return xtx_.solve(xty_);
+  }
 
   double NeRegSuf::SSE()const{
     Spd ivar = xtx().inv();
     return yty() - ivar.Mdist(xty()); }
   double NeRegSuf::SST()const{ return sumsqy - n()*pow(ybar(),2); }
-  double NeRegSuf::n()const{ return xtx_(0,0);  }
-  double NeRegSuf::ybar()const{ return xty_[0]/xtx_(0,0);}
+  double NeRegSuf::n()const{ return n_; }
+  double NeRegSuf::ybar()const{ return sumy_/n_;}
 
   void NeRegSuf::combine(Ptr<RegSuf> sp){
     Ptr<NeRegSuf> s(sp.dcast<NeRegSuf>());
-    xtx_ += s->xtx_;
+    xtx_ += s->xtx_;   // Do we want to combine xtx_ if xtx_is_fixed_?
+    needs_to_reflect_ = needs_to_reflect_ || s->needs_to_reflect_;
     xty_ += s->xty_;
     sumsqy += s->sumsqy;
+    sumy_ += s->sumy_;
+    n_ += s->n_;
   }
 
   void NeRegSuf::combine(const RegSuf & sp){
     const NeRegSuf& s(dynamic_cast<const NeRegSuf &>(sp));
-    xtx_ += s.xtx_;
+    xtx_ += s.xtx_;   // Do we want to combine xtx_ if xtx_is_fixed_?
+    needs_to_reflect_ = needs_to_reflect_ || s.needs_to_reflect_;
     xty_ += s.xty_;
     sumsqy += s.sumsqy;
+    sumy_ += s.sumy_;
+    n_ += s.n_;
   }
 
+  NeRegSuf * NeRegSuf::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s); }
+
   Vec NeRegSuf::vectorize(bool minimal)const{
+    reflect();
     Vec ans = xtx_.vectorize(minimal);
     ans.concat(xty_);
     ans.push_back(sumsqy);
+    ans.push_back(n_);
+    ans.push_back(sumy_);
     return ans;
   }
 
   Vec::const_iterator NeRegSuf::unvectorize(Vec::const_iterator &v,
                                   bool minimal){
+    // do we want to store xtx_is_fixed_?
     xtx_.unvectorize(v, minimal);
+    needs_to_reflect_ = true;
     uint dim = xty_.size();
     xty_.assign(v, v+dim);
     v+=dim;
     sumsqy = *v;  ++v;
+    n_ = lround(*v); ++v;
+    sumy_ = *v; ++v;
     return v;
   }
 
   Vec::const_iterator NeRegSuf::unvectorize(const Vec &v, bool minimal){
+    // do we want to store xtx_is_fixed_?
     Vec::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
+  ostream & NeRegSuf::print(ostream &out)const{
+    reflect();
+    return out << "sumsqy = " << sumsqy << endl
+               << "sumy_  = " << sumy_ << endl
+               << "n_     = " << n_ << endl
+               << "xty_ = " << xty_ << endl
+               << "xtx  = " << endl << xtx_;
+  }
+
+  void NeRegSuf::fix_xtx(bool fix){
+    reflect();
+    xtx_is_fixed_ = fix;
+  }
+
+  void NeRegSuf::reflect()const{
+    if(needs_to_reflect_){
+      xtx_.reflect();
+      needs_to_reflect_ = false;
+    }
+  }
 
   //======================================================================
   typedef RegressionDataPolicy RDP;
-
 
   RDP::RegressionDataPolicy(Ptr<RegSuf> s)
     : DPBase(s)
@@ -380,7 +475,6 @@ namespace BOOM{
     : Model(rhs),
       DPBase(rhs)
   {}
-
 
   RegressionDataPolicy & RDP::operator=(const RegressionDataPolicy &rhs){
     if(&rhs!=this) DPBase::operator=(rhs);
@@ -396,17 +490,14 @@ namespace BOOM{
       ParamPolicy(new GlmCoefs(p), new UnivParams(1.0)),
       DataPolicy(new NeRegSuf(p)),
       ConjPriorPolicy()
-  {
-  }
+  {}
 
   RM::RegressionModel(const Vec &b, double Sigma)
     : GlmModel(),
       ParamPolicy(new GlmCoefs(b), new UnivParams(Sigma*Sigma)),
       DataPolicy(new NeRegSuf(b.size())),
       ConjPriorPolicy()
-  {
-  }
-
+  {}
 
   RM::RegressionModel(const Mat &X, const Vec &y, bool add_icpt)
     : GlmModel(),
@@ -417,16 +508,12 @@ namespace BOOM{
     mle();
   }
 
-
-
   RM::RegressionModel(const DesignMatrix &X, const Vec &y, bool add_icpt)
     : GlmModel(),
       ParamPolicy(new GlmCoefs(X.ncol()), new UnivParams(1.0)),
       DataPolicy(new QrRegSuf(X,y, add_icpt)),
       ConjPriorPolicy()
-  {
-  }
-
+  {}
 
   RM::RegressionModel(const DatasetType &d, bool all)
     : GlmModel(),
@@ -434,7 +521,6 @@ namespace BOOM{
       DataPolicy(new NeRegSuf(d.begin(), d.end())),
       ConjPriorPolicy()
   {}
-
 
   RM::RegressionModel(const RegressionModel &rhs)
     : Model(rhs),
@@ -445,8 +531,7 @@ namespace BOOM{
       ConjPriorPolicy(rhs),
       NumOptModel(rhs),
       EmMixtureComponent(rhs)
-  {
-  }
+  {}
 
   RM * RM::clone()const{return new RegressionModel(*this); }
 
@@ -459,7 +544,6 @@ namespace BOOM{
   Spd RM::xtx()const{ return xtx( coef()->inc() ) ;}
   Vec RM::xty()const{ return xty( coef()->inc() ) ;}
   double RM::yty()const{ return suf()->yty();  }
-
 
   Vec RM::simulate_fake_x()const{
     uint p = nvars_possible();
@@ -481,13 +565,11 @@ namespace BOOM{
     return new RegressionData(y,X);
   }
 
-
   //======================================================================
 
   Ptr<GlmCoefs> RM::coef(){return ParamPolicy::prm1();}
   const Ptr<GlmCoefs> RM::coef()const{return ParamPolicy::prm1();}
   void RM::set_sigsq(double s2){ Sigsq_prm()->set(s2);}
-
 
   Ptr<UnivParams> RM::Sigsq_prm(){return ParamPolicy::prm2();}
   const Ptr<UnivParams> RM::Sigsq_prm()const {return ParamPolicy::prm2();}
@@ -496,7 +578,7 @@ namespace BOOM{
   double RM::sigma()const{return sqrt(sigsq());}
 
   void RM::make_X_y(Mat &X, Vec &Y)const{
-    uint p = beta().size();
+    uint p = xdim();
     uint n = dat().size();
     X = Mat(n,p);
     Y = Vec(n);
@@ -509,24 +591,6 @@ namespace BOOM{
     }
   }
 
-//   RegSuf * RM::create_suf()const{
-//     if(strat==QR){
-//       std::pair<Mat,Vec> xy(make_X_y());
-//       return new QrRegSuf(xy.first,xy.second);
-//     }
-//     else if(strat==normal_equations){
-//       uint p = beta().size();
-//       return new NeRegSuf(p);
-//     }
-//     else return 0;
-//   }
-
-//   RegSuf * RM::create_suf(const Mat &X, const Vec &y)const{
-//     if(strat==QR) return new QrRegSuf(X,y);
-//     else if(strat==normal_equations) return new NeRegSuf(X,y);
-//     else return 0;
-//   }
-
   void RM::mle(){
     set_beta(suf()->beta_hat());
     set_sigsq(suf()->SSE()/suf()->n());
@@ -535,15 +599,20 @@ namespace BOOM{
   double RM::pdf(dPtr dp, bool logscale)const{
     Ptr<RegressionData> rd = DAT(dp);
     const Vec &x = rd->x();
-    return dnorm(rd->y(), predict(x), sigma(), logscale);  }
+    return dnorm(rd->y(), predict(x), sigma(), logscale);
+  }
 
+  double RM::pdf(const Data *dp, bool logscale)const{
+    const RegressionData *rd =  dynamic_cast<const RegressionData *>(dp);
+    return dnorm(rd->y(), predict(rd->x()), sigma(), logscale);
+  }
 
   double RM::Loglike(Vec &g, Mat &h, uint nd)const{
     const double log2pi = 1.83787706640935;
-
     const Vec b = this->beta();
     const double sigsq = this->sigsq();
     double n = suf()->n();
+    if(b.size()==0) return empty_loglike(g, h, nd);
 
     double SSE = yty() - 2*b.dot(xty()) + xtx().Mdist(b);
     double ans =  -.5*(n * log2pi  + n *log(sigsq)+ SSE/sigsq);
@@ -560,10 +629,26 @@ namespace BOOM{
     return ans;
   }
 
+  // Log likelihood when beta is empty, so that xbeta = 0.  In this
+  // case the only parameter is sigma^2
+  double RM::empty_loglike(Vec &g, Mat &h, uint nd)const{
+    double v = sigsq();
+    double n = suf()->n();
+    double ss = suf()->yty();
+    const double log2pi = 1.83787706640935;
+    double ans = -.5*n*(log2pi + log(v)) - .5*ss/v;
+    if(nd > 0){
+      double v2 = v*v;
+      g[0] = -.5*n/v + .5*ss/v2;
+      if(nd > 1){
+        h(0,0) = .5*n/v2 - ss/(v2*v);
+      }
+    }
+    return ans;
+  }
 
   void RM::set_conjugate_prior(Ptr<MvnGivenXandSigma> b, Ptr<GammaModel> siginv){
-    Ptr<RegressionModel> m(this);
-    NEW(RegressionConjSampler, pri)(m, b,siginv);
+    NEW(RegressionConjSampler, pri)(this, b,siginv);
     this->set_conjugate_prior(pri);
   }
 
@@ -586,9 +671,6 @@ namespace BOOM{
 
      b = xtx-1xty = (rt qt q r)^{-1} rt qt y
      = r^[-1] qt y
- 	
   */
-
-  //======================================================================
 
 } // ends namespace BOOM

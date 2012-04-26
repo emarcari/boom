@@ -31,7 +31,7 @@ namespace BOOM{
       : public PosteriorSampler
   {
    public:
-    CumulativeLogitSampler(Ptr<CumulativeLogitModel> m,
+    CumulativeLogitSampler(CumulativeLogitModel *m,
                             Ptr<MvnBase> beta_prior);
     void impute_latent_data();
     void draw_beta();
@@ -39,7 +39,7 @@ namespace BOOM{
     virtual void draw();
     virtual double logpri()const;
    private:
-    Ptr<CumulativeLogitModel> m_;
+    CumulativeLogitModel *m_;
     Ptr<MvnBase> beta_prior_;
     WeightedRegSuf suf_;
     Spd ivar_;

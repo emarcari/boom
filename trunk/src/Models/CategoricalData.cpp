@@ -42,10 +42,12 @@ namespace BOOM{
 
   typedef CatKey CK;
 
-  inline string u2str(uint u){
-    ostringstream out;
-    out << u;
-    return out.str();
+  namespace {
+    inline string u2str(uint u){
+      ostringstream out;
+      out << u;
+      return out.str();
+    }
   }
 
   CK::CatKey(){}
@@ -72,7 +74,7 @@ namespace BOOM{
     observers.insert(dat);
     dat->labs_ = this;
     if(dat->value() >= labs_.size()){
-      throw std::runtime_error("illegal value passed to CatKey::Register");
+      throw_exception<std::runtime_error>("illegal value passed to CatKey::Register");
     }
   }
 
@@ -87,7 +89,7 @@ namespace BOOM{
 	add_label(lab);
 	dat->val_ = findstr(lab, found);
       }
-      else throw std::runtime_error("illegal label passed to CatKey::Register");
+      else throw_exception<std::runtime_error>("illegal label passed to CatKey::Register");
     }
   }
 
@@ -112,7 +114,7 @@ namespace BOOM{
     if(!found){
       ostringstream out;
       out << "label " << lab << " not found in CatKey::findstr";
-      throw std::runtime_error(out.str());
+      throw_exception<std::runtime_error>(out.str());
     }
     return ans;
   }
@@ -188,7 +190,7 @@ namespace BOOM{
 	      << endl
 	      << "Could not find level: " << labs_[i]
 	      << " in replacement labels." << endl;
-	  throw std::runtime_error(err.str());
+	  throw_exception<std::runtime_error>(err.str());
 	}
       }
     }
@@ -201,7 +203,7 @@ namespace BOOM{
     if(it==sv.end()){
       ostringstream out;
       out << "string " << s << " not found in findstr2" << endl;
-      throw runtime_error(out.str());
+      throw_exception<runtime_error>(out.str());
     }
     return it-sv.begin();
   }
@@ -255,7 +257,7 @@ namespace BOOM{
 // 	ostringstream msg;
 // 	msg << "Lab = " << Lab
 // 	    << " argument not found in CategoricalData constructor";
-// 	throw runtime_error(msg.str());
+// 	throw_exception<runtime_error>(msg.str());
 //       }
 //     }
 //     val_ = distance(b, it);
@@ -294,7 +296,7 @@ namespace BOOM{
     if(rhs >= size()){
       ostringstream msg;
       msg << "CategoricalData::operator=... argument " << rhs << " too large ";
-      throw runtime_error(msg.str());
+      throw_exception<runtime_error>(msg.str());
     }
     val_ = rhs;
     if(sig) signal();
@@ -344,7 +346,7 @@ namespace BOOM{
 //     if(it==s.end()){
 //       ostringstream out;
 //       out << "string " << s << " not found in findstr" << endl;
-//       throw runtime_error(out.str());
+//       throw_exception<runtime_error>(out.str());
 //     }
 //     val_ = it-s.begin();
 //     *labs_ = s;
@@ -353,7 +355,7 @@ namespace BOOM{
   bool CD::comparable(const CD &rhs)const { return labs_ == rhs.labs_;}
 
   inline void incompat(){
-    throw runtime_error("comparison between incompatable categorical variables");
+    throw_exception<runtime_error>("comparison between incompatable categorical variables");
   }
   //------------------------------------------------------------
   ostream & CD::display(ostream &out)const{
@@ -555,7 +557,16 @@ namespace BOOM{
     set_order(tmp, s);
   }
 
-
+  CategoricalFreqDist::CategoricalFreqDist(
+      const std::vector<Ptr<CategoricalData> > &data){
+    const std::vector<std::string> &labels(data[0]->labels());
+    int number_of_categories = labels.size();
+    std::vector<int> counts(number_of_categories, 0);
+    for (int i = 0; i < data.size(); ++i) {
+      ++counts[data[i]->value()];
+    }
+    reset(counts, labels);
+  }
 
 
 } // namespace BOOM

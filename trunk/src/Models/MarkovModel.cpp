@@ -25,6 +25,7 @@
 #include <Models/PosteriorSamplers/MarkovConjSampler.hpp>
 #include <Models/ProductDirichletModel.hpp>
 #include <Models/DirichletModel.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
 
 #include <distributions/Markov.hpp>
 #include <stdexcept>
@@ -219,14 +220,16 @@ namespace BOOM{
     init_ += s.init_;
   }
 
+  MarkovSuf * MarkovSuf::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s); }
+
   Vec MarkovSuf::vectorize(bool)const{
     Vec ans(trans_.begin(), trans_.end());
     ans.concat(init_);
     return ans;
   }
 
-  Vec::const_iterator MarkovSuf::unvectorize(Vec::const_iterator &v,
-                                             bool){
+  Vec::const_iterator MarkovSuf::unvectorize(Vec::const_iterator &v, bool){
     uint d = trans_.nrow();
     Mat tmp(v, v+d*d, d, d);
     trans_ = tmp;
@@ -236,8 +239,7 @@ namespace BOOM{
     return v;
   }
 
-  Vec::const_iterator MarkovSuf::unvectorize(const Vec &v,
-                                             bool minimal){
+  Vec::const_iterator MarkovSuf::unvectorize(const Vec &v, bool minimal){
     Vec::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
@@ -423,7 +425,7 @@ namespace BOOM{
 
 
   inline void BadMarkovData(){
-    throw std::runtime_error("Bad data type passed to MarkovModel::pdf");
+    throw_exception<std::runtime_error>("Bad data type passed to MarkovModel::pdf");
   }
 
   double MarkovModel::pdf(Ptr<Data> dp, bool logscale) const{
@@ -436,6 +438,16 @@ namespace BOOM{
       else BadMarkovData();
     }
     return ans;
+  }
+
+  double MarkovModel::pdf(const Data * dp, bool logscale) const{
+    const MarkovData *dp1 = dynamic_cast<const MarkovData *>(dp);
+    if(dp1) return pdf(*dp1, logscale);
+
+    const MarkovDataSeries * dp2 = dynamic_cast<const MarkovDataSeries *>(dp);
+    if(dp2) return pdf(*dp2, logscale);
+    BadMarkovData();
+    return 0;
   }
 
   double MarkovModel::pdf(const MarkovData &dat,

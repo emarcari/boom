@@ -51,7 +51,7 @@ namespace BOOM{
     : public PosteriorSampler
   {
   public:
-    MvnCorrelationSampler(Ptr<MvnModel>,
+    MvnCorrelationSampler(MvnModel *,
 			  Ptr<CorrModel>,
 			  bool refresh_suf = false);
     void draw();
@@ -64,7 +64,7 @@ namespace BOOM{
     void set_r(double r);
     void check_limits(double oldr, double eps);
 
-    Ptr<MvnModel> mod_;       // supplies likelihood
+    MvnModel *mod_;       // supplies likelihood
     Ptr<CorrModel> pri_;      // prior for R
     Corr R_;                  // workspace
     Spd Sumsq_;

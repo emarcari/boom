@@ -22,7 +22,7 @@ namespace BOOM{
 
   typedef ProbitRegressionSampler PRS;
 
-  PRS::ProbitRegressionSampler(Ptr<ProbitRegressionModel> model,
+  PRS::ProbitRegressionSampler(ProbitRegressionModel *model,
                                Ptr<MvnBase> prior)
       : mod_(model),
         pri_(prior),

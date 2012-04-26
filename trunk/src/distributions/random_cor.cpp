@@ -21,9 +21,10 @@
 #include <cpputil/math_utils.hpp>
 #include <distributions.hpp>
 #include <cmath>
+#include <sstream>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
-  namespace LinAlg{
   typedef CorrelationMatrix CM;
 
     class Rdet{
@@ -38,11 +39,10 @@ namespace BOOM{
         R_(j,i) = r;
         double ans = R_.det();
         if(isnan(ans)){
-          ostringstream err;
+          std::ostringstream err;
           err << "Illegal determinant in random_cor:  R = " << endl
               << R_ << endl;
-          string msg = err.str();
-          throw std::runtime_error(msg);
+          report_error(err.str());
         }
         return ans;
       }
@@ -85,5 +85,4 @@ namespace BOOM{
       }
       return R;
     }
-  }  // namespace LinAlg
 } // namespace BOOM

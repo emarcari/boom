@@ -36,7 +36,7 @@ namespace BOOM{
     pstar = f(theta);
     if(!BOOM::finite(pstar)){
       string msg = "invalid condition used to initialize SliceSampler";
-      throw std::runtime_error(msg);
+      throw_exception<std::runtime_error>(msg);
     }
 
     plo = f(theta-lo*z);

@@ -30,7 +30,6 @@
 
 namespace BOOM{
 
-  using LinAlg::Chol;
   double dmatrix_normal_ivar(const Mat &Y,const Mat &Mu,
 			const Spd & Siginv, const Spd & Ominv,
 			bool logscale){

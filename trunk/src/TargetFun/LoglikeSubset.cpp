@@ -25,15 +25,15 @@
 
 namespace BOOM{
 
-  LoglikeSubsetTF::LoglikeSubsetTF(Ptr<LoglikeModel> m)
+  LoglikeSubsetTF::LoglikeSubsetTF(LoglikeModel *m)
     : mod(m),
       t(m->t())
   {}
-  LoglikeSubsetTF::LoglikeSubsetTF(Ptr<LoglikeModel> m, const ParamVec & v)
+  LoglikeSubsetTF::LoglikeSubsetTF(LoglikeModel *m, const ParamVec & v)
     : mod(m),
       t(v)
   {}
-  LoglikeSubsetTF::LoglikeSubsetTF(Ptr<LoglikeModel> m, Ptr<Params> T)
+  LoglikeSubsetTF::LoglikeSubsetTF(LoglikeModel *m, Ptr<Params> T)
     : mod(m),
       t(1,T){}
 
@@ -49,21 +49,21 @@ namespace BOOM{
   }
 
   //------------------------------------------------------------
-  dLoglikeSubsetTF::dLoglikeSubsetTF(Ptr<dLoglikeModel> d)
+  dLoglikeSubsetTF::dLoglikeSubsetTF(dLoglikeModel *d)
     : LoglikeSubsetTF(d),
       dmod(d)
   {
     get_pos();
   }
 
-  dLoglikeSubsetTF::dLoglikeSubsetTF(Ptr<dLoglikeModel> d, const ParamVec & T)
+  dLoglikeSubsetTF::dLoglikeSubsetTF(dLoglikeModel *d, const ParamVec & T)
     : LoglikeSubsetTF(d,T),
       dmod(d)
   {
     get_pos();
   }
 
-  dLoglikeSubsetTF::dLoglikeSubsetTF(Ptr<dLoglikeModel> d, Ptr<Params> T)
+  dLoglikeSubsetTF::dLoglikeSubsetTF(dLoglikeModel *d, Ptr<Params> T)
     : LoglikeSubsetTF(d,T),
       dmod(d)
   {
@@ -111,18 +111,18 @@ namespace BOOM{
   }
 
   //------------------------------------------------------------
-  d2LoglikeSubsetTF::d2LoglikeSubsetTF(Ptr<d2LoglikeModel> d2)
+  d2LoglikeSubsetTF::d2LoglikeSubsetTF(d2LoglikeModel *d2)
     : dLoglikeSubsetTF(d2),
       d2mod(d2)
   {}
 
-  d2LoglikeSubsetTF::d2LoglikeSubsetTF(Ptr<d2LoglikeModel> d2,
+  d2LoglikeSubsetTF::d2LoglikeSubsetTF(d2LoglikeModel *d2,
 			   Ptr<Params> T)
     : dLoglikeSubsetTF(d2,T),
       d2mod(d2)
   {}
 
-  d2LoglikeSubsetTF::d2LoglikeSubsetTF(Ptr<d2LoglikeModel> d2, const ParamVec &T)
+  d2LoglikeSubsetTF::d2LoglikeSubsetTF(d2LoglikeModel *d2, const ParamVec &T)
     : dLoglikeSubsetTF(d2,T),
       d2mod(d2)
   {}
@@ -138,8 +138,5 @@ namespace BOOM{
     h = inc.select_square(H);
     return ans;
   }
-
-
-
 
 }

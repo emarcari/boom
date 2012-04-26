@@ -51,7 +51,7 @@ namespace BOOM{
       ostringstream msg;
       msg << "item " << mod->id() << " not found  in subject "
 	  << s->id() << endl;
-      throw std::runtime_error(msg.str());
+      throw_exception<std::runtime_error>(msg.str());
     }
     //------------------------------------------------------------
     void IMP::setup_data_1(Ptr<PCR> mod, Ptr<Subject> s){
@@ -70,7 +70,7 @@ namespace BOOM{
 	if(nag){
 	  ostringstream msg;
 	  msg << "response not found in DafePcrDataImputer::get_u";
-	  throw std::runtime_error(msg.str());
+	  throw_exception<std::runtime_error>(msg.str());
 	}
 	return Vec();
       }

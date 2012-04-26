@@ -25,7 +25,7 @@ namespace BOOM{
   typedef MLAuxMixSampler AUX;
   typedef MultinomialLogitModel MLM;
 
-  AUX::MLAuxMixSampler(Ptr<MLM> Mod, Ptr<MvnBase> Pri, uint nthreads)
+  AUX::MLAuxMixSampler(MLM *Mod, Ptr<MvnBase> Pri, uint nthreads)
     : mod_(Mod),
       pri(Pri)
   {

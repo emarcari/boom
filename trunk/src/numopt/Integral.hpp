@@ -48,6 +48,7 @@ namespace BOOM{
     int error_code()const;
     string error_message()const;
 
+    std::string debug_string() const;
    private:
     Fun f_;               // integrand
     double lo_, hi_;      // limits of integration

@@ -22,7 +22,7 @@ namespace BOOM{
 
   typedef BetaBinomialSampler BBS;
 
-  BBS::BetaBinomialSampler(Ptr<BinomialModel> mod,
+  BBS::BetaBinomialSampler(BinomialModel *mod,
 			   Ptr<BetaModel> pri)
     : mod_(mod),
       pri_(pri)
@@ -33,10 +33,7 @@ namespace BOOM{
     double b = pri_->b();
     double nyes = mod_->suf()->sum();
     double n = mod_->n() * mod_->suf()->nobs();
-    double nno =n - nyes;
-//     double y1 = rgamma_mt(rng(), a+nyes, 1.0);
-//     double y2 = rgamma_mt(rng(), b+nno, 1.0);
-//     double p = y1/(y1+y2);
+    double nno = n - nyes;
     double p = rbeta_mt(rng(), a + nyes, b+nno);
     mod_->set_prob(p);
   }
@@ -44,6 +41,14 @@ namespace BOOM{
   double BBS::logpri()const{
     double p = mod_->prob();
     return pri_->logp(p);
+  }
+
+  void BBS::find_posterior_mode(){
+    double a = pri_->a();
+    double b = pri_->b();
+    double y = mod_->suf()->sum() + a;
+    double n = mod_->suf()->nobs() + a + b;
+    mod_->set_prob( (y - 1) / (n - 2) );
   }
 
 }

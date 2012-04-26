@@ -15,6 +15,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
+#ifndef BOOM_ZERO_MEAN_GAUSSIAN_CONJ_SAMPLER_HPP_
+#define BOOM_ZERO_MEAN_GAUSSIAN_CONJ_SAMPLER_HPP_
 
 #include <Models/PosteriorSamplers/GaussianVarSampler.hpp>
 
@@ -25,14 +27,15 @@ namespace BOOM{
        : public GaussianVarSampler
    {
     public:
-     ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel * mod, Ptr<GammaModelBase>);
-     ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel * mod, double df, double sigma_guess);
+     ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel * mod,
+                                 Ptr<GammaModelBase>);
+     ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel * mod,
+                                 double df, double sigma_guess);
+
      ZeroMeanGaussianConjSampler * clone()const;
-
      void find_posterior_mode();  // mode taken with respect to d sigsq, not d siginv
-
     private:
      ZeroMeanGaussianModel * mod;
    };
-
 }
+#endif // BOOM_ZERO_MEAN_GAUSSIAN_CONJ_SAMPLER_HPP_

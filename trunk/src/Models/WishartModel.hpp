@@ -26,7 +26,6 @@
 #include "Policies/PriorPolicy.hpp"
 #include "Policies/ParamPolicy_2.hpp"
 
-
 namespace BOOM{
   class WishartSuf : public SufstatDetails<SpdData> {
   public:
@@ -41,13 +40,13 @@ namespace BOOM{
     const Spd & sumW()const{return sumW_;}
     void combine(Ptr<WishartSuf>);
     void combine(const WishartSuf &);
-    WishartSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s);}
+    WishartSuf * abstract_combine(Sufstat *s);
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
+    virtual ostream &print(ostream &out)const;
   private:
     double n_;
     double sumldw_;

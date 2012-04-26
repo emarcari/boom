@@ -52,16 +52,14 @@ namespace BOOM{
     uint nobs()const;
     void combine(Ptr<GlmMvnSuf>);
     void combine(const GlmMvnSuf &);
-    GlmMvnSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s);}
-
+    GlmMvnSuf * abstract_combine(Sufstat *s);
 
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
-
+    virtual ostream &print(ostream &out)const;
   private:
     mutable Spd bbt_;    // sum of beta beta.transpose()
     mutable Spd ggt_;    // sum of gamma * gamma^T

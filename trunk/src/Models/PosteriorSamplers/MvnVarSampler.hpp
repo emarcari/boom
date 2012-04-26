@@ -26,23 +26,23 @@ namespace BOOM{
     // assumes y~N(mu, Sigma), with mu|Sigma \norm(mu0, Sigma/kappa)
     // and Sigma^-1~W(df, SS)
   public:
-    MvnConjVarSampler(Ptr<MvnModel>, double df, const Spd & SS);
-    MvnConjVarSampler(Ptr<MvnModel>);
+    MvnConjVarSampler(MvnModel *, double df, const Spd & SS);
+    MvnConjVarSampler(MvnModel *);
     double logpri()const;
     void draw();
   private:
-    Ptr<MvnModel> mvn;
+    MvnModel *mvn;
     Ptr<UnivParams> pdf;
     Ptr<SpdParams> pss;
   };
 
-  class MvnVarSampler : public PosteriorSampler{
-    // assumes y~N(mu, Sigma) with mu~N(mu0, Omega) and Sigma^-1~W(df, SS)
-  public:
-    double logpri()const;
-    void draw();
-  private:
-    Ptr<MvnModel> mvn;
-  };
+//   class MvnVarSampler : public PosteriorSampler{
+//     // assumes y~N(mu, Sigma) with mu~N(mu0, Omega) and Sigma^-1~W(df, SS)
+//   public:
+//     double logpri()const;
+//     void draw();
+//   private:
+//     MvnModel* mvn;
+//   };
 }
 #endif// BOOM_MVN_VAR_SAMPLER_HPP

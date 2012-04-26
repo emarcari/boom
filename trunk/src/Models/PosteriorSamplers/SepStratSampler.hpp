@@ -26,9 +26,9 @@ namespace BOOM{
 
   class SepStratSampler : public PosteriorSampler{
    public:
-    SepStratSampler(Ptr<MvnModel> mod,
+    SepStratSampler(MvnModel *mod,
                     const std::vector<Ptr<GammaModel> > & ivar);
-    SepStratSampler(Ptr<MvnModel> mod,
+    SepStratSampler(MvnModel *mod,
                     Ptr<CorrModel> Rprior,
                     const std::vector<Ptr<GammaModel> > & ivar);
     void draw();
@@ -68,7 +68,7 @@ namespace BOOM{
     double detR(double r);
 
     // fundamental data
-    Ptr<MvnModel> mod_;
+    MvnModel *mod_;
     Ptr<CorrModel> Rpri_;
     std::vector<Ptr<GammaModel> > sinv_pri_;
 

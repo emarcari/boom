@@ -85,7 +85,7 @@ namespace BOOM{
       ostringstream err;
       err << "IoManager cannot read from file " << endl
           << fname_ << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
 
     if(!first_time){
@@ -120,7 +120,7 @@ namespace BOOM{
     if(empty()) read();
     if(empty()){
       string msg = "could not read from file "  + fname_;
-      throw std::runtime_error(msg);
+      throw_exception<std::runtime_error>(msg);
     }
     Vec ans(buf.back());
     buf.pop_back();
@@ -175,7 +175,7 @@ namespace BOOM{
     else{
       ostringstream err;
       err << "input manager has not been set in IOM::reset_stream()";
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
   }
 

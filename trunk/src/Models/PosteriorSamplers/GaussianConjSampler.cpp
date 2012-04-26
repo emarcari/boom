@@ -15,15 +15,16 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
-#include "GaussianConjSampler.hpp"
+#include <Models/PosteriorSamplers/GaussianConjSampler.hpp>
+#include <Models/GaussianModel.hpp>
 #include <distributions.hpp>
 
 namespace BOOM{
 
   typedef GaussianConjSampler GCS;
-  GCS::GaussianConjSampler(Ptr<GaussianModel> m,
+  GCS::GaussianConjSampler(GaussianModel *m,
 				Ptr<GaussianModelGivenSigma> mu,
-				Ptr<GammaModel> sig)
+				Ptr<GammaModelBase> sig)
     : mod_(m),
       mu_(mu),
       siginv_(sig)
@@ -56,17 +57,14 @@ namespace BOOM{
 
     double mu_hat = (n* mod_->ybar() + kappa * mu0)/(n+kappa);
 
-    double ss = this->ss();
-    if(n>1) ss += (n-1) * v;
-    ss +=     n * pow(ybar-mu_hat, 2);
-    ss += kappa * pow( mu0-mu_hat, 2);
+    double ss = this->ss() + (n-1)*v;
+    ss += n * kappa * pow(ybar - mu0, 2) / (n + kappa);
 
     double sigsq = 1.0/rgamma_mt(rng(), df/2, ss/2);
     v = sigsq/(n+kappa);
-    double mu = rnorm_mt(rng(), mu_hat, v);
+    double mu = rnorm_mt(rng(), mu_hat, sqrt(v));
     mod_->set_params(mu, sigsq);
   }
-
 
   void GCS::find_posterior_mode(){
     double n = mod_->suf()->n();

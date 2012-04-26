@@ -24,6 +24,7 @@
 #include <fstream>
 #include <ios>
 #include <cpputil/file_utils.hpp> // for gll
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
   template<class T>
@@ -43,7 +44,11 @@ namespace BOOM{
       std::ifstream in(fname.c_str());
       gll(in);
       obj.read(in);
-    }else throw bad_io(io_prm);
+    }else{
+      ostringstream err;
+      err << "bad 'io' parameter: " << io_prm;
+      report_error(err.str());
+    }
   }
 
   template<class T>  // specialization for pointers
@@ -63,7 +68,11 @@ namespace BOOM{
       std::ifstream in(fname.c_str());
       gll(in);
       obj->read(in);
-    }else throw bad_io(io_prm);
+    }else{
+      ostringstream err;
+      err << "bad 'io' parameter: " << io_prm;
+      report_error(err.str());
+    }
   }
 
   template<>  // specialization for double
@@ -80,12 +89,14 @@ namespace BOOM{
       std::ifstream in(fname.c_str());
       gll(in);
       in >> obj;
-    }else throw bad_io(io_prm);
+    }else{
+      ostringstream err;
+      err << "bad 'io' parameter: " << io_prm;
+      report_error(err.str());
+    }
   }
 
-
   //-------------- specialization for one double
-
 
   template <class T>
   void io(const std::string &fname, T &obj, IO io_prm, bool ask){
@@ -100,5 +111,3 @@ namespace BOOM{
 
 }
 #endif // BOOM_IO_TEMPLATES_H
-
-

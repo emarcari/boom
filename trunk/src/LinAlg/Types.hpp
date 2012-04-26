@@ -19,42 +19,21 @@
 #define BOOM_LIN_ALG_TYPES_HPP
 
 namespace BOOM{
+  class Vector;
+  class VectorView;
+  class ConstVectorView;
+  class Matrix;
+  class SubMatrix;
+  class MatrixPartition;
+  class SpdMatrix;
+  class CorrelationMatrix;
+  class Array;
+  class QR;
+  class Chol;
 
-  namespace LinAlg{    // BOOM_USE_ATLAS is defined
-    class Vector;
-    class VectorView;
-    class ConstVectorView;
-    class Matrix;
-    class SpdMatrix;
-    class CorrelationMatrix;
-    class Array3;
-    class Array4;
-    class QR;
-    class Chol;
-  }
-  struct LinAlgTypes{
-    typedef LinAlg::Vector Vec;
-    typedef LinAlg::VectorView VectorView;
-    typedef LinAlg::ConstVectorView ConstVectorView;
-    typedef LinAlg::Matrix Mat;
-    typedef LinAlg::SpdMatrix Spd ;
-    typedef LinAlg::CorrelationMatrix Corr ;
-    typedef LinAlg::Array3 Arr3;
-    typedef LinAlg::Array4 Arr4;
-    typedef LinAlg::QR QR;
-    typedef LinAlg::Chol Chol;
-    typedef unsigned int Int;
-  };
-
-  typedef LinAlg::Vector Vec;
-  typedef LinAlg::VectorView VectorView;
-  typedef LinAlg::ConstVectorView ConstVectorView;
-  typedef LinAlg::Matrix Mat;
-  typedef LinAlg::SpdMatrix Spd;
-  typedef LinAlg::Chol Chol;
-  typedef LinAlg::CorrelationMatrix Corr;
-  typedef LinAlg::Array3 Arr3;
-  typedef LinAlg::Array4 Arr4;
-
+  typedef Vector Vec;
+  typedef Matrix Mat;
+  typedef SpdMatrix Spd;
+  typedef CorrelationMatrix Corr;
 }
 #endif // BOOM_LIN_ALG_TYPES_HPP

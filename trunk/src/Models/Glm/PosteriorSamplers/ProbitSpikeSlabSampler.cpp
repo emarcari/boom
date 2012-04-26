@@ -23,7 +23,7 @@
 
 namespace BOOM{
   typedef ProbitSpikeSlabSampler PSSS;
-  ProbitSpikeSlabSampler::ProbitSpikeSlabSampler(Ptr<ProbitRegressionModel> model,
+  ProbitSpikeSlabSampler::ProbitSpikeSlabSampler(ProbitRegressionModel *model,
                                                  Ptr<MvnBase> prior,
                                                  Ptr<VariableSelectionPrior> vspri,
                                                  bool check_init)
@@ -42,7 +42,7 @@ namespace BOOM{
 	    << m_->coef()->inc() << endl
 	    << *gamma_prior_ << endl;
 
-	throw std::runtime_error(err.str());
+	throw_exception<std::runtime_error>(err.str());
       }
     }
   }
@@ -51,10 +51,12 @@ namespace BOOM{
     const Selector & g(m_->coef()->inc());
     double ans = gamma_prior_->logp(g);
     if(!finite(ans)) return ans;
-    ans += dmvn(g.select(m_->beta()),
-                g.select(beta_prior_->mu()),
-                g.select(beta_prior_->siginv()),
-                true);
+    if(g.nvars() > 0){
+      ans += dmvn(g.select(m_->beta()),
+                  g.select(beta_prior_->mu()),
+                  g.select(beta_prior_->siginv()),
+                  true);
+    }
     return ans;
   }
 
@@ -98,7 +100,7 @@ namespace BOOM{
           << "a legal configuration." << endl
 	  << "Selector vector:  " << inc << endl
 	  << "beta: " << m_->beta() << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
 
     // do the sampling in random order

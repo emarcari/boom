@@ -36,7 +36,7 @@ namespace BOOM{
         step/=2.0;
         x = oldx - step;
         if(fabs(step) < eps){
-          throw std::runtime_error("too small a step size in scalar_newton_max");
+          throw_exception<std::runtime_error>("too small a step size in scalar_newton_max");
         }
         y = f(x,g,h);
         dy = y - oldy;

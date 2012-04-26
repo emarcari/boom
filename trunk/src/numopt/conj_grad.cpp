@@ -59,7 +59,11 @@ namespace BOOM{
     tol = intol * n * sqrt(intol);
 
     f = target(Bvec);
-    if(!finite(f)) throw bad_initial_value("Conj Grad", Bvec);
+    if(!finite(f)) {
+      ostringstream err;
+      err << "bad initial value: " << Bvec << " in conj_grad";
+      throw_exception<std::runtime_error>(err.str());
+    }
 
     Fmin = f;
     funcount = 1;
@@ -77,11 +81,13 @@ namespace BOOM{
  	if (gradcount > maxit) {
  	  fncount = funcount;
  	  grcount = gradcount;
- 	  throw std::runtime_error("max_iter_exceeded in conj_grad");
+ 	  throw_exception<std::runtime_error>("max_iter_exceeded in conj_grad");
  	}
  	dtarget(Bvec, g);
 
 	X = Bvec;
+        G1 = 0;
+        G2 = 0;
 	if(type==FletcherReeves){
 	  G1 = g.normsq();
 	  G2 = c.normsq();
@@ -92,7 +98,7 @@ namespace BOOM{
 	  G1 = g.normsq() - g.dot(c);
 	  G2 = t.dot(g) - t.dot(c);
 	}
-	else throw std::runtime_error("unkonwn_type in CG method of optim");
+	else throw_exception<std::runtime_error>("unkonwn_type in CG method of optim");
 	c=g;
 
  	if (G1 > tol) {

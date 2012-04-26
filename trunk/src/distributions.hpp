@@ -19,6 +19,7 @@
 #ifndef BOOM_DISTRIBUTIONS_HPP
 #define BOOM_DISTRIBUTIONS_HPP
 
+#include <cpputil/ThrowException.hpp>
 #include <distributions/Rmath_dist.hpp>
 #include <distributions/rng.hpp>
 #include <LinAlg/Types.hpp>
@@ -27,6 +28,9 @@
 
 namespace BOOM{
   void set_seed(unsigned int I1, unsigned int I2);
+  class VectorView;
+  class ConstVectorView;
+
 
    class TnSampler{
      // Implements adaptive rejection sampling for drawing from the
@@ -75,7 +79,9 @@ namespace BOOM{
     void add_point(double x);
     double f(double x)const;
     double df(double x)const;
-    double h(double x, uint k)const;
+
+    // hull is the envelope distribution on the log scale
+    double hull(double x, uint k)const;
     private:
     // x contains the values of the points that have been tried.
     // initialized with lo and hi
@@ -223,9 +229,13 @@ namespace BOOM{
   Vec rdirichlet(const ConstVectorView & nu);
   Vec rdirichlet_mt(RNG &rng, const ConstVectorView & nu);
 
-
   unsigned int rmulti(const Vec &);
+  unsigned int rmulti(const VectorView &);
+  unsigned int rmulti(const ConstVectorView &);
   unsigned int rmulti_mt(RNG &rng, const Vec &);
+  unsigned int rmulti_mt(RNG &rng, const VectorView &);
+  unsigned int rmulti_mt(RNG &rng, const ConstVectorView &);
+
   int rmulti(int, int);
   int rmulti_mt(RNG &, int, int);
 

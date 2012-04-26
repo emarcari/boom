@@ -96,7 +96,7 @@ void MCSS::check_dim(uint d){
     err << "Attempt to add a Markov Model of dimension " << d
         << " to a MarkovConjShrinkageSampler of dimension " << dim()
         << "." << endl;
-    throw std::runtime_error(err.str());
+    throw_exception<std::runtime_error>(err.str());
   }
   Mat Nu(d,d,1.0);
   pri_->set_Nu(Nu);

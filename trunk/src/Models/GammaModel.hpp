@@ -51,13 +51,13 @@ namespace BOOM{
 
     virtual void combine(Ptr<GammaSuf> s);
     virtual void combine(const GammaSuf & s);
-    GammaSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s);    }
+    GammaSuf * abstract_combine(Sufstat *s);
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
+    virtual ostream &print(ostream &out)const;
   private:
     double sum_, sumlog_, n_;
   };
@@ -76,8 +76,9 @@ namespace BOOM{
     virtual double alpha()const=0;
     virtual double beta()const=0;
     virtual void add_mixture_data(Ptr<Data>, double prob);
-//     double pdf(Ptr<Data> dp, bool logscale) const;
-//     double pdf(double x, bool logscale) const;
+    double pdf(Ptr<Data> dp, bool logscale) const;
+    double pdf(const Data * dp, bool logscale) const;
+
     double Logp(double x, double &g, double &h, uint nd) const ;
     double sim() const;
   };

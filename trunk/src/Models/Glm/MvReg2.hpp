@@ -76,14 +76,14 @@ namespace BOOM{
     void refresh()const;
     virtual void combine(Ptr<MvRegSuf>);
     virtual void combine(const MvRegSuf &);
-    QrMvRegSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s); }
+    QrMvRegSuf * abstract_combine(Sufstat *s);
 
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
+    virtual ostream &print(ostream &out)const;
   private:
     mutable QR qr;
     mutable Mat y_;
@@ -124,14 +124,14 @@ namespace BOOM{
     virtual double sumw()const;
     virtual void combine(Ptr<MvRegSuf>);
     virtual void combine(const MvRegSuf &);
-    NeMvRegSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s); }
+    NeMvRegSuf * abstract_combine(Sufstat *s);
 
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
+    virtual ostream &print(ostream &out)const;
   private:
     Spd yty_;
     Spd xtx_;
@@ -142,7 +142,6 @@ namespace BOOM{
 
   template <class Fwd>
   NeMvRegSuf::NeMvRegSuf(Fwd b, Fwd e)
-    : MvRegSuf(0,0)
   {
     Ptr<MvRegData> dp =*b;
     const Vec &x(dp->x());

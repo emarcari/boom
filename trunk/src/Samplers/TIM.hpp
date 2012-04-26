@@ -29,16 +29,14 @@ namespace BOOM{
   // distribution.
   class TIM : public MetropolisHastings{
   public:
-
-    TIM(boost::function<double(const Vec &,Vec &, Mat &,int)> logf,
-        int dim,
+    TIM(boost::function<double(const Vec &, Vec &, Mat &, int)> logf,
         double nu = 3);
 
     TIM(const BOOM::Target & logf,
         const BOOM::dTarget & dlogf,
         const BOOM::d2Target & d2logf,
-        int dim,
         double nu = 3);
+
     virtual Vec draw(const Vec &old);
 
     // in the typical use case the mode is located each iteration.  If
@@ -50,15 +48,17 @@ namespace BOOM{
     const Spd & ivar()const;
   private:
     void report_failure(const Vec &old);
-    Ptr<MvtIndepProposal> create_proposal(int dim, double nu = 3);
+    Ptr<MvtIndepProposal> create_proposal(int dim, double nu);
+    void check_proposal(int dim);
 
     Ptr<MvtIndepProposal> prop_;
+    double nu_;
     BOOM::Target f_;
     BOOM::dTarget df_;
     BOOM::d2Target d2f_;
     Vec cand_;
     Vec g_;
-    Spd H_;
+    Mat H_;
     bool mode_is_fixed_;
     bool mode_has_been_found_;
   };

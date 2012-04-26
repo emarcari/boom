@@ -29,7 +29,7 @@ namespace BOOM{
     virtual ~RefCounted(){}
     void up_count(){++cnt_;}
     void down_count(){--cnt_;}
-    unsigned int ref_count(){return cnt_;}
+    unsigned int ref_count()const{return cnt_;}
   };
 
 }

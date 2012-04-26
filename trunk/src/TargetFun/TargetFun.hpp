@@ -20,13 +20,14 @@
 #define TARGET_FUN_H
 
 #include <LinAlg/Types.hpp>
+#include <cpputil/ThrowException.hpp>
 #include <cpputil/RefCounted.hpp>
 #include <LinAlg/Vector.hpp>
 
 namespace BOOM{
   // function object which can be passed to optimization routines
 
-  class TargetFun : private RefCounted, public LinAlgTypes{
+  class TargetFun : private RefCounted{
   public:
 
     virtual double operator()(const Vec &x)const=0;

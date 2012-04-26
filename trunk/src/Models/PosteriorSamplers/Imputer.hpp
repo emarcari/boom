@@ -22,12 +22,11 @@
 namespace BOOM{
   class Imputer : public PosteriorSampler{
   public:
-    Imputer(Ptr<LatentVariableModel> m) : mod(m) {}
-    void draw(){mod->impute_latent_data();}
+    Imputer(LatentVariableModel *m) : mod(m) {}
+    void draw(){mod_->impute_latent_data();}
     double logpri()const{return 0;}
   private:
-    Ptr<LatentVariableModel> mod;
+    LatentVariableModel *mod_;
   };
 }
 #endif // BOOM_LATENT_DATA_IMPUTER_HPP
-

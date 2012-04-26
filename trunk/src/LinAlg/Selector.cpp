@@ -29,29 +29,32 @@
 #include <sstream>
 
 namespace BOOM{
-  typedef std::vector<bool> vb;
-  typedef std::vector<uint> vpos;
 
-  vb s2vb(const std::string &);
+  namespace{
+    typedef std::vector<bool> vb;
+    typedef std::vector<uint> vpos;
 
-  vb s2vb(const std::string & s){
-     uint n = s.size();
-     std::vector<bool> ans(n,false);
-     for(uint i=0; i<n; ++i){
-       char c = s[i];
-       if(c=='1') ans[i] = true;
-       else if(c=='0') ans[i] = false;
-       else{
- 	ostringstream err;
- 	err << "only 0's and 1's are allowed in the 'Selector' string constructor "
- 	    << endl
- 	    << "you supplied:  "  << endl
- 	    << s << endl
- 	    << "first illegal value found at position " << i << "." << endl;
- 	throw std::runtime_error(err.str());
-       }
-     }
-     return ans;
+    vb s2vb(const std::string &);
+
+    vb s2vb(const std::string & s){
+      uint n = s.size();
+      std::vector<bool> ans(n,false);
+      for(uint i=0; i<n; ++i){
+        char c = s[i];
+        if(c=='1') ans[i] = true;
+        else if(c=='0') ans[i] = false;
+        else{
+          ostringstream err;
+          err << "only 0's and 1's are allowed in the 'Selector' string constructor "
+              << endl
+              << "you supplied:  "  << endl
+              << s << endl
+              << "first illegal value found at position " << i << "." << endl;
+          throw_exception<std::runtime_error>(err.str());
+        }
+      }
+      return ans;
+    }
   }
 
   void Selector::reset_inc_indx(){
@@ -113,7 +116,7 @@ namespace BOOM{
     err << "error in function Selector::" << fun << endl
 	<< "Selector::nvars_possible()== " << nvars_possible() << endl
 	<< "you've assumed it to be " << p << endl;
-    throw std::runtime_error(err.str());
+    throw_exception<std::runtime_error>(err.str());
   }
 
   void Selector::check_size_gt(uint p, const string &fun)const{
@@ -123,7 +126,7 @@ namespace BOOM{
     err << "error in function Selector::" << fun << endl
 	<< "Selector::nvars_possible()== " << nvars_possible() << endl
 	<< "you tried to access element " << p << endl;
-    throw std::runtime_error(err.str());
+    throw_exception<std::runtime_error>(err.str());
   }
 
   Selector & Selector::add(uint p){
@@ -251,6 +254,17 @@ namespace BOOM{
     return ans;}
 
 
+  // Returns a Selector of the same size as this, which is 1 where this[i] != that[i]
+  Selector Selector::exclusive_or(const Selector &that)const{
+    uint n = nvars_possible();
+    check_size_eq(that.nvars_possible(), "intersection");
+    Selector ans(n, false);
+    for(int i = 0; i < n; ++i){
+      ans[i] = (*this)[i] != that[i];
+    }
+    return ans;
+  }
+
   Selector & Selector::cover(const Selector &rhs){
     check_size_eq(rhs.nvars_possible(), "cover");
     for(uint i=0; i<rhs.nvars(); ++i)
@@ -266,7 +280,7 @@ namespace BOOM{
       ostringstream msg;
       msg << "Selector::select... x.size() = " << nx << " nvars_possible() = "
 	  << N << endl;
-      throw std::runtime_error(msg.str());
+      throw_exception<std::runtime_error>(msg.str());
     }
     uint n = inc.nvars();
 
@@ -291,7 +305,7 @@ namespace BOOM{
       ostringstream msg;
       msg << "Selector::expand... x.size() = " << nx << " nvars() = "
 	  << n << endl;
-      throw std::runtime_error(msg.str());
+      throw_exception<std::runtime_error>(msg.str());
     }
     uint N = inc.nvars_possible();
     if(n==N) return x;
@@ -401,10 +415,6 @@ namespace BOOM{
     return v;
   }
 
-  inline int random_int(int lo, int hi){
-    return lround(floor(runif(lo, hi+.999999)));
-  }
-
   uint Selector::random_included_position()const{
     assert(inc(0)); // intercept is included
     uint n = nvars();
@@ -456,11 +466,11 @@ namespace BOOM{
     string s;
     in >> s;
     uint n = s.size();
-    vb tmp(n);
+    std::vector<bool> tmp(n);
     for(uint i=0; i<n; ++i){
       if(s[i]=='0') tmp[i]=false;
       else if(s[i]=='1') tmp[i]=true;
-      else throw std::runtime_error(s+"is an illegal input value for 'Selector'");
+      else throw_exception<std::runtime_error>(s+"is an illegal input value for 'Selector'");
     }
     Selector blah(tmp);
     inc.swap(blah);

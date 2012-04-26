@@ -18,6 +18,8 @@
 #include "MvReg2.hpp"
 #include <boost/bind.hpp>
 #include <distributions.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
+
 namespace BOOM{
 
   //======================================================================
@@ -134,6 +136,9 @@ namespace BOOM{
     return ans;
   }
 
+  NeMvRegSuf * NS::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s); }
+
   Vec::const_iterator NS::unvectorize(Vec::const_iterator &v,
                                       bool minimal){
     yty_.unvectorize(v,minimal);
@@ -152,7 +157,12 @@ namespace BOOM{
     return unvectorize(it, minimal);
   }
 
-
+  ostream & NS::print(ostream &out)const{
+    out << "yty_ = " << yty_ << endl
+        << "xty_ = " << xty_ << endl
+        << "xtx_ = " << endl << xtx_;
+    return out;
+  }
 
   //======================================================================
 
@@ -184,30 +194,40 @@ namespace BOOM{
   }
 
   void QS::combine(Ptr<MvRegSuf>){
-    throw std::runtime_error("cannot combine QrMvRegSuf");
+    throw_exception<std::runtime_error>("cannot combine QrMvRegSuf");
   }
 
   void QS::combine(const MvRegSuf &){
-    throw std::runtime_error("cannot combine QrMvRegSuf");
+    throw_exception<std::runtime_error>("cannot combine QrMvRegSuf");
   }
 
+  QrMvRegSuf * QS::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s); }
+
+
   Vec QS::vectorize(bool)const{
-    throw std::runtime_error("cannot vectorize QrMvRegSuf");
+    throw_exception<std::runtime_error>("cannot vectorize QrMvRegSuf");
     return Vec(1,0.0);
   }
 
   Vec::const_iterator QS::unvectorize(Vec::const_iterator &v,
                                       bool){
-    throw std::runtime_error("cannot unvectorize QrMvRegSuf");
+    throw_exception<std::runtime_error>("cannot unvectorize QrMvRegSuf");
     return v;
   }
 
   Vec::const_iterator QS::unvectorize(const Vec &v, bool minimal){
-    throw std::runtime_error("cannot unvectorize QrMvRegSuf");
+    throw_exception<std::runtime_error>("cannot unvectorize QrMvRegSuf");
     Vec::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
+  ostream & QS::print(ostream &out)const{
+    out << "yty_ = " << yty_ << endl
+        << "xty_ = " << xty_ << endl
+        << "xtx_ = " << endl << xtx_;
+    return out;
+  }
 
   QS * QS::clone()const{return new QS(*this);}
 

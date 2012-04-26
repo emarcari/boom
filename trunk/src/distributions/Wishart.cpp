@@ -44,11 +44,11 @@ namespace BOOM{
     Mat L = WishartTriangle(rng, d, nu);
     bool ok=true;
     Mat ss_chol = sumsq_inv.chol(ok);
-    if(!ok) throw std::runtime_error("problem in rWish");
+    if(!ok) throw_exception<std::runtime_error>("problem in rWish");
 
     Mat tmp(ss_chol * L);  // tmp is the lower cholesky triangle of siginv
     if(inv){
-      throw std::runtime_error("need to invert from choelsky factor in rwish");
+      throw_exception<std::runtime_error>("need to invert from choelsky factor in rwish");
     }
     return LLT(tmp);
   }
@@ -92,7 +92,7 @@ namespace BOOM{
   double dWish(const Spd &Siginv, const Spd &sumsq, double df,
                bool logscale, bool inv){
     if(Siginv.nrow()!=sumsq.nrow()){
-      throw std::runtime_error("Siginv and sumsq must have same dimensions in dWish");
+      throw_exception<std::runtime_error>("Siginv and sumsq must have same dimensions in dWish");
     }
 
     const double log2 = 0.693147180559945;

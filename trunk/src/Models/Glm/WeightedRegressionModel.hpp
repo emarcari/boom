@@ -71,12 +71,10 @@ namespace BOOM{
     virtual double n()const;
     virtual double sumw()const; // sum of weights
     virtual double sumlogw()const; // sum of weights
-    ostream & print(ostream &out)const;
+    virtual ostream & print(ostream &out)const;
     void combine(Ptr<WeightedRegSuf>);
     void combine(const WeightedRegSuf &);
-    WeightedRegSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s); }
-
+    WeightedRegSuf * abstract_combine(Sufstat *s);
 
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,

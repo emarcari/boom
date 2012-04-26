@@ -38,16 +38,5 @@ namespace BOOM{
   std::vector<string> read_file(const string &fname);
   std::vector<string> read_file(istream &);
 
-  //------------------------------------------------------------
-  class bad_file_name: public std::exception{
-    string fname;
-  public:
-    bad_file_name() throw(){}
-    bad_file_name(const string &name) : fname(name){}
-    ~bad_file_name() throw(){}
-    const char *what()const throw(){ return fname.c_str(); }
-  };
 }
 #endif //BOOM_CPP_FILE_UTILS_H
-
-

@@ -31,12 +31,12 @@ namespace BOOM{
   {
     typedef std::vector<Ptr<GammaModel> > Gvec;
   public:
-    GlmMvnSiginvIndSampler(Ptr<GlmMvnPrior> mod, Gvec ivar_pri);
+    GlmMvnSiginvIndSampler(GlmMvnPrior *mod, Gvec ivar_pri);
     virtual void draw();
     virtual double logpri()const;
     uint dim()const;
   private:
-    Ptr<GlmMvnPrior> mod_;
+    GlmMvnPrior *mod_;
     std::vector<Ptr<GammaModel> > ivar_pri_;
   };
 

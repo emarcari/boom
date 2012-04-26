@@ -20,11 +20,14 @@
 
 #include "ModelTypes.hpp"
 #include "Sufstat.hpp"
+#include <Models/EmMixtureComponent.hpp>
 #include <Models/Policies/ParamPolicy_1.hpp>
 #include <Models/Policies/SufstatDataPolicy.hpp>
-#include <Models/Policies/PriorPolicy.hpp>
+#include <Models/Policies/ConjugatePriorPolicy.hpp>
 
 namespace BOOM{
+
+  class BetaBinomialSampler;
 
   class BinomialSuf : public SufstatDetails<IntData>{
   public:
@@ -36,9 +39,11 @@ namespace BOOM{
     virtual void clear();
     virtual void Update(const IntData &);
     void update_raw(double y);
+    void batch_update(double n, double y);
 
-    BinomialSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this, s);}
+    void add_mixture_data(double y, double prob);
+
+    BinomialSuf * abstract_combine(Sufstat *s);
     void combine(Ptr<BinomialSuf>);
     void combine(const BinomialSuf &);
 
@@ -47,6 +52,7 @@ namespace BOOM{
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
+    virtual ostream &print(ostream &out)const;
   private:
     double sum_, nobs_;
   };
@@ -54,8 +60,9 @@ namespace BOOM{
   class BinomialModel
     : public ParamPolicy_1<UnivParams>,
       public SufstatDataPolicy<IntData,BinomialSuf>,
-      public PriorPolicy,
-      public NumOptModel
+      public ConjugatePriorPolicy<BetaBinomialSampler>,
+      public NumOptModel,
+      public EmMixtureComponent
   {
   public:
     BinomialModel(uint n=1, double p=.5);
@@ -70,12 +77,20 @@ namespace BOOM{
     void set_prob(double p);
 
     virtual double pdf(Ptr<Data> x, bool logscale)const;
+    virtual double pdf(const Data * x, bool logscale)const;
     double pdf(uint x, bool logscale)const;
 
     Ptr<UnivParams> Prob_prm();
     const Ptr<UnivParams> Prob_prm()const;
     uint sim()const;
 
+    virtual void find_posterior_mode();
+    virtual void add_mixture_data(Ptr<Data>, double prob);
+
+    // Sets the prior distribution to a Beta(a, b), and sets the prior
+    // sampler to a BetaBinomialSampler.
+    void set_conjugate_prior(double a, double b);
+    void set_conjugate_prior(Ptr<BetaBinomialSampler>);
   private:
     const uint n_;
   };

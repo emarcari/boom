@@ -41,7 +41,7 @@ struct target
 {
   const Vec & sumlog_;
   double nobs_;
-  mutable Vec & nu_;
+  Vec & nu_;
   uint which_;
   Ptr<DoubleModel> pri_;
 

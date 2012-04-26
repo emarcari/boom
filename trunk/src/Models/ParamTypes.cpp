@@ -22,7 +22,7 @@
 #include <cpputil/io.hpp>
 #include <cpputil/file_utils.hpp>
 #include "ParamTypes.hpp"
-#include <LinAlg/ConstVectorView.hpp>
+#include <LinAlg/VectorView.hpp>
 
 namespace BOOM{
 
@@ -61,7 +61,7 @@ namespace BOOM{
   void Params::check_io()const{
     if(!io_mgr){
       string msg = "io_manager not set.  Try setting fname first\n";
-      throw std::runtime_error(msg);}}
+      throw_exception<std::runtime_error>(msg);}}
 
   void Params::output(const Vec &v)const{
     check_io();
@@ -101,7 +101,11 @@ namespace BOOM{
       flush();
     }else if(io_prm==COUNT){
       return count_lines();
-    }else throw bad_io(io_prm);
+    }else {
+      ostringstream err;
+      err << "unrecognized 'io' parameter: " << io_prm;
+      throw_exception<std::runtime_error>(err.str());
+    }
 
     return 0;
   }

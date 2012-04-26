@@ -19,7 +19,6 @@
 #define BOOM_SUBMATRIX_HPP
 #include <LinAlg/Matrix.hpp>
 namespace BOOM{
-  namespace LinAlg{
 
     // maintains a rectangular view into a matrix specified by lower
     // and upper coordinates (inclusive)
@@ -28,10 +27,21 @@ namespace BOOM{
       typedef double * col_iterator;
       typedef const double * const_col_iterator;
 
+      SubMatrix(double *v = 0, int nrow = 0, int ncol = 0);
       SubMatrix(Matrix &, uint rlo, uint rhi, uint clo, uint chi);
+      SubMatrix(SubMatrix &, uint rlo, uint rhi, uint clo, uint chi);
       SubMatrix(const SubMatrix &rhs);
+      explicit SubMatrix(Matrix &); // view into the entire matrix
       SubMatrix & operator=(const Matrix &rhs);
+
+      // copy values from rhs to *this, but they stay in distinct
+      // memory.  operator= with a SubMatrix rhs should work the same
+      // as operator=(const Matrix &rhs)
       SubMatrix & operator=(const SubMatrix &rhs);
+
+      // Pointer semantics: make the memory here point to the memory
+      // there.
+      SubMatrix & reset(const SubMatrix &rhs);
 
       uint nrow()const;
       uint ncol()const;
@@ -51,15 +61,31 @@ namespace BOOM{
       VectorView row(uint j);
       ConstVectorView row(uint j)const;
 
+      VectorView diag();
+      ConstVectorView diag()const;
+      VectorView subdiag(int i);
+      ConstVectorView subdiag(int i)const;
+      VectorView superdiag(int i);
+      ConstVectorView superdiag(int i)const;
+
       SubMatrix & operator+=(const Matrix &m);
       SubMatrix & operator-=(const Matrix &m);
 
+      SubMatrix & operator*=(double x);
+      SubMatrix & operator/=(double x);
+      SubMatrix & operator+=(double x);
+      SubMatrix & operator-=(double x);
+
       double sum()const;
 
+      Matrix to_matrix()const;
+
     private:
-      std::vector<double *> cols_;
-      uint nr_, nc_;
-      uint stride;
+      double *start_;
+      uint nr_, nc_;  // number of rows and columns in the SubMatrix
+      uint stride;    // number of rows in the parent matrix
+      double *cols(int i){return start_ + stride*i;}
+      const double *cols(int i)const{return start_ + stride*i;}
     };
     //======================================================================
     class ConstSubMatrix{
@@ -75,15 +101,29 @@ namespace BOOM{
       const_col_iterator col_begin(uint j)const;
       const_col_iterator col_end(uint j)const;
 
+      // TODO(stevescott):  range checking
       ConstVectorView col(uint j)const;
       ConstVectorView row(uint j)const;
+      ConstVectorView diag()const;
+      ConstVectorView subdiag(int i)const;
+      ConstVectorView superdiag(int i)const;
 
       double sum()const;
     private:
-      std::vector<const double *> cols_;
+      const double *start_;
       uint nr_, nc_;
       uint stride;
+      const double *cols(int i)const{return start_ + stride*i;}
     };
-  }
-}
+
+bool operator==(const Matrix &lhs, const SubMatrix &rhs);
+bool operator==(const Matrix &lhs, const ConstSubMatrix &rhs);
+bool operator==(const SubMatrix &lhs, const Matrix &rhs);
+bool operator==(const SubMatrix &lhs, const SubMatrix &rhs);
+bool operator==(const SubMatrix &lhs, const ConstSubMatrix &rhs);
+bool operator==(const ConstSubMatrix &lhs, const Matrix &rhs);
+bool operator==(const ConstSubMatrix &lhs, const SubMatrix &rhs);
+bool operator==(const ConstSubMatrix &lhs, const ConstSubMatrix &rhs);
+
+}  // namespace BOOM
 #endif // BOOM_SUBMATRIX_HPP

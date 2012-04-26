@@ -29,7 +29,7 @@ namespace BOOM{
 
   typedef LogitSamplerBma LSB;
 
-  LSB::LogitSamplerBma(Ptr<LogisticRegressionModel> mod,
+  LSB::LogitSamplerBma(LogisticRegressionModel *mod,
 		       Ptr<MvnBase> pri,
 		       Ptr<VariableSelectionPrior> vs)
     : LogitSampler(mod,pri),
@@ -42,10 +42,12 @@ namespace BOOM{
   double LSB::logpri()const{
     const Selector & inc(mod_->inc());
     double ans = vs_->logp(inc);
-    Spd ivar = inc.select(pri_->siginv());
-    Vec mu = inc.select(pri_->mu());
-    Vec beta = inc.select(mod_->beta());
-    ans += dmvn(beta, mu, ivar, true);
+    if(inc.nvars() > 0){
+      Spd ivar = inc.select(pri_->siginv());
+      Vec mu = inc.select(pri_->mu());
+      Vec beta = inc.select(mod_->beta());
+      ans += dmvn(beta, mu, ivar, true);
+    }
     return ans;
   }
 
@@ -58,7 +60,7 @@ namespace BOOM{
   void LSB::limit_model_selection(uint n){ max_nflips_ = n;}
 
 
-  inline bool keep_flip(double logp_old, double logp_new){
+  static inline bool keep_flip(double logp_old, double logp_new){
     if(!finite(logp_new)) return false;
     double pflip = logit_inv(logp_new - logp_old);
     double u = runif(0,1);
@@ -80,7 +82,7 @@ namespace BOOM{
 	  << endl
 	  << "Selector vector:  " << inc << endl
 	  << "beta:            " << mod_->beta() <<endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
 
     std::vector<uint> flips = seq<uint>(0, nv-1);

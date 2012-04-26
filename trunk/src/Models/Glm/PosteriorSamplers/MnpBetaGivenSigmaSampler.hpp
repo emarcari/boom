@@ -31,17 +31,17 @@ namespace BOOM{
     // times.
 
   public:
-    MnpBetaGivenSigmaSampler(Ptr<MultinomialProbitModel> Mod,
+    MnpBetaGivenSigmaSampler(MultinomialProbitModel *Mod,
 			     Ptr<VectorParams> B,
 			     Ptr<UnivParams> K);
-    MnpBetaGivenSigmaSampler(Ptr<MultinomialProbitModel> Mod,
+    MnpBetaGivenSigmaSampler(MultinomialProbitModel *Mod,
 			     const Vec &B,
 			     double K);
     virtual void draw();
     virtual double logpri()const;
     void fix_beta0(bool=true);
   private:
-    Ptr<MultinomialProbitModel> mnp;
+    MultinomialProbitModel *mnp;
     Ptr<VectorParams> b;
     Ptr<UnivParams> kappa;
     bool b0_fixed;

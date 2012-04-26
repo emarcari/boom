@@ -24,8 +24,9 @@
 #include <LinAlg/Matrix.hpp>
 
 #include <cpputil/math_utils.hpp>
-#include <numopt.hpp>
+#include <cpputil/ThrowException.hpp>
 
+#include <numopt.hpp>
 /* Nelder-Mead */
 namespace BOOM{
 
@@ -55,7 +56,7 @@ namespace BOOM{
     int fcount=0;
     do{
       ++restarts;
-      if(restarts > maxrestart) throw too_many_restarts();
+      if(restarts > maxrestart) throw_exception<std::runtime_error>("too many restarts");
       fcount=0;
       ans = nelder_mead(Bvec, X, target, abstol, intol, alpha,
  			bet, gamm, trace, fcount, maxit);
@@ -103,10 +104,11 @@ namespace BOOM{
     f = target(Bvec);
     if (!finite(f)) {
       //error("Function cannot be evaluated at initial parameters");
-      bad_initial_value("Nelder_Mead", Bvec);
       ostringstream err;
-      err << "Function cannot be evaluated at initial parameters";
-      throw std::runtime_error(err.str());
+      err << "Error in nelder_mead:  " << endl
+          << "Function cannot be evaluated at initial parameters:" << endl
+          << Bvec;
+      throw_exception<std::runtime_error>(err.str());
     } else {
       //      if (trace) Rprintf("Function value for initial parameters = %f\n", f);
       funcount = 1;
@@ -273,7 +275,7 @@ namespace BOOM{
     //     }
     Fmin = P(n1 - 1,L - 1);
     for (i = 0; i < n; i++) X[i] = P(i,L - 1);
-    if (shrinkfail) throw std::runtime_error("Nelder-Mead shrink failure");
+    if (shrinkfail) throw_exception<std::runtime_error>("Nelder-Mead shrink failure");
     fncount = funcount;
     return Fmin;
   }

@@ -35,7 +35,7 @@ namespace BOOM{
     Ptr<DoubleModel> pri;
   };
 
-  MVTRS::MvtRegSampler(Ptr<MvtRegModel> m, const Mat &B_guess, double prior_nobs,
+  MVTRS::MvtRegSampler(MvtRegModel *m, const Mat &B_guess, double prior_nobs,
 		       double prior_df, const Spd & Sigma_guess,
 		       Ptr<DoubleModel> Nu_prior)
     : mod(m),
@@ -44,7 +44,7 @@ namespace BOOM{
       nu_prior(Nu_prior)
   {
     reg_model->set_params(mod->Beta_prm(), mod->Sigma_prm());
-    reg_sampler = new MvRegSampler(reg_model, B_guess, prior_nobs, prior_df, Sigma_guess);
+    reg_sampler = new MvRegSampler(reg_model.dumb_ptr(), B_guess, prior_nobs, prior_df, Sigma_guess);
     nu_model->set_prm(mod->Nu_prm());
     Logp_nu nu_logpost(nu_model, nu_prior);
     nu_sampler = new SliceSampler(nu_logpost, true);

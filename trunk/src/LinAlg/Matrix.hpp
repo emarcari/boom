@@ -23,7 +23,6 @@
 #include "Vector.hpp"
 
 namespace BOOM{
-  namespace LinAlg{
     using std::ostream;
     using std::istream;
 
@@ -47,7 +46,7 @@ namespace BOOM{
 
       Matrix();
       Matrix(uint nr, uint nc, double x=0.0);
-      Matrix(uint nr, uint nc, const double *m, bool ColMajor=true);
+      Matrix(uint nr, uint nc, const double *m, bool byrow=false);
       Matrix(uint nr, uint nc, const std::vector<double> &v, bool byrow=false);
       Matrix(const std::string &s, std::string row_delim = "|");
 
@@ -59,7 +58,11 @@ namespace BOOM{
       Matrix & operator=(const SubMatrix &);
       Matrix & operator=(const ConstSubMatrix &);
       Matrix & operator=(const double &);
+
       bool operator==(const Matrix &)const;
+
+      template <class FwdIt>
+      FwdIt assign(FwdIt begin, FwdIt end);
 
       void swap(Matrix &rhs); // efficient.. swaps pointers and size info
       virtual void randomize();  // fills entries with U(0,1) random variables.
@@ -83,7 +86,6 @@ namespace BOOM{
 
       double *data();   // for sending data to LAPACK, etc
       const double *data()const;
-
 
       //-------- subscripting, range checking can be turned off
       //-------- by defining the macro NDEBUG
@@ -109,6 +111,10 @@ namespace BOOM{
 
       VectorView diag();
       ConstVectorView diag()const;
+      VectorView subdiag(int i);
+      ConstVectorView subdiag(int i)const;
+      VectorView superdiag(int i);
+      ConstVectorView superdiag(int i)const;
       VectorView first_row();
       ConstVectorView first_row()const;
       VectorView last_row();
@@ -148,23 +154,41 @@ namespace BOOM{
       bool can_Tmult(const Matrix &B, const Matrix &Ans)const;
       bool can_multT(const Matrix &B, const Matrix &Ans)const;
 
-      virtual Matrix & mult(const Matrix &B, Matrix &ans, double scal=1.0)const;  // scal * this * B
-      virtual Matrix & Tmult(const Matrix &B, Matrix &ans, double scal=1.0)const; // scal *this^T * B
-      virtual Matrix & multT(const Matrix &B, Matrix &ans, double scal=1.0)const; // scal * this * B^T
+      // scal * this * B
+      virtual Matrix & mult(const Matrix &B, Matrix &ans,
+                            double scal=1.0)const;
+      // scal *this^T * B
+      virtual Matrix & Tmult(const Matrix &B, Matrix &ans,
+                             double scal=1.0)const;
+      // scal * this * B^T
+      virtual Matrix & multT(const Matrix &B, Matrix &ans,
+                             double scal=1.0)const;
 
-      virtual Matrix & mult(const SpdMatrix &S, Matrix & ans, double scal=1.0)const;
-      virtual Matrix & Tmult(const SpdMatrix &S, Matrix & ans, double scal=1.0)const;
-      virtual Matrix & multT(const SpdMatrix &S, Matrix & ans, double scal=1.0)const;
+      virtual Matrix & mult(const SpdMatrix &S, Matrix & ans,
+                            double scal=1.0)const;
+      virtual Matrix & Tmult(const SpdMatrix &S, Matrix & ans,
+                             double scal=1.0)const;
+      virtual Matrix & multT(const SpdMatrix &S, Matrix & ans,
+                             double scal=1.0)const;
       // no BLAS support for this^T * S
       // virtual Matrix & Tmult(const SpdMatrix &S, Matrix & ans)const;
 
-      virtual Matrix & mult(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const;  // this * B
-      virtual Matrix & Tmult(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const; // this^T * B
-      virtual Matrix & multT(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const; // this * B^T
+      // this * B
+      virtual Matrix & mult(const DiagonalMatrix &B, Matrix &ans,
+                            double scal=1.0)const;
+      // this^T * B
+      virtual Matrix & Tmult(const DiagonalMatrix &B, Matrix &ans,
+                             double scal=1.0)const;
+      // this * B^T
+      virtual Matrix & multT(const DiagonalMatrix &B, Matrix &ans,
+                             double scal=1.0)const;
 
-      virtual Vector & mult(const Vector &v, Vector &ans, double scal=1.0)const;   // this * v
-      virtual Vector & Tmult(const Vector &v, Vector &ans, double scal=1.0)const;  // this^T * v
-
+      // this * v
+      virtual Vector & mult(const Vector &v, Vector &ans,
+                            double scal=1.0)const;
+      // this^T * v
+      virtual Vector & Tmult(const Vector &v, Vector &ans,
+                             double scal=1.0)const;
 
       // the following functions are non-virtual, but behave virtually
       // because they call the virtual functions listed above
@@ -229,6 +253,8 @@ namespace BOOM{
       inline uint INDX(uint i, uint j)const;
       inline bool inrange(uint i, uint j)const;
     };
+
+  typedef Matrix Mat;
     //______________________________________________________________________
 
     // ---- template constructor --
@@ -239,6 +265,13 @@ namespace BOOM{
 	nc_(nc)
     {
       assert(V.size()==nr*nc);
+    }
+
+    template <class FwdIt>
+    FwdIt Matrix::assign(FwdIt b, FwdIt e){
+      assert(distance(b, e) == size());
+      V.assign(b, e);
+      return e;
     }
 
     VectorView diag(Matrix &m);
@@ -350,6 +383,7 @@ namespace BOOM{
     Matrix Usolve(const Matrix &U, const Matrix &B); // ans = U^{-1}B
     Matrix & Usolve_inplace(const Matrix &U, Matrix &B); // B = U^{-1}B
     Matrix Uinv(const Matrix &U);
-  }
+
+
 }
 #endif // BOOM_NEWLA_MATRIX_HPP

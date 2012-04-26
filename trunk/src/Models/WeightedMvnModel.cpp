@@ -22,7 +22,7 @@
 #include <LinAlg/Types.hpp>
 #include <distributions.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
-
+#include <Models/SufstatAbstractCombineImpl.hpp>
 #include <cmath>
 
 namespace BOOM{
@@ -106,6 +106,9 @@ namespace BOOM{
     sumlogw_ += s.sumlogw_;
   }
 
+  WeightedMvnSuf * WMS::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s); }
+
   Vec WMS::vectorize(bool minimal)const{
     Vec ans = sum_;
     ans.concat(sumsq_.vectorize(minimal));
@@ -131,9 +134,15 @@ namespace BOOM{
     return unvectorize(it, minimal);
   }
 
-  //======================================================================
+  ostream &WMS::print(ostream &out)const{
+    return out << "sum_ = " << sum_ << endl
+               << "n_ = " << n_ << endl
+               << "sumw_ = " << sumw_ << endl
+               << "sumlogw_ = " << sumlogw_ << endl
+               << "sumsq_ = " << endl << sumsq_;
+  }
 
-  using LinAlg::Id;
+  //======================================================================
 
   WeightedMvnModel::WeightedMvnModel(uint p, double mu, double sigma)
     : ParamPolicy(new VectorParams(Vec(p, mu)),

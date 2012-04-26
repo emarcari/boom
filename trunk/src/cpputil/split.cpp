@@ -39,20 +39,29 @@ namespace BOOM{
     typedef boost::escaped_list_separator<char> Sep;
     typedef boost::tokenizer<Sep> tokenizer;
 
-    Sep sep("", delim, quotes);
-    tokenizer tk(s, sep);
-    if(delimited){
-      vector<string> ans(tk.begin(), tk.end());
-      return ans;
-    }
+    try{
+      Sep sep("", delim, quotes);
+      tokenizer tk(s, sep);
+      if(delimited){
+        vector<string> ans(tk.begin(), tk.end());
+        return ans;
+      }
 
-    vector<string> ans;
-    for(tokenizer::iterator it = tk.begin(); it!=tk.end(); ++it){
-      string s = *it;
-      if(s.size()>0) ans.push_back(s);
+      vector<string> ans;
+      for(tokenizer::iterator it = tk.begin(); it!=tk.end(); ++it){
+        string s = *it;
+        if(s.size()>0) ans.push_back(s);
+      }
+      return ans;
+
+    }catch (std::exception &e){
+      throw_exception<std::runtime_error>(e.what());
+    }catch(...){
+      throw_exception<std::runtime_error>(
+          "caught unknown exception in StringSplitter::operator()");
     }
-    return ans;
+    vector<string> result;  // never get here
+    return result;
   }
 
 }
-

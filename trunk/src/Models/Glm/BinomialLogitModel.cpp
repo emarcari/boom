@@ -49,7 +49,6 @@ namespace BOOM{
       log_alpha_(0)
   {}
 
-
   BLM::BinomialLogitModel
   (const Mat &X, const Vec &y, const Vec &n, bool add_int)
     : ParamPolicy(new GlmCoefs(X.ncol() + add_int)),
@@ -73,18 +72,23 @@ namespace BOOM{
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
-      log_alpha_(0)
+      log_alpha_(rhs.log_alpha_)
   {}
 
   BLM* BinomialLogitModel::clone()const{
     return new BinomialLogitModel(*this);}
 
-
   double BLM::pdf(dPtr dp, bool logscale) const{
     return pdf(DAT(dp), logscale);}
 
+  double BLM::pdf(const Data * dp, bool logscale) const{
+    const BinomialRegressionData *rd = dynamic_cast<const BinomialRegressionData *>(dp);
+    return logp(rd->y(), rd->n(), rd->x(), logscale);
+  }
+
   double BLM::pdf(Ptr<BRD> dp, bool logscale) const{
-    return logp(dp->y(), dp->n(), dp->x(), logscale); }
+    return logp(dp->y(), dp->n(), dp->x(), logscale);
+  }
 
   double BLM::logp_1(bool y, const Vec &x, bool logscale)const{
     double btx = predict(x);
@@ -117,7 +121,7 @@ namespace BOOM{
       int y = data[i]->y();
       int n = data[i]->n();
       const Vec & x(data[i]->x());
-      double eta = predict(x) - log_alpha_;
+      double eta = x.dot(beta) - log_alpha_;
       double p = logit_inv(eta);
       double loglike = dbinom(y, n, p, true);
       ans += loglike;
@@ -143,19 +147,17 @@ namespace BOOM{
     return ans;
   }
 
-
   void BLM::set_nonevent_sampling_prob(double alpha){
     if(alpha <=0 || alpha > 1){
       ostringstream err;
       err << "alpha (proportion of non-events retained in the data) "
           << "must be in (0,1]" << endl
           << "you set alpha = " << alpha << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
     log_alpha_ = std::log(alpha);
   }
 
   double BLM::log_alpha()const{return log_alpha_;}
-
 
 }

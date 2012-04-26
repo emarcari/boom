@@ -92,10 +92,10 @@ pnbeta_raw(double x, double o_x, double a, double b, double ncp)
     while (errbd > errmax && j < itrmax + x0);
 
     if (errbd > errmax){
-      throw std::runtime_error("full precision was not achieved in pnbeta");
+     BOOM::throw_exception<std::runtime_error>("full precision was not achieved in pnbeta");
     }
     if (j >= itrmax + x0){
-      throw std::runtime_error("algorithm did not converge in pnbeta");
+     BOOM::throw_exception<std::runtime_error>("algorithm did not converge in pnbeta");
     }
 
     return ans;
@@ -111,7 +111,7 @@ double pnbeta2(double x, double o_x, double a, double b, double ncp,
     if(lower_tail) return log_p	? log(ans) : ans;
     else {
       if(ans > 1 - 1e-10){
-        throw std::runtime_error("full precision was not achieved in pnbeta");
+       BOOM::throw_exception<std::runtime_error>("full precision was not achieved in pnbeta");
       }
       ans = std::min<double>(ans, 1.0);  /* Precaution */
       return log_p ? log1p(-ans) : (1 - ans);

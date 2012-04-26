@@ -22,9 +22,9 @@
 
 namespace BOOM{
 
-  PoissonGammaSampler::PoissonGammaSampler(Ptr<PoissonModel> p, Ptr<GammaModel> g)
-    : gam(g),
-      pois(p)
+  PoissonGammaSampler::PoissonGammaSampler(PoissonModel *p, Ptr<GammaModel> g)
+      : pois(p),
+        gam(g)
   {}
 
   double PoissonGammaSampler::alpha()const{

@@ -22,9 +22,8 @@
 #include <Models/GammaModel.hpp>
 #include <Models/Policies/ParamPolicy_1.hpp>
 #include <Models/Policies/ConjugatePriorPolicy.hpp>
+#include <Models/PosteriorSamplers/ZeroMeanGaussianConjSampler.hpp>
 namespace BOOM{
-
-  class ZeroMeanGaussianConjSampler;
 
   class ZeroMeanGaussianModel
       : public GaussianModelBase,

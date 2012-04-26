@@ -177,7 +177,7 @@ namespace BOOM{
       }
       if (trace && (iter % nREPORT == 0))
        	cout << "iter " << setw(4) << iter << " value " << f << endl;
-      if (iter >= maxit) break;  //throw max_iter_exceeded("BFGS", maxit);
+      if (iter >= maxit) break;  //throw_exception<max_iter_exceeded>("BFGS", maxit);
       if (gradcount - ilast > 2 * n)
  	ilast = gradcount;	/* periodic restart */
     } while (count != n || ilast != gradcount);

@@ -23,8 +23,7 @@ namespace BOOM{
 
   typedef MarkovConjSampler MCS;
 
-  MCS::MarkovConjSampler(  //Ptr<MarkovModel> Mod,
-                         MarkovModel *Mod,
+  MCS::MarkovConjSampler(MarkovModel *Mod,
 			 Ptr<ProductDirichletModel> Q,
 			 Ptr<DirichletModel> pi0)
     : mod_(Mod),
@@ -34,18 +33,15 @@ namespace BOOM{
       mod_->free_pi0();
     }
 
-  MCS::MarkovConjSampler(//Ptr<MarkovModel> Mod,
-                         MarkovModel * Mod,
+  MCS::MarkovConjSampler(MarkovModel * Mod,
 			 Ptr<ProductDirichletModel> Q)
     : mod_(Mod),
-    Q_(Q)
+      Q_(Q)
     {}
 
-
-  MCS::MarkovConjSampler(//Ptr<MarkovModel> Mod,
-                          MarkovModel *Mod,
-                          const Mat & Nu,
-                          const Vec & nu)
+  MCS::MarkovConjSampler(MarkovModel *Mod,
+                         const Mat & Nu,
+                         const Vec & nu)
        : mod_(Mod),
          Q_(new ProductDirichletModel(Nu)),
          pi0_(new DirichletModel(nu))
@@ -53,10 +49,8 @@ namespace BOOM{
      mod_->free_pi0();
    }
 
-
   MCS::MarkovConjSampler(MarkovModel * Mod,
-       // Ptr<MarkovModel> Mod,
-                          const Mat & Nu)
+                         const Mat & Nu)
        : mod_(Mod),
          Q_(new ProductDirichletModel(Nu))
    {}
@@ -138,7 +132,7 @@ namespace BOOM{
 	<< endl
 	<< "Prior for transition counts was:" <<endl
 	<< Nu() << endl;
-    throw std::runtime_error(err.str());
+    throw_exception<std::runtime_error>(err.str());
   }
 
   void MCS::check_nu()const{
@@ -146,7 +140,7 @@ namespace BOOM{
     ostringstream err;
     err << "MarkovConjugateSampler::nu()" << endl
 	<< "No prior distribution was set" << endl;
-    throw std::runtime_error(err.str());
+    throw_exception<std::runtime_error>(err.str());
   }
 
 

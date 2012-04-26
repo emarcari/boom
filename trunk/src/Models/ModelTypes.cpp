@@ -140,7 +140,7 @@ namespace BOOM{
       ostringstream out;
       out << "message file not set.  Set it with the 'track_progress'"
 	  << " model member function." << endl;
-      throw std::logic_error(out.str());
+      throw_exception<std::logic_error>(out.str());
     }
     return progress_->msg();
   }
@@ -178,19 +178,17 @@ namespace BOOM{
     unvectorize_params(prms, true);
   }
 
-  boost::tuple<double,Vec,Mat>  d2LoglikeModel::mle_result(){
+  double d2LoglikeModel::mle_result(Vec &g, Mat &h){
     d2LoglikeTF loglike(this);
     Vec prms = vectorize_params(true);
-    Vec g(prms);
-    uint p = g.size();
-    Mat h(p,p);
+    uint p = prms.size();
+    g.resize(p);
+    h.resize(p, p);
     double logf = max_nd2(prms, g, h, Target(loglike),
 			  dTarget(loglike), d2Target(loglike), 1e-5);
     unvectorize_params(prms, true);
-    return boost::make_tuple(logf, prms, h);
+    return logf;
   }
-
-  //
 
   double DoubleModel::pdf(Ptr<Data> dp, bool logscale)const{
     double x = dp.dcast<DoubleData>()->value();
@@ -198,11 +196,11 @@ namespace BOOM{
     return logscale?ans : exp(ans);
   }
 
-  double DoubleModel::pdf(const DoubleData &d, bool logscale)const{
-    double ans = logp(d.value());
-    return logscale? ans : exp(ans);
+  double DoubleModel::pdf(const Data * dp, bool logscale)const{
+    double x = dynamic_cast<const DoubleData *>(dp)->value();
+    double ans = logp(x);
+    return logscale?ans : exp(ans);
   }
-
 
   //======================================================================
   double DiffDoubleModel::logp(double x)const{

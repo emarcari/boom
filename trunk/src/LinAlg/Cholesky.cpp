@@ -16,7 +16,8 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include "Cholesky.hpp"
-#include <stdexcept>
+#include <cpputil/report_error.hpp>
+#include <sstream>
 #include "Vector.hpp"
 
 extern "C"{
@@ -39,7 +40,6 @@ extern "C"{
 }
 
 namespace BOOM{
-  namespace LinAlg{
     Chol::Chol(const Matrix &m)
       : dcmp(m),
 	pos_def(true)
@@ -106,8 +106,9 @@ namespace BOOM{
       int ncol_b = B.ncol();
       int info=0;
       dpotrs_("L", &n, &ncol_b, dcmp.data(), &n, ans.data(), &n, &info);
-      if(info<0)
-	throw std::logic_error("Chol::solve problem with cholesky solver");
+      if(info<0){
+	report_error("Chol::solve problem with cholesky solver");
+      }
       return ans;
     }
 
@@ -121,8 +122,9 @@ namespace BOOM{
       int ncol_b = 1;
       int info=0;
       dpotrs_("L", &n, &ncol_b, dcmp.data(), &n, ans.data(), &n, &info);
-      if(info<0)
-	throw std::logic_error("Chol::solve problem with cholesky solver");
+      if(info<0){
+	report_error("Chol::solve problem with cholesky solver");
+      }
       return ans;
     }
 
@@ -144,8 +146,13 @@ namespace BOOM{
 
     void Chol::check()const{
       if(!pos_def){
-	std::string msg = "attempt to use an invalid cholesky decomposition";
-	throw std::logic_error(msg);
+        ostringstream err;
+        err << "attempt to use an invalid cholesky decomposition" << endl
+            << "dcmp = " << endl
+            << dcmp << endl
+            << "original matrix = " << endl
+            << original_matrix();
+        report_error(err.str());
       }
     }
 
@@ -160,5 +167,4 @@ namespace BOOM{
       ans *= a;
       return ans;
     }
-  }
 }

@@ -17,6 +17,7 @@
 */
 
 #include <distributions.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 
@@ -41,7 +42,7 @@ namespace BOOM{
 
   double Tn2Sampler::df(double x)const{ return -x; }
 
-  double Tn2Sampler::h(double z, uint k)const{
+  double Tn2Sampler::hull(double z, uint k)const{
     double xk = x[k];
     double dk = dlogf[k];
     double yk = logf[k];
@@ -65,10 +66,10 @@ namespace BOOM{
 
   void Tn2Sampler::add_point(double z){
     if(z > x.back()){
-      throw std::runtime_error("z out of bounds (too large) in Tn2Sampler::add_point");
+      report_error("z out of bounds (too large) in Tn2Sampler::add_point");
     }
     if(z < x[0]){
-      throw std::runtime_error("z out of bounds (too small) in Tn2Sampler::add_point");
+      report_error("z out of bounds (too small) in Tn2Sampler::add_point");
     }
     IT it = std::lower_bound(x.begin(), x.end(), z);
     int k = it - x.begin();
@@ -91,21 +92,19 @@ namespace BOOM{
   void Tn2Sampler::update_cdf(){
     // cdf[i] is the integral of the outer hull from knots[i] to
     // knots[i+1]
-
     uint n = x.size();
     cdf.resize(n);
     double y0 = logf[0];
-
     for(uint k=0; k<n; ++k){
       double d= dlogf[k];
-      double y= logf[k];
-      double z = x[k];
-      double tmp = exp(y - y0 -d*z )/d;
-      double hi = exp(d*knots[k+1]);
-      double lo = exp(d*knots[k]);
-      tmp *= (hi-lo);
-      double last = k==0 ? 0 : cdf[k-1];
-      cdf[k] = last + tmp;
+      double y= hull(knots[k], k);
+      double increment;
+      if( fabs(d) < .00000000001){
+        increment = exp(y - y0) * (knots[k+1] - knots[k]);
+      }else{
+        increment = (exp(y - y0)/d) * (exp(d * knots[k+1]-knots[k]) - 1);
+      }
+      cdf[k] = (k==0 ? increment : cdf[k-1] + increment);
     }
   }
 
@@ -117,10 +116,14 @@ namespace BOOM{
     double lo = knots[k];
     double hi = knots[k+1];
     double lam = -1*dlogf[k];
-    double cand = rtrun_exp_mt(rng, lam, lo, hi);
+    double cand;
+    if(lam==0){
+      cand = runif_mt(rng, lo, hi);
+    }else{
+      cand = rtrun_exp_mt(rng, lam, lo, hi);
+    }
     double target = f(cand);
-    double hull = h(cand, k);
-    double logu = hull - rexp_mt(rng, 1);
+    double logu = hull(cand, k) - rexp_mt(rng, 1);
     if(logu < target) return cand;
     add_point(cand);
     return draw(rng);

@@ -17,9 +17,12 @@
 */
 
 #include <cmath>                          // log
+#include <sstream>
 #include <distributions.hpp>              // rgamma, runif
 #include <cpputil/math_utils.hpp>         // infinity
+#include <cpputil/report_error.hpp>
 #include <distributions/trun_gamma.hpp>
+#include <distributions/BoundedAdaptiveRejectionSampler.hpp>
 
 namespace BOOM{
 
@@ -39,19 +42,59 @@ namespace BOOM{
   }
 
   //----------------------------------------------------------------------
+  class LogGammaDensity{
+   public:
+    LogGammaDensity(double a, double b, double cut)
+        : a_(a), b_(b), cut_(cut) {}
+    double operator()(double x)const{
+      return dtrun_gamma(x, a_, b_, cut_, true); }
+   private:
+    double a_, b_, cut_;
+  };
+
+  class DLogGammaDensity{
+   public:
+    DLogGammaDensity(double a, double b, double cut)
+        : a_(a), b_(b), cut_(cut) {}
+    double operator()(double x)const{ return (a_ - 1)/x - b_;}
+   private:
+    double a_, b_, cut_;
+  };
+
 
   double rtrun_gamma(double a,double b,double cut, unsigned n){
     return rtrun_gamma_mt(GlobalRng::rng, a, b, cut, n);}
 
   double rtrun_gamma_mt(RNG & rng, double a,double b,double cut, unsigned n){
     double mode = (a-1)/b;
-    double x = 0;
+    double x = cut;
     if(cut < mode){    // rejection sampling
-      while(x<cut) x = rgamma_mt(rng, a,b);
+      do {
+        x = rgamma_mt(rng, a,b);
+      } while(x<cut);
       return x;
     }
-    x = cut;
-    for(unsigned i=0; i<n; ++i) x = rtg_slice(rng, x,a,b,cut);
+    if(a > 1){
+      try{
+        BoundedAdaptiveRejectionSampler sam(
+            cut, LogGammaDensity(a, b, cut), DLogGammaDensity(a, b, cut));
+        return sam.draw(rng);
+      } catch (std::exception &e) {
+        ostringstream err;
+        err << "Caught exception with error message:  " << endl
+            << e.what() << endl
+            << "in call to rtrun_gamma_mt with " << endl
+            << "  a = " << a << endl
+            << "  b = " << b << endl
+            << "cut = " << cut << endl
+            << "  n = " << n << endl;
+        report_error(err.str());
+      } catch (...) {
+        report_error("caught unknown exception in rtrun_gamma_mt");
+      }
+    } else {
+      for(unsigned i=0; i<n; ++i) x = rtg_slice(rng, x,a,b,cut);
+    }
     return x;
   }
 
@@ -75,11 +118,11 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   double rtg_slice(RNG &rng, double x,double a,double b,double cut){
-    double logpstar = dtrun_gamma(x,a,b,cut,true) - rexp(1);
+    double logpstar = dtrun_gamma(x,a,b,cut,true) - rexp_mt(rng, 1.0);
     double lo = cut;
     double hi = rtg_init(x,a,b,cut, logpstar);
     x = runif_mt(rng, lo,hi);
-    while( dtrun_gamma(x,a,b, cut, true) < logpstar){
+    while(dtrun_gamma(x,a,b, cut, true) < logpstar){
       hi = x;
       x = runif_mt(rng, lo,hi);
     }

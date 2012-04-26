@@ -37,7 +37,7 @@
 
 namespace BOOM{
 
-  class Data : public LinAlgTypes{  // abstract base class
+  class Data{  // abstract base class
   public:
     RefCounted rc_;
     void up_count(){rc_.up_count();}
@@ -50,6 +50,7 @@ namespace BOOM{
       partly_missing};
   private:
     missing_status missing_flag;
+    mutable std::vector<boost::function<void(void)> > signals_;
   public:
     Data() : missing_flag(observed){}
     Data(const Data &rhs)
@@ -58,12 +59,14 @@ namespace BOOM{
     virtual Data * clone()const=0;
     virtual ~Data(){}
     virtual ostream & display(ostream &)const =0;
-    //    virtual istream & read(istream &)=0;
-    virtual uint size(bool minimal=true)const=0;
-    // size() is number of elements in vectorized Data
-
     missing_status missing()const;
     void set_missing_status(missing_status m);
+    void signal()const{
+      uint n = signals_.size();
+      for(uint i=0; i<n; ++i) signals_[i]();
+    }
+    void add_observer(boost::function<void(void)> f){
+      signals_.push_back(f); }
     friend void intrusive_ptr_add_ref(Data *d);
     friend void intrusive_ptr_release(Data *d);
   };
@@ -86,15 +89,6 @@ namespace BOOM{
     typedef DataTraits<DAT> Traits;
     virtual void set(const value_type &, bool)=0;
     virtual const value_type &value()const=0;
-
-    void signal()const{
-      uint n = signals_.size();
-      for(uint i=0; i<n; ++i) signals_[i]();
-    }
-    void add_observer(boost::function<void(void)> f){
-      signals_.push_back(f); }
-  private:
-    mutable std::vector<boost::function<void(void)> > signals_;
   };
   //----------------------------------------------------------------------
   template <class T>
@@ -113,7 +107,6 @@ namespace BOOM{
       if(Signal) this->signal();
     }
     ostream & display(ostream &out) const{out << value_ ; return out;}
-    //    istream & read(istream &in){ in >> value_; return in;}
     uint size(bool=true)const {return 1;}
   private:
     T value_;
@@ -127,7 +120,6 @@ namespace BOOM{
 
   class VectorData : public DataTraits<Vec>{
   public:
-
     explicit VectorData(uint n, double x=0);
     VectorData(const Vec &y);
     VectorData(const VectorData &d);
@@ -136,14 +128,12 @@ namespace BOOM{
     uint size(bool =true)const {return x.size();}
     uint dim()const {return x.size();}
     ostream & display(ostream &out) const;
-    //    istream & read(istream &in);
 
     virtual const Vec & value()const{return x;}
     virtual void set(const Vec &rhs, bool signal=true);
 
     double operator[](uint)const;
     double & operator[](uint);
-
   private:
     Vec x;
   };
@@ -160,7 +150,6 @@ namespace BOOM{
     uint ncol()const{return x.ncol();}
 
     ostream & display(ostream &out) const;
-    //    istream & read(istream &) ;
 
     virtual const Mat & value()const{return x;}
     virtual void set(const Mat &rhs, bool signal=true);
@@ -179,7 +168,6 @@ namespace BOOM{
       uint n = R.ncol();
       return n*n;}
     ostream & display(ostream &out) const;
-    //    istream & read(istream & );
 
     virtual const Corr & value()const;
     virtual void set(const Corr &rhs, bool signal=true);
@@ -208,7 +196,6 @@ namespace BOOM{
 
     uint size(bool minimal=true)const;   // length of the process
     ostream & display(ostream &out)const;
-    //    istream & read(istream &in);
 
     virtual void swap(BinomialProcessData &rhs);
     bool all()const;   // true if all 1's

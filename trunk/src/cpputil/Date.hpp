@@ -23,74 +23,56 @@
 #include <BOOM.hpp>
 
 namespace BOOM{
-  struct bad_date{};
 
-  enum month_names{unknown_month=0, Jan=1, Feb, Mar, Apr, May, Jun, Jul,
+  // Starting with Jan=1 helps keep things sane, but puts everything
+  // off by 1 from the tm_mon field in struct tm from <ctime>.
+  enum MonthNames{unknown_month=0, Jan=1, Feb, Mar, Apr, May, Jun, Jul,
  		   Aug, Sep, Oct, Nov, Dec};
-
-  enum day_names{Sat=0, Sun, Mon, Tue, Wed, Thu, Fri};
-  enum calendar_format{Full,full,Abbreviations, abbreviations,numeric};
-
-  inline unsigned short days_in_month(month_names month, bool leap_year=false){
-    static unsigned short ndays[]={0,31,28,31,30,31,30,31,31,30,31,30,31};
-    if(month==Feb) return leap_year ? 29 : 28;
-    else return ndays[month];}
-
-  inline bool is_leap_year(int yyyy){
-    //divisible by 4, not if divisible by 100, but true if divisible by 400
-    return (!(yyyy % 4))  && ((yyyy % 100) || (!(yyyy % 400)));
+  inline MonthNames next(MonthNames month){
+    return month < Dec ? MonthNames(month+1) : Jan;
   }
 
-  struct unknown_month_name{
-    string s;
-    unknown_month_name(const string &m) : s(m){}
-  };
+  // Starting with Sun=0 matches struct tm::wday in <ctime>.
+  enum DayNames{Sun=0, Mon, Tue, Wed, Thu, Fri, Sat};
+  inline DayNames next(DayNames day){
+    return day < Sat ? DayNames(day + 1) : Sun;
+  }
 
-  month_names str2month(const string &m);
+  enum calendar_format{Full,full,Abbreviations, abbreviations,numeric};
 
-  ostream & operator<<(ostream &, const day_names &);
+  MonthNames str2month(const string &m);
+
+  ostream & operator<<(ostream &, const DayNames &);
 
   class Date{
   public:
     enum print_order{mdy, dmy, ymd};
     enum date_format{slashes, dashes, script};
-  private:
-    month_names m_;
-    int d_;
-    int y_;
-    void check();
-    static Date day_zero;  // default is Jan 1 2000
-    static calendar_format month_format;
-    static calendar_format day_format;
-    static date_format df;
-    static print_order po;
-    Date & start_next_month();
-    Date & end_prev_month();
-  public:
-    Date();
-    Date(int julian_date);
-    Date(int m, int dd, int yyyy);
-    Date(month_names m, int dd, int yyyy);
-    Date(const string &mdy, char delim='/');
-    Date(const string &m, int d, int yyyy);
+
+    Date();                          // 'today'
+    Date(int days_after_jan_1_1970); // Unix time, but in days
+    Date(int m, int dd, int yyyy);   // January 3, 2007 is Date(1, 3, 2007);
+    Date(MonthNames m, int dd, int yyyy);     // Date(Jan, 3, 2007)
+    Date(const string &mdy, char delim='/');  // Date("Jan/3/2007")
+    Date(const string &m, int d, int yyyy);   // Date("January", 3, 2007);
     Date(const Date & rhs);
+    Date(const struct tm &time_info);
 
     Date & operator=(const Date &rhs);
+    Date & operator=(const struct tm &rhs);
+    Date & set(const tm &rhs);
+    Date & set(MonthNames month, int day, int four_digit_year);
+    Date & set(int days_after_jan_1_1970);
 
-    unsigned short days_left_in_month()const;//jan 31 = 0, jan1=30
-    unsigned short days_into_year()const;    // jan 1 is 1
-    unsigned short days_left_in_year()const; // dec 31 = 0; jan 1 = 364
-    bool is_leap_year()const;
-
-    Date & operator++();   // next day
-    Date operator++(int);   // next day (postfix)
-    Date & operator--();   // previous day
-    Date operator--(int); // previous day (postfix);
+    Date & operator++();       // next day
+    Date operator++(int);      // next day (postfix)
+    Date & operator--();       // previous day
+    Date operator--(int);      // previous day (postfix);
     Date & operator+=(int n);  // add n days
     Date & operator-=(int n);  // subtract n days
 
-    Date operator+(int n);
-    Date operator-(int n);
+    Date operator+(int n)const;
+    Date operator-(int n)const;
 
     bool operator==(const Date &rhs)const;  // comparison operators
     bool operator!=(const Date &rhs)const;
@@ -99,91 +81,107 @@ namespace BOOM{
     bool operator<=(const Date &rhs)const;
     bool operator>=(const Date &rhs)const;
 
-    month_names month()const;
-    unsigned short day()const;
-    day_names day_of_week()const;
+    // Accessors
+    MonthNames month()const;
+    int day()const;
     int year()const;
-    long julian()const;    // zero Date is Jan 1 2000
 
-    static void set_zero(const Date &d);
-    static void set_zero(int m, int d, int y);
+    DayNames day_of_week()const;
+    int days_until(DayNames day)const;
+    int days_after(DayNames day)const;
+    int days_left_in_month()const;//jan 31 = 0, jan1=30
+    int days_into_year()const;    // jan 1 is 1
+    int days_left_in_year()const; // dec 31 = 0; jan 1 = 364
 
-    static void solve_for_zero(int m, int d, int y, int jdate);
+    bool is_leap_year()const;
+    long days_after_jan_1_1970()const;
+    std::ostream & display(std::ostream &)const;
+    std::ostream & display_month(std::ostream &)const;
+    string str()const;
+
+    time_t to_time_t()const;
+
+    //---------------public static members below this line ------------------
+    // These could also be free functions in an appropriate namespace.
     static void set_month_format(calendar_format f);
     static void set_day_format(calendar_format f);
     static void set_print_order(print_order d);
     static void set_date_format(date_format f);
 
-    std::ostream & display(std::ostream &)const;
-    std::ostream & display_month(std::ostream &)const;
-    string str()const;
+    static bool is_leap_year(int yyyy){
+      //divisible by 4, not if divisible by 100, but true if divisible by 400
+      return (!(yyyy % 4))  && ((yyyy % 100) || (!(yyyy % 400)));
+    }
+    static int days_after_jan_1_1970(MonthNames month, int day, int year);
+    static int days_before_jan_1_1970(MonthNames month, int day, int year);
+
+    static int days_in_month(MonthNames month, bool leap_year=false){
+      if(month == Feb) return leap_year ? 29 : 28;
+      return days_in_month_[month];}
+
+    // The number of days (month,day) is into the year.  Unit based, so Jan 1 is 1.
+    static int days_into_year(MonthNames month, int day, bool leap){
+      int ans = leap ?
+          days_before_month_in_leap_year_[month] + day :
+          days_before_month_[month] + day;
+      return ans;
+    }
+
+    // The local time zone is the time zone of the computer on which
+    // the program is run.  It is used only for the default
+    // constructor.
+    static void set_local_time_zone(int);
+    static int local_time_zone();
+
+    // Returns the number of full years since Jan 1, 1970 that have
+    // been exhausted by the first argument.  The second argument
+    // returns the number of days AFTER Jan 1 of the following year.
+    static int years_after_jan_1_1970(int days_after_jan_1_1970, int *days_remaining);
+    static int years_before_jan_1_1970(int days_before_jan_1_1970, int *days_remaining);
+
+    // The number of leap years in [1970, year).
+    static int number_of_leap_years_after_1970(int year, bool include_endpoint = false);
+    // The number of leap years in (year, 1970].
+    static int number_of_leap_years_before_1970(int year, bool include_endpoint = false);
+    static void find_month_and_day(int days_into_year, bool leap, MonthNames *month, int *day);
+  private:
+    MonthNames month_;
+    int day_;
+    int year_;
+    long days_after_origin_;  // Origin is Jan 1, 1970
+
+    static calendar_format month_format;
+    static calendar_format day_format;
+    static date_format df;
+    static print_order po;
+    static const int seconds_in_a_day_;
+    static const int seconds_in_an_hour_;
+    static int local_time_zone_;  // number of hours difference from GMT;
+    static const int days_in_month_[13];
+    static const int days_before_month_[13];
+    static const int days_before_month_in_leap_year_[13];
+
+    Date & start_next_month();
+    Date & end_prev_month();
+    Date & set_before_1970(int days_before_jan_1_1970);
+
+    void check(MonthNames month, int day, int four_digit_year)const;
+    static int compute_local_time_zone();
   };
-
-  Date mdy2Date(int m, int d, int yyyy);
-  Date dmy2Date(int d, int m, int yyyy);
-  Date ymd2Date(int yyyy, int m, int d);
-
-  Date mdy2Date(const string &, char delim='/');
-  Date dmy2Date(const string &, char delim='/');
-  Date ymd2Date(const string &, char delim='/');
-
+  //======================================================================
   int operator-(const Date &d1, const Date &d2);
 
+  // To compute (e.g.) the third Monday in June, 1972:
+  // nth_day_in_month(3, Mon, Jun, 1972);
+  Date nth_weekday_in_month(int n, DayNames weekday, MonthNames month, int year);
+
+  // To compute (e.g.) the last Friday in Feb 2006:
+  // last_weekday_in_month(Fri, Feb, 2006);
+  Date last_weekday_in_month(DayNames weekday, MonthNames month, int year);
+
   std::ostream & operator<<(std::ostream &, const Date &d);
-  std::ostream & display(std::ostream &, day_names,
+  std::ostream & display(std::ostream &, DayNames,
  			 calendar_format=Abbreviations);
-
   Date guess_date_format(const string &s, char delim='/');
-  //============================================================
-  class timepoint{
-    Date dt_;  // date today
-    double t_; // fractional day \in [0,1)
-    double hms2t(const string &hms, char delim=':')const;
-    static char hms_sep_;
-    static char date_time_sep_;
-    static const double seconds_in_day;
-    static const double minutes_in_day;
-    static const double hours_in_day;
-    static const double hour_size;
-    static const double minute_size;
-    static const double second_size;
-  public:
-    timepoint();
-    timepoint(const Date &d, const string &hms, char delim=':');
-    timepoint(double  julian_time);
-    timepoint(const string &mdy, const string &hms);
-    timepoint(const timepoint & rhs);
-
-    timepoint & operator=(const timepoint & rhs);
-
-    bool operator==(const timepoint &rhs)const;
-    bool operator<(const timepoint &rhs)const;
-    bool operator!=(const timepoint &rhs)const;
-    bool operator>=(const timepoint &rhs)const;
-    bool operator<=(const timepoint &rhs)const;
-    bool operator>(const timepoint &rhs)const;
-
-    double time_left_in_day()const;
-    unsigned short hour()const;    // 0..23
-    unsigned short minute()const;  // 0..59
-    unsigned short second()const;  // 0..59
-    unsigned short hours_left_in_day()const;  // 0..23
-    unsigned short minutes_left_in_hour()const; // 0..59
-    unsigned short seconds_left_in_minute()const; // 0..59
-
-    timepoint & operator+=(double ndays);
-    timepoint & operator-=(double ndays);
-    timepoint  operator+(double ndays);
-    timepoint  operator-(double ndays);
-
-    Date date()const;
-    static void hms_sep(char c);
-    static void date_time_sep(char c);
-
-    friend ostream & operator<<(ostream &, const timepoint &tm);
-  };
-  double operator-(const timepoint &t1, const timepoint &t2);
-  ostream & operator<<(ostream &, const timepoint &tm );
 }
-
 #endif // BOOM_DATE_HPP

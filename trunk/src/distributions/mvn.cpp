@@ -35,9 +35,15 @@ namespace BOOM{
     uint n = V.nrow();
     Mat Q(n,n);
     Vec lam = eigen(V,Q);
-    for(uint i=0; i<n; ++i) lam[i]  = sqrt(lam[i]) * rnorm_mt(rng, 0,1);
+    for(uint i=0; i<n; ++i){
+      // We're guaranteed that lam[i] is real and non-negative.  We
+      // can take the absolute value of lam[i] to guard against
+      // spurious negative numbers close to zero.
+      lam[i]  = sqrt(fabs(lam[i])) * rnorm_mt(rng, 0,1);
+    }
     Vec ans(Q*lam);
-    return ans+mu;
+    ans += mu;
+    return ans;
   }
 
   Vec rmvn_L(const Vec &mu, const Mat &L){
@@ -94,7 +100,7 @@ namespace BOOM{
     return rmvn_suf_mt(GlobalRng::rng, Ivar, IvarMu);  }
 
   Vec rmvn_suf_mt(RNG & rng, const Spd & Ivar, const Vec & IvarMu){
-    LinAlg::Chol L(Ivar);
+    Chol L(Ivar);
     uint n = IvarMu.size();
     Vec z(n);
     for(uint i=0; i<n; ++i) z[i] = rnorm_mt(rng);

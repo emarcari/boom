@@ -36,7 +36,7 @@ namespace BOOM{
     // the function make_catdat_ptrs can make a ResponseVec out of a
     // vector of strings or uints
     MLogitSplit(ResponseVec responses, const Mat &Xsubject_info,
-		const Arr3 &Xchoice_info);
+		const Array &Xchoice_info);
     // dim(Xchoice_info) = [#obs, #choices, #choice x's]
 
     MLogitSplit(ResponseVec responses,    // no choice information
@@ -48,7 +48,7 @@ namespace BOOM{
     MLogitSplit * clone()const;
 
     virtual Vec eta(Ptr<ChoiceData>)const;
-    virtual Vec &fill_eta(Ptr<ChoiceData>, Vec &ans)const;
+    virtual Vec &fill_eta(const ChoiceData &, Vec &ans)const;
 
     virtual double Loglike(Vec &g, Mat &h, uint nd)const;
 
@@ -68,8 +68,8 @@ namespace BOOM{
     const Ptr<GlmCoefs> Beta_subject_prm(uint i)const;
 
     // compute beta^Tx for the choice and subject portions of X
-    double predict_choice(Ptr<ChoiceData>, uint m)const;
-    double predict_subject(Ptr<ChoiceData>, uint m)const;
+    double predict_choice(const ChoiceData &, uint m)const;
+    double predict_subject(const ChoiceData &, uint m)const;
 
   private:
     std::vector<Ptr<GlmCoefs> >beta_subject_; // no leading vector of 0's

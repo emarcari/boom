@@ -23,29 +23,41 @@ namespace BOOM{
   typedef CompositeEmMixtureComponent CME;
   typedef CompositeModel CM;
 
+  CME::CompositeEmMixtureComponent() {}
 
   CME::CompositeEmMixtureComponent(const CME &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
-      CM(rhs.m_),
-      EM(rhs)
+      CompositeModel(rhs.m_),
+      EmMixtureComponent(rhs)
   {
     uint S = rhs.m_.size();
     for(uint s=0; s<S; ++s) m_.push_back(rhs.m_[s]->clone());
     CM::set_models(m_.begin(), m_.end());
   }
 
-	
   CME * CME::clone()const{return new CME(*this);}
 
-  //  void CME::initialize_params(){ CM::initialize_params(); }
+  void CME::mle(){
+    for(int s = 0; s < m_.size(); ++s){
+      m_[s]->mle();
+    }
+  }
 
-  void CME::mle(){ for(uint s=0; s<m_.size(); ++s) m_[s]->mle();}
+  void CME::find_posterior_mode(){
+    for(uint s=0; s<m_.size(); ++s){
+      m_[s]->find_posterior_mode();
+    }
+  }
 
   void CME::add_mixture_data(Ptr<Data> dp, double prob){
     Ptr<CompositeData> d(CM::DAT(dp));
     uint S = m_.size();
     assert(d->dim() == S);
-    for(uint s=0; s<S; ++s) m_[s]->add_mixture_data(d->get(s), prob);
+    for(uint s=0; s<S; ++s) m_[s]->add_mixture_data(d->get_ptr(s), prob);
+  }
+
+  void CME::add_model(Ptr<EmMixtureComponent> new_model){
+    m_.push_back(new_model);
+    CM::add_model(new_model);
   }
 }

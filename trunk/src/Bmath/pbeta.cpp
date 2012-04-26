@@ -79,7 +79,7 @@ double pbeta(double x, double pin, double qin, int lower_tail, int log_p)
 {
   if (isnan(x) || isnan(pin) || isnan(qin)) return x + pin + qin;
 
-  if (pin <= 0 || qin <= 0) throw std::runtime_error("arguments to pbeta/qbeta must be > 0");
+  if (pin <= 0 || qin <= 0)BOOM::throw_exception<std::runtime_error>("arguments to pbeta/qbeta must be > 0");
 
   if (x <= 0)
     return R_DT_0;

@@ -24,6 +24,7 @@
 #include <distributions.hpp>  // for rgamma, lgamma, digamma, etc.
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <cmath>
+#include <Models/SufstatAbstractCombineImpl.hpp>
 
 namespace BOOM{
 
@@ -68,6 +69,9 @@ namespace BOOM{
     n_ += s.n_;
   }
 
+  DirichletSuf * DS::abstract_combine(Sufstat *s){
+      return abstract_combine_impl(this, s);}
+
   Vec DS::vectorize(bool)const{
     Vec ans = sumlog_;
     ans.push_back(n_);
@@ -89,7 +93,9 @@ namespace BOOM{
     return unvectorize(it, minimal);
   }
 
-
+  ostream & DS::print(ostream &out)const{
+    return out << n_ << " " << sumlog_;
+  }
   //======================================================================
   typedef DirichletModel DM;
   typedef VectorParams VP;
@@ -144,6 +150,10 @@ namespace BOOM{
 
   double DM::pdf(dPtr dp, bool logscale) const{
     return pdf(DAT(dp)->value(),logscale);}
+
+  double DM::pdf(const Data *dp, bool logscale) const{
+    return pdf(DAT(dp)->value(),logscale);}
+
   double DM::pdf(const Vec &pi, bool logscale) const{
     return ddirichlet(pi, nu(), logscale);}
 

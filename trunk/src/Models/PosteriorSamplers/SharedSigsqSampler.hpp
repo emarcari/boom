@@ -30,12 +30,13 @@ namespace BOOM{
     //  for sigsq), and 1/sigsq ~ pri_
 
   public:
-    SharedSigsqSampler(const std::vector<Ptr<GaussianModelBase> > &models,
-		       Ptr<UnivParams> Sigsq, Ptr<GammaModelBase> pri);
+    SharedSigsqSampler(const std::vector<GaussianModelBase*> &models,
+		       Ptr<UnivParams> Sigsq,
+                       Ptr<GammaModelBase> pri);
     void draw();
     double logpri()const;
   private:
-    std::vector<Ptr<GaussianModelBase> > models_;
+    std::vector<GaussianModelBase*> models_;
     Ptr<UnivParams> sigsq_;
     Ptr<GammaModelBase> pri_;
   };

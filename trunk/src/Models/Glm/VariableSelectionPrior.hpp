@@ -39,7 +39,6 @@ namespace BOOM{
   class GlmCoefs;
   class VariableSelectionPrior;
 
-
   class VsSuf : public SufstatDetails<GlmCoefs>
   {
   public:
@@ -53,15 +52,14 @@ namespace BOOM{
     void add_var(VarPtr v);
     void combine(Ptr<VsSuf>);
     void combine(const VsSuf &);
-    VsSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s); }
+    VsSuf * abstract_combine(Sufstat *s);
 
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
-
+    virtual ostream &print(ostream &out)const;
   private:
     std::vector<VarPtr> vars_;
   };
@@ -90,6 +88,7 @@ namespace BOOM{
     virtual void mle();
     virtual double pdf(Ptr<Data> dp, bool logscale)const;
     double logp(const Selector &inc)const;
+    void make_valid(Selector &inc)const;
     const VarPtr variable(uint i)const;
     VarPtr variable(uint i);
 

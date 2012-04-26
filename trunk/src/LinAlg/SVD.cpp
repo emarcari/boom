@@ -1,6 +1,7 @@
 #include <LinAlg/SVD.hpp>
 #include <stdexcept>
 #include <sstream>
+#include <cpputil/ThrowException.hpp>
 
 extern "C"{
  void dgesvd_(const char *,  // JOBU
@@ -20,7 +21,6 @@ extern "C"{
 }
 
 namespace BOOM{
-namespace LinAlg{
 SVD::SVD(const Matrix &m)
     : left_(m.nrow(), m.nrow()),
       right_(m.ncol(), m.ncol()),
@@ -109,10 +109,9 @@ Matrix SVD::inv()const{
     std::ostringstream err;
     err << "error in SVD::inv(), only square matrices can be inverted" << std::endl
         << "original matrix = " << std::endl << original_matrix() << std::endl;
-    throw std::runtime_error(err.str());
+    throw_exception<std::runtime_error>(err.str());
   }
   return solve(left_.Id());
 }
 
-}
 }

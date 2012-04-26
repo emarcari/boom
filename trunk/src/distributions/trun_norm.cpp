@@ -19,8 +19,10 @@
 #include <cmath>
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 
  /*======================================================================*/
  namespace BOOM{
@@ -272,9 +274,24 @@
       return mu - sigma * y;
     }
 
-    Tn2Sampler sam(lo, hi);
-    double y = sam.draw(rng);
-    return y * sigma + mu;
+    try{
+      Tn2Sampler sam(lo, hi);
+      double y = sam.draw(rng);
+      return y * sigma + mu;
+    } catch (std::exception &e) {
+      ostringstream err;
+      err << "rtrun_norm_2_mt caught an exception when called with arguments" << endl
+          << "    mu = " << mu << endl
+          << " sigma = " << sigma << endl
+          << "    lo = " << lo << endl
+          << "    hi = " << hi << endl
+          << "The error message of the captured exception is " << endl
+          << e.what() << endl;
+      report_error(err.str());
+    } catch (...) {
+      report_error("caught unknown exception in rtrun_norm_2_mt");
+    }
+    return 0;  // The only way to get here is to fail in the try/catch block
   }
 
   double rtrun_norm_2(double mu, double sigma, double lo, double hi){

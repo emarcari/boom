@@ -37,21 +37,20 @@ namespace BOOM{
   public:
     // assumes vec(B)|Sigma ~ N( b, kappa * Sigma^{-1} \otimes I_p )
 
-    MvtRegSampler(Ptr<MvtRegModel> m, const Mat &B, double kappa,
+    MvtRegSampler(MvtRegModel *m, const Mat &B, double kappa,
 		  double prior_df, const Spd & Sigma_guess,
 		  Ptr<DoubleModel> nu_prior);
 
     void draw();
     double logpri()const;
   private:
-    Ptr<MvtRegModel> mod;
+    MvtRegModel *mod;
 
     Ptr<MvReg> reg_model;  // update sufficient statistics but not data
     Ptr<MvRegSampler> reg_sampler;
 
     Ptr<ScaledChisqModel> nu_model;
     Ptr<DoubleModel> nu_prior;
-    //    Ptr<ScalarLogpostTF> nu_logpost;
     Ptr<SliceSampler> nu_sampler;
 
     Vec yhat;

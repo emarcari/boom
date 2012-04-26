@@ -31,7 +31,6 @@ namespace BOOM{
   typedef GlmModel GLM;
 
   typedef std::vector<string> StringVec;
-  typedef Ptr<StringVec, false> vnPtr;
 
   //===========================================================
 
@@ -44,7 +43,10 @@ namespace BOOM{
 
   uint GlmModel::xdim()const{ return coef()->nvars_possible();}
   void GlmModel::add(uint p){ coef()->add(p);}
+  void GlmModel::add_all(){ for(int i = 0; i < xdim(); ++i) add(i);}
   void GlmModel::drop(uint p){ coef()->drop(p);}
+  void GlmModel::drop_all(){for(int i = 0; i < xdim(); ++i) drop(i);}
+  void GlmModel::drop_all_but_intercept(){drop_all();  add(0);}
   void GlmModel::flip(uint p){coef()->flip(p);}
   const Selector & GlmModel::inc()const{return coef()->inc();}
   bool GlmModel::inc(uint p)const{return coef()->inc(p);}
@@ -53,6 +55,10 @@ namespace BOOM{
     coef()->set_vnames(vn);}
 
   double GlmModel::predict(const Vec &x)const{
+    return coef()->predict(x);}
+  double GlmModel::predict(const VectorView &x)const{
+    return coef()->predict(x);}
+  double GlmModel::predict(const ConstVectorView &x)const{
     return coef()->predict(x);}
 
   Vec GlmModel::beta()const{return coef()->beta();}

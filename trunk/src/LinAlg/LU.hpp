@@ -25,26 +25,23 @@
 #include <vector>
 
 namespace BOOM{
-  namespace LinAlg{
-    class Vector;
-    class LU{             // LU decomposition of the Matrix A
-      Matrix dcmp;
-      typedef std::vector<int> ivec;
-      ivec pivots;
-      bool sing_;
-    public:
-      LU(const Matrix &m);
-      Matrix getL()const;
-      Matrix getU()const;
-      ivec get_pivots()const;
-      double det()const;
-      Matrix solve(const Matrix &B)const;   // find X such that AX = B
-      Vector solve(const Vector &b)const;   // find x such that Ax = b
-      Matrix solveT(const Matrix &B)const;  // find X such that A^TX = B
-      Vector solveT(const Vector &b)const;  // find x such that A^Tx = b
-      bool singular()const{return sing_;}   // is the Matrix A singular?
-    };
-  }
+  class Vector;
+  class LU{             // LU decomposition of the Matrix A
+    Matrix dcmp;
+    typedef std::vector<int> ivec;
+    ivec pivots;
+    bool sing_;
+   public:
+    LU(const Matrix &m);
+    Matrix getL()const;
+    Matrix getU()const;
+    ivec get_pivots()const;
+    double det()const;
+    Matrix solve(const Matrix &B)const;   // find X such that AX = B
+    Vector solve(const Vector &b)const;   // find x such that Ax = b
+    Matrix solveT(const Matrix &B)const;  // find X such that A^TX = B
+    Vector solveT(const Vector &b)const;  // find x such that A^Tx = b
+    bool singular()const{return sing_;}   // is the Matrix A singular?
+  };
 }
 #endif // BOOM_LU_HPP
-

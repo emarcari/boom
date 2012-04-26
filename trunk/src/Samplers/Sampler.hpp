@@ -32,7 +32,7 @@ namespace BOOM{
 
     ============================================================*/
 
-  class SamplerBase : private RefCounted, public LinAlgTypes{
+  class SamplerBase : private RefCounted{
   public:
     SamplerBase();
     SamplerBase(const SamplerBase &rhs);

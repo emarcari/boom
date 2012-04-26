@@ -25,13 +25,13 @@ namespace BOOM{
   typedef MultinomialLogitModel MLM;
   typedef MlogitRwm MLR;
 
-  MLR::MlogitRwm(Ptr<MLM> mlm, Ptr<MvnBase> pri)
+  MLR::MlogitRwm(MLM *mlm, Ptr<MvnBase> pri)
     : mlm_(mlm),
       pri_(pri)
   {}
 
 
-  MLR::MlogitRwm(Ptr<MLM> mlm,
+  MLR::MlogitRwm(MLM *mlm,
 		 const Vec &mu,
 		 const Spd & Ominv)
     : mlm_(mlm),

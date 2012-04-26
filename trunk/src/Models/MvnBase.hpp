@@ -29,8 +29,11 @@ namespace BOOM{
 
    class MvnSuf: public SufstatDetails<VectorData>{
     public:
-     MvnSuf(uint p);
-     MvnSuf(double n, const Vec &sum, const Spd &sumsq);
+     // If created using the default constructor, the MvnSuf will be
+     // resized to the dimension of the first data point passed to it
+     // in update().
+     MvnSuf(uint p=0);
+     MvnSuf(double n, const Vec &ybar, const Spd &sumsq);
      MvnSuf(const MvnSuf &sf);
      MvnSuf *clone() const;
 
@@ -40,33 +43,40 @@ namespace BOOM{
      void update_raw(const Vec &x);
      void add_mixture_data(const Vec &x, double prob);
 
-     const Vec & sum()const;
-     const Spd & sumsq()const;
+     Vec sum()const;
+     Spd sumsq()const;       // Un-centered sum of squares
      double n()const;
-     Vec ybar()const;
+     const Vec & ybar()const;
      Spd sample_var()const;  // divides by n-1
      Spd var_hat()const;     // divides by n
      Spd center_sumsq(const Vec &mu)const;
-     Spd center_sumsq()const;
+     const Spd & center_sumsq()const;
 
      void combine(Ptr<MvnSuf>);
      void combine(const MvnSuf &);
-     MvnSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s); }
+     MvnSuf * abstract_combine(Sufstat *s);
 
      virtual Vec vectorize(bool minimal=true)const;
      virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
                                              bool minimal=true);
      virtual Vec::const_iterator unvectorize(const Vec &v,
                                              bool minimal=true);
+
+     virtual ostream & print(ostream &)const;
     private:
-     Vec sum_;
-     mutable Spd sumsq_;     // uncentered
+     Vec ybar_;
+     Vec wsp_;
+     mutable Spd sumsq_;     // centered at ybar
      double n_;              // sample size
      mutable bool sym_;
      void check_symmetry()const;
+
+     // resizes if empty, otherwise throws if dimension is wrong.
+     void check_dimension(const Vec &y);
    };
 
+  inline ostream & operator<<(ostream &out, const MvnSuf &s){
+    return s.print(out);}
   //------------------------------------------------------------
 
   class MvnBase
@@ -80,6 +90,7 @@ namespace BOOM{
     virtual const Spd & Sigma()const=0;
     virtual const Spd & siginv() const=0;
     virtual double ldsi()const=0;
+    virtual Vec sim()const;
   };
 
   //____________________________________________________________

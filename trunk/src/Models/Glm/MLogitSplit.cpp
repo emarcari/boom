@@ -26,13 +26,12 @@
 #include <boost/bind.hpp>
 
 #include <LinAlg/SubMatrix.hpp>
-#include <LinAlg/Array3.hpp>
+#include <LinAlg/Array.hpp>
 
 namespace BOOM{
 
   typedef MLogitSplit MLS;
   typedef MLogitBase MLB;
-  using LinAlg::SubMatrix;
   //------------------------------------------------------------
   void MLS::setup_beta_subject(){
     uint nch = Nchoices();
@@ -65,10 +64,10 @@ namespace BOOM{
   //------------------------------------------------------------
   MLS::MLogitSplit(ResponseVec responses,
 		   const Mat &Xsubject,
-		   const Arr3 &Xchoice)
+		   const Array &Xchoice)
     : MLB(responses, Xsubject, Xchoice),
       ParamPolicy(),
-      beta_choice_(new GlmCoefs(Xchoice.dim3()))
+      beta_choice_(new GlmCoefs(Xchoice.dim(2)))
   {
     setup_beta_subject();
     setup_params();
@@ -214,7 +213,7 @@ namespace BOOM{
     for(uint i=0; i<n; ++i){
       Ptr<ChoiceData> dp = d[i];
       uint y = dp->value();
-      fill_eta(dp,wsp);
+      fill_eta(*dp,wsp);
       if(downsampling) wsp += log_sampling_probs();
       double lognc = lse(wsp);
       ans += wsp[y] - lognc;
@@ -232,19 +231,19 @@ namespace BOOM{
   const Ptr<GlmCoefs> MLS::Beta_choice_prm()const{return beta_choice_;}
   const Ptr<GlmCoefs> MLS::Beta_subject_prm(uint i)const{assert(i>0); return beta_subject_[i-1];}
   //------------------------------------------------------------
-  double MLS::predict_choice(Ptr<ChoiceData> dp, uint m)const{
-    return beta_choice_->predict(dp->Xchoice(m));   }
+  double MLS::predict_choice(const ChoiceData & dp, uint m)const{
+    return beta_choice_->predict(dp.Xchoice(m));   }
   //------------------------------------------------------------
-  double MLS::predict_subject(Ptr<ChoiceData> dp, uint m)const{
+  double MLS::predict_subject(const ChoiceData & dp, uint m)const{
     if(m==0) return 0;
-    return beta_subject_[m-1]->predict(dp->Xsubject());}
+    return beta_subject_[m-1]->predict(dp.Xsubject());}
   //------------------------------------------------------------
   Vec MLS::eta(Ptr<ChoiceData> dp)const{
     Vec ans(Nchoices());
-    return fill_eta(dp, ans);
+    return fill_eta(*dp, ans);
   }
   //------------------------------------------------------------
-  Vec&  MLS::fill_eta(Ptr<ChoiceData> dp, Vec &ans)const{
+  Vec&  MLS::fill_eta(const ChoiceData & dp, Vec &ans)const{
     uint M = Nchoices();
     ans.resize(M);
     for(uint m=0; m<M; ++m)
@@ -270,7 +269,7 @@ namespace BOOM{
 	  << "dim(b) = " << b.size() << endl
 	  << "nvars  = " << beta_choice_->nvars() << endl
 	  << "nvars_possible = " << beta_choice_->nvars_possible() << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
   }
   //------------------------------------------------------------
@@ -288,7 +287,7 @@ namespace BOOM{
 	  << "nvars  = " << B->nvars() << endl
 	  << "nvars_possible = " << B->nvars_possible() << endl
 	  << "m = " << m << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
   }
   //------------------------------------------------------------

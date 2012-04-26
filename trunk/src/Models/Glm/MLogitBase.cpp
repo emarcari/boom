@@ -42,15 +42,15 @@ namespace BOOM{
   }
   //------------------------------------------------------------
   MLB::MLogitBase(ResponseVec responses, const Mat &Xsubject,
-		  const Arr3 &Xchoice)
+		  const Array &Xchoice)
     : DataPolicy(),
       PriorPolicy(),
       choice_data_wsp_(new Mat),
       nch_(responses[0]->nlevels()),
       psub_(Xsubject.ncol()),
-      pch_(Xchoice.dim3())
+      pch_(Xchoice.dim(2))
   {
-    assert(nch_==Xchoice.dim2());
+    assert(nch_==Xchoice.dim(1));
 
     uint n = responses.size();
     Ptr<CatKey> key = responses[0]->key();
@@ -58,7 +58,7 @@ namespace BOOM{
       NEW(VectorData, subject)(Xsubject.row(i));
       std::vector<Ptr<VectorData> > choice;
       for(uint j=0; j<nch_; ++j){
-	NEW(VectorData, ch)(Xchoice[i].row(j));
+	NEW(VectorData, ch)(Xchoice.vector_slice(Array::index3(i, j, -1)));
 	choice.push_back(ch);
       }
 
@@ -112,19 +112,25 @@ namespace BOOM{
   }
 
   //------------------------------------------------------------
-  double MLB::pdf(Ptr<ChoiceData> dp, bool logscale)const{
+  double MLB::logp(const ChoiceData & dp)const{
     // for right now...  assumes all choices are available to everyone
     //    uint n = dp->n_avail();
-
     wsp.resize(nch_);
     fill_eta(dp, wsp);
-    uint y = dp->value();
+    uint y = dp.value();
     double ans = wsp[y] - lse(wsp);
-    return logscale ? ans : exp(ans);
+    return ans;
   }
   //------------------------------------------------------------
   double MLB::pdf(Ptr<Data> dp, bool logscale)const{
-    return pdf(DAT(dp), logscale); }
+    double ans = logp(*DAT(dp));
+    return logscale ? ans : exp(ans);
+  }
+
+  double MLB::pdf(const Data * dp, bool logscale)const{
+    double ans = logp(*DAT(dp));
+    return logscale ? ans : exp(ans);
+  }
 
   //------------------------------------------------------------
 
@@ -146,7 +152,7 @@ namespace BOOM{
   }
 
   Vec & MLB::predict(Ptr<ChoiceData> dp, Vec &ans)const{
-    fill_eta(dp, ans);
+    fill_eta(*dp, ans);
     ans = exp(ans-lse(ans));
     return ans;
   }

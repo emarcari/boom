@@ -20,7 +20,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cpputil/seq.hpp>
-#include <stdexcept>
+#include <cpputil/ThrowException.hpp>
 #include <uint.hpp>
 #include <cstdlib>
 
@@ -80,7 +80,7 @@ namespace BOOM{
     ostringstream msg;
     msg << "Illegal characters passed to RangeParser(string) : "  << range << endl
 	<< " only positive integers, commas (,) , and dashes (-) allowed.";
-    throw runtime_error(msg.str());
+    throw_exception<runtime_error>(msg.str());
   }
 
 }

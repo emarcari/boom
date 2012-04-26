@@ -20,7 +20,6 @@
 #include "Matrix.hpp"
 #include "SpdMatrix.hpp"
 #include "VectorView.hpp"
-#include "ConstVectorView.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -40,7 +39,6 @@ extern "C"{
 using namespace std;
 
 namespace BOOM{
-  namespace LinAlg{
 
     typedef std::vector<double> dVector;
 
@@ -50,7 +48,7 @@ namespace BOOM{
 	ostringstream out;
 	out << "Vector subscript " << n << " out of bounds in Vector of size "
 	    << size << endl;
-	throw std::runtime_error(out.str());
+	throw_exception<std::runtime_error>(out.str());
       }
     }
 #else
@@ -94,6 +92,13 @@ namespace BOOM{
       }
     }
 
+    Vector::Vector(std::istream &in)
+    {
+      double x;
+      while(in && (in >> x)) {
+        push_back(x);
+      }
+    }
 
     Vector::Vector(const dVector &rhs)
       : dVector(rhs)
@@ -103,9 +108,13 @@ namespace BOOM{
       : dVector(rhs)
     {}
 
-//     Vector::Vector(const VectorView &rhs)
-//       : dVector(rhs.begin(), rhs.end())
-//     {}
+    Vector::Vector(const VectorView &rhs)
+     : dVector(rhs.begin(), rhs.end())
+    {}
+
+    Vector::Vector(const ConstVectorView &rhs)
+     : dVector(rhs.begin(), rhs.end())
+    {}
 
     Vector & Vector::operator=(const Vector &rhs){
       if(&rhs!=this) dVector::operator=(rhs);
@@ -153,16 +162,7 @@ namespace BOOM{
       if(empty()) return 0;
       return &((*this)[0]);}
 
-
     uint Vector::length()const{return size();}
-
-    //    void Vector::resize(uint n){V->resize(n);}
-//     Vector & Vector::concat(const Vector &v){
-//       iterator old_end = end();
-//       reserve(size() + v.size());
-//       dVector::insert(end(), v.begin(), v.end());
-//       return *this;
-//     }
 
     Vector & Vector::push_back(double x){
       dVector::push_back(x);
@@ -192,21 +192,21 @@ namespace BOOM{
 
 
     //-------------------- math
-    Vector & Vector::operator+=(const double & x){
+    Vector & Vector::operator+=(double x){
       double *d(data());
       uint n = size();
       for(uint i=0; i<n; ++i) d[i]+=x;
       return *this; }
 
-    Vector & Vector::operator-=(const double & x){
+    Vector & Vector::operator-=(double x){
       return *this += (-x);}
 
-    Vector & Vector::operator*=(const double & x){
+    Vector & Vector::operator*=(double x){
       const int n(size());
       cblas_dscal(n, x, data(), stride());
       return *this; }
 
-    Vector & Vector::operator/=(const double & x){
+    Vector & Vector::operator/=(double x){
       assert(x!=0.0 && "divide by zero error in Vector::operator/=");
       return operator*=(1.0/x);}
 
@@ -319,7 +319,7 @@ namespace BOOM{
     Vector & Vector::normalize_prob(){
       const int n(size());
       double s = cblas_dasum(n, data(), stride());
-      if(s==0) throw runtime_error("normalizing constant is zero in Vector::normalize_prob");
+      if(s==0) throw_exception<runtime_error>("normalizing constant is zero in Vector::normalize_prob");
       operator/=(s);
       return *this;
     }
@@ -384,7 +384,7 @@ namespace BOOM{
             << endl
             << "x = " << x << endl
             << "y = " << y << endl;
-        throw std::runtime_error(err.str());
+        throw_exception<std::runtime_error>(err.str());
       }
       return cblas_ddot(n, x.data(), x.stride(), y.data(), y.stride());
     }
@@ -409,7 +409,7 @@ namespace BOOM{
 	v1 = y.data();
 	v2 = x.data()+1;
       }else{
-	throw runtime_error("x and y do not conform in affdot");
+	throw_exception<runtime_error>("x and y do not conform in affdot");
       }
       const int i(std::min(m,n));
       return cblas_ddot(i, v1, y.stride(), v2, x.stride());
@@ -526,24 +526,54 @@ namespace BOOM{
       getline(in, line);
       return str2vec(line);}
 
-    //------- size changing operations -------
-//     Vector concat(const Vector &v1, const Vector &v2){
-//       Vector ans(v1);
-//       return ans.concat(v2); }
+    namespace {
+      template <class VEC1, class VEC2>
+      Vector concat_impl(const VEC1 &x, const VEC2 &y){
+        Vector ans(x);
+        ans.concat(y);
+        return ans;
+      }
 
-//     Vector concat(const Vector &v, double x){
-//       Vector ans(v);
-//       return ans.push_back(x);}
+      template<class VEC>
+      Vector scalar_concat_impl(double x, const VEC &v){
+        Vector ans(1, x);
+        return ans.concat(v);
+      }
+    }
 
-//     Vector concat(double x, const Vector &v){
-//       Vector ans(1, x);
-//       return ans.concat(v);}
+    Vector concat(const Vector &x, const Vector &y){
+      return concat_impl(x, y);}
+    Vector concat(const Vector &x, const VectorView &y){
+      return concat_impl(x, y);}
+    Vector concat(const Vector &x, const ConstVectorView &y){
+      return concat_impl(x, y);}
+    Vector concat(const Vector &x, double y){
+      Vector ans(x); ans.push_back(y); return ans;}
 
-//     Vector concat(const std::vector<Vector> &vv){
-//       Vector ans(vv.front());
-//       for(uint i=1; i<vv.size(); ++i) ans.concat(vv[i]);
-//       return ans;
-//     }
+    Vector concat(const VectorView &x, const Vector &y){
+      return concat_impl(x, y);}
+    Vector concat(const VectorView &x, const VectorView &y){
+      return concat_impl(x, y);}
+    Vector concat(const VectorView &x, const ConstVectorView &y){
+      return concat_impl(x, y);}
+    Vector concat(const VectorView &x, double y){
+      Vector ans(x); ans.push_back(y); return ans;}
+
+    Vector concat(const ConstVectorView &x, const Vector &y){
+      return concat_impl(x, y);}
+    Vector concat(const ConstVectorView &x, const VectorView &y){
+      return concat_impl(x, y);}
+    Vector concat(const ConstVectorView &x, const ConstVectorView &y){
+      return concat_impl(x, y);}
+    Vector concat(const ConstVectorView &x, double y){
+      Vector ans(x); ans.push_back(y); return ans;}
+
+    Vector concat(double x, const Vector &y){
+      return scalar_concat_impl(x, y);}
+    Vector concat(double x, const VectorView &y){
+      return scalar_concat_impl(x, y);}
+    Vector concat(double x, const ConstVectorView &y){
+      return scalar_concat_impl(x, y);}
 
     Vector select(const Vector &v, const std::vector<bool> & inc,
  		  uint nvars){
@@ -576,6 +606,4 @@ namespace BOOM{
       return ans.sort();
     }
 
-
-  }  // LinAlg
 } // BOOM

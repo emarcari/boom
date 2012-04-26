@@ -24,28 +24,28 @@ namespace BOOM{
 
   typedef MvnConjSampler MCS;
 
-  MCS::MvnConjSampler(Ptr<MvnModel> Mod, const Vec &mu0,
+  MCS::MvnConjSampler(MvnModel *Mod, const Vec &mu0,
 		      double kappa, const Spd & SigmaHat,
 		      double prior_df)
-    : mod(Mod),
-      mu_(new MvnGivenSigma(mu0, kappa, mod->Sigma_prm() )),
+    : mod_(Mod),
+      mu_(new MvnGivenSigma(mu0, kappa, mod_->Sigma_prm() )),
       siginv_(new WishartModel(prior_df, SigmaHat))
   {
   }
 
-  MCS::MvnConjSampler(Ptr<MvnModel> Mod,
+  MCS::MvnConjSampler(MvnModel *Mod,
 		      Ptr<MvnGivenSigma> Mu,
 		      Ptr<WishartModel> Siginv)
-    : mod(Mod),
+    : mod_(Mod),
       mu_(Mu),
       siginv_(Siginv)
   {
-    mu_->set_Sigma(mod->Sigma_prm());
+    mu_->set_Sigma(mod_->Sigma_prm());
   }
 
   double MCS::logpri()const{
-    double ans = siginv_->pdf(mod->siginv(), true);
-    ans += mu_->logp(mod->mu());
+    double ans = siginv_->pdf(mod_->siginv(), true);
+    ans += mu_->logp(mod_->mu());
     return ans;
   }
 
@@ -55,7 +55,7 @@ namespace BOOM{
   const Spd & MCS::prior_SS()const{ return siginv_->sumsq();}
 
   void MCS::set_posterior_sufficient_statistics(){
-    Ptr<MvnSuf> s = mod->suf();
+    Ptr<MvnSuf> s = mod_->suf();
     n = s->n();
     k = kappa();
     const Vec & mu0(this->mu0());
@@ -77,18 +77,18 @@ namespace BOOM{
   void MCS::draw(){
     set_posterior_sufficient_statistics();
     SS = rWish(DF, SS.inv());// check this.. inverse?
-    mod->set_siginv(SS);
-    mu_hat = rmvn_mt(rng(), mu_hat, mod->Sigma()/(n+k));
-    mod->set_mu(mu_hat);
+    mod_->set_siginv(SS);
+    mu_hat = rmvn_mt(rng(), mu_hat, mod_->Sigma()/(n+k));
+    mod_->set_mu(mu_hat);
   }
 
   void MCS::find_posterior_mode(){
     set_posterior_sufficient_statistics();
-    mod->set_mu(mu_hat);
+    mod_->set_mu(mu_hat);
     double scale_factor = (DF - SS.nrow()-1);
     if(scale_factor<0) scale_factor=0;
     SS *= scale_factor;
-    mod->set_siginv(SS);
+    mod_->set_siginv(SS);
   }
 
 

@@ -32,9 +32,7 @@ namespace BOOM{
    public:
     typedef unsigned int uint;
     typedef std::vector<bool> vb;
-    //    typedef std::vector<uint> vpos;
    private:
-    //    vb inc_;
     std::vector<uint> inc_indx; // sorted vector of included indices
     bool include_all;  //
     void reset_inc_indx();
@@ -42,8 +40,11 @@ namespace BOOM{
     void check_size_gt(uint p, const string &fun_name)const;
    public:
     Selector();
-    Selector(uint p, bool all=true);  // all true or all false
-    Selector(const std::string &zeros_and_ones);
+    explicit Selector(uint p, bool all=true);  // all true or all false
+
+    // Using this constructor, Selector s("10") would have s[0] = true
+    // and [1] = false;
+    explicit Selector(const std::string &zeros_and_ones);
     Selector(const vb &);
     Selector(const std::vector<uint> &pos, uint n);
     Selector(const Selector & );
@@ -75,8 +76,14 @@ namespace BOOM{
     bool operator==(const Selector &rhs)const;
     bool operator!=(const Selector &rhs)const;
 
+    // Returns the set union:  locations which are in either Selector.
     Selector Union(const Selector &rhs)const;
+
+    // Returns the set intersection, locations which are in both Selectors.
     Selector intersection(const Selector &rhs)const;
+
+    // Returns a Selector that is 1 in places where this disagrees with rhs.
+    Selector exclusive_or(const Selector &rhs)const;
     Selector & cover(const Selector &rhs);  // makes *this cover rhs
 
     uint indx(uint i)const;  // i=0..n-1, ans in 0..N-1

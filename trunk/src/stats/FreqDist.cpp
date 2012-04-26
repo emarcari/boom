@@ -20,35 +20,31 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 
-  inline string u2str(uint u){
-    std::ostringstream out;
-    out << u;
-    return out.str();
-  }
+  namespace {
 
-  typedef FreqDist FD;
-  FD::FreqDist(const std::vector<Ptr<CategoricalData> > &y)
-    : labs_(y[0]->labels()),
-      counts_(y[0]->nlevels())
-  {
-    for(uint i=0; i<y.size(); ++i){
-      ++counts_[y[i]->value()];
+    template <class INT> std::string u2str(INT u){
+      std::ostringstream out;
+      out << u;
+      return out.str();
     }
-  }
 
-  FD::FreqDist(const std::vector<uint> &y){
-    std::vector<uint> x(y);
-    std::sort(x.begin(), x.end());
-    uint last = x[0];
-    string lab = u2str(last);
-    uint count = 1;
-    for(uint i=1; i<x.size(); ++i){
-      if(x[i]!=last){
-	counts_.push_back(count);
-	labs_.push_back(lab);
+    template <class INT> std::vector<int>
+    count_values(const std::vector<INT> &y, std::vector<std::string> &labels) {
+      std::vector<int> x(y.begin(), y.end());
+      std::vector<int> counts;
+      labels.clear();
+      std::sort(x.begin(), x.end());
+      int last = x[0];
+      string lab = u2str(last);
+      uint count = 1;
+      for(uint i=1; i<x.size(); ++i){
+        if(x[i]!=last){
+	counts.push_back(count);
+	labels.push_back(lab);
 	count = 1;
 	last = x[i];
 	lab = u2str(last);
@@ -56,20 +52,37 @@ namespace BOOM{
 	++count;
       }
     }
-    counts_.push_back(count);
-    labs_.push_back(lab);
+    counts.push_back(count);
+    labels.push_back(lab);
+    return counts;
+    }
   }
 
+  FreqDist::FreqDist(const std::vector<uint> &y){
+    counts_ = count_values(y, labs_);
+  }
 
-  ostream & operator<<(ostream & out, const FD &d){
-    uint N = d.labs_.size();
+  FreqDist::FreqDist(const std::vector<int> &y){
+    counts_ = count_values(y, labs_);
+  }
+
+  FreqDist::FreqDist(const std::vector<long> &y){
+    counts_ = count_values(y, labs_);
+  }
+
+  FreqDist::FreqDist(const std::vector<unsigned long> &y){
+    counts_ = count_values(y, labs_);
+  }
+
+  ostream & FreqDist::print(ostream &out)const{
+    uint N = labs_.size();
     uint labfw=0;
     uint countfw=0;
     for(uint i = 0; i<N; ++i){
-      uint len = d.labs_[i].size();
+      uint len = labs_[i].size();
       if(len > labfw) labfw = len;
 
-      string s = u2str(d.counts_[i]);
+      string s = u2str(counts_[i]);
       len = s.size();
       if(len > countfw) countfw = len;
     }
@@ -77,10 +90,19 @@ namespace BOOM{
     countfw +=2;
 
     for(uint i=0; i<N; ++i){
-      out << std::setw(labfw) << d.labs_[i]
-	  << std::setw(countfw) << d.counts_[i]
+      out << std::setw(labfw) << labs_[i]
+	  << std::setw(countfw) << counts_[i]
 	  << endl;
     }
     return out;
+  }
+
+  void FreqDist::reset(const std::vector<int> &counts,
+                 const std::vector<std::string> &labels){
+    if(counts.size() != labels.size()){
+      report_error("counts and labels must be the same size in FreqDist::reset");
+    }
+    counts_ = counts;
+    labs_ = labels;
   }
 }

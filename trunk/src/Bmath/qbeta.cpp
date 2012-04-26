@@ -45,7 +45,7 @@
  *	have been incorporated in this version.
  */
 
-#include <stdexcept>
+#include <cpputil/ThrowException.hpp>
 #include "nmath.hpp"
 #include "dpq.hpp"
 namespace Rmath{
@@ -82,7 +82,7 @@ double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
     }
 
     if(p < 0. || q < 0.){
-      throw std::runtime_error("shape parameters for qbeta must be > 0.");
+      BOOM::throw_exception<std::runtime_error>("shape parameters for qbeta must be > 0.");
     }
 
     R_Q_P01_boundaries(alpha, 0, 1);
@@ -160,7 +160,7 @@ double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
     for (i_pb=0; i_pb < 1000; i_pb++) {
 	y = pbeta_raw(xinbta, pp, qq, /*lower_tail = */ true, false);
 	if(!finite(y)){
-          throw std::runtime_error("algorithm blew up ni qbeta");
+          BOOM::throw_exception<std::runtime_error>("algorithm blew up ni qbeta");
         }
 
 	y = (y - a) *
@@ -186,7 +186,7 @@ double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
 	yprev = y;
     }
     /*-- NOT converged: Iteration count --*/
-    throw std::runtime_error("algorithm did not converge in qbeta");
+    BOOM::throw_exception<std::runtime_error>("algorithm did not converge in qbeta");
 
 L_converged:
     return swap_tail ? 1 - xinbta : xinbta;

@@ -117,7 +117,7 @@ double rgamma_mt(BOOM::RNG & rng, double a, double scale)
         std::ostringstream err;
         err << "illegal parameter values passed to rgamma:  a = " << a
             << " scale = " << scale << std::endl;
-        throw std::runtime_error(err.str());
+        BOOM::throw_exception<std::runtime_error>(err.str());
       }
 
 	e = 1.0 + exp_m1 * a;

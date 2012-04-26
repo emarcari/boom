@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2007 Steven L. Scott
+  Copyright (C) 2007-2010 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -18,22 +18,21 @@
 
 #include <Models/MvnBase.hpp>
 #include <distributions.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
 
 namespace BOOM{
 
   typedef MvnBase MB;
 
-  using LinAlg::Id;
-
   MvnSuf::MvnSuf(uint p)
-    : sum_(p, 0.0),
+    : ybar_(p, 0.0),
       sumsq_(p, 0.0),
       n_(0.0),
       sym_(false)
   {}
 
-  MvnSuf::MvnSuf(double n, const Vec &sum, const Spd & sumsq)
-      : sum_(sum),
+  MvnSuf::MvnSuf(double n, const Vec &ybar, const Spd & sumsq)
+      : ybar_(ybar),
         sumsq_(sumsq),
         n_(n),
         sym_(false)
@@ -42,7 +41,7 @@ namespace BOOM{
   MvnSuf::MvnSuf(const MvnSuf &rhs)
     : Sufstat(rhs),
       SufstatDetails<VectorData>(rhs),
-      sum_(rhs.sum_),
+      ybar_(rhs.ybar_),
       sumsq_(rhs.sumsq_),
       n_(rhs.n_),
       sym_(rhs.sym_)
@@ -51,22 +50,38 @@ namespace BOOM{
   MvnSuf *MvnSuf::clone() const{ return new MvnSuf(*this);}
 
   void MvnSuf::clear(){
-    sum_=0;
+    ybar_=0;
     sumsq_=0;
     n_=0;
     sym_ = false;
   }
 
   void MvnSuf::resize(uint p){
-    sum_.resize(p);
+    ybar_.resize(p);
     sumsq_.resize(p);
     clear();
   }
 
-  void MvnSuf::update_raw(const Vec & x){
+  void MvnSuf::check_dimension(const Vec &y){
+    if(ybar_.size() == 0){
+      resize(y.size());
+    }
+    if(y.size() != ybar_.size()){
+      ostringstream msg;
+      msg << "attempting to update MvnSuf of dimension << " << ybar_.size()
+          << " with data of dimension " << y.size() << "." << endl
+          << "Value of data point is [" << y << "]";
+      throw_exception<std::runtime_error>(msg.str().c_str());
+    }
+  }
+
+  void MvnSuf::update_raw(const Vec & y){
+    check_dimension(y);
     n_+=1.0;
-    sum_ += x;
-    sumsq_.add_outer(x,1.0,false);
+    wsp_ = (y - ybar_)/n_;  // old ybar, new n
+    ybar_ += wsp_;          // new ybar
+    sumsq_.add_outer(wsp_, n_-1, false);
+    sumsq_.add_outer(y - ybar_, 1, false);
     sym_ = false;
   }
 
@@ -75,17 +90,23 @@ namespace BOOM{
     update_raw(x);
   }
 
-  void MvnSuf::add_mixture_data(const Vec &x, double prob){
+  void MvnSuf::add_mixture_data(const Vec &y, double prob){
+    check_dimension(y);
     n_ += prob;
-    sum_.axpy(x, prob);
-    sumsq_.add_outer(x, prob, false);
+    wsp_ = (y - ybar_)*(prob/n_);  // old ybar_, new n_
+    ybar_ += wsp_;                 // new ybar_
+    sumsq_.add_outer(wsp_, n_ - prob, false);
+    sumsq_.add_outer(y - ybar_, prob, false);
     sym_ = false;
   }
 
-  const Vec & MvnSuf::sum()const{return sum_;}
-  const Spd & MvnSuf::sumsq()const{
+  Vec MvnSuf::sum()const{return ybar_ * n_;}
+  Spd MvnSuf::sumsq()const{
     check_symmetry();
-    return sumsq_;}
+    Spd ans(sumsq_);
+    ans.add_outer(ybar_, n_);
+    return ans;
+  }
   double MvnSuf::n()const{return n_;}
 
   void MvnSuf::check_symmetry()const{
@@ -95,55 +116,54 @@ namespace BOOM{
     }
   }
 
-  Vec MvnSuf::ybar()const{
-    if(n()>0) return sum_/n();
-    return sum_.zero();}
-
+  const Vec & MvnSuf::ybar()const{ return ybar_;}
   Spd MvnSuf::sample_var()const{
     if(n()>1) return center_sumsq()/(n()-1);
-    return Id(sum_.size());
+    return sumsq_ * 0.0;
   }
 
   Spd MvnSuf::var_hat()const{
     if(n()>0) return center_sumsq()/n();
-    return Id(sum_.size());
+    return sumsq_ * 0.0;
   }
 
   Spd MvnSuf::center_sumsq(const Vec &mu)const{
-    double N = n();
-    Spd ans = sumsq();
-    ans.add_outer(mu, N);
-    ans.add_outer2(mu, sum_, -1);
+    Spd ans = center_sumsq();
+    ans.add_outer(ybar_ - mu, n_);
     return ans;
   }
 
-  Spd MvnSuf::center_sumsq()const{
-    return center_sumsq(ybar());}
+  const Spd & MvnSuf::center_sumsq()const{
+    check_symmetry();
+    return sumsq_;
+  }
 
   void MvnSuf::combine(Ptr<MvnSuf> s){
-    sum_ += s->sum_;
-    sumsq_ += s->sumsq_;
-    n_ += s->n_;
-    sym_ = sym_ && s->sym_;
+    this->combine(*s);
   }
 
+  // TODO(stevescott): test this
   void MvnSuf::combine(const MvnSuf & s){
-    sum_ += s.sum_;
-    sumsq_ += s.sumsq_;
-    n_ += s.n_;
-    sym_ = sym_ && s.sym_;
+    Vec zbar = (sum() + s.sum())/(n() + s.n());
+    sumsq_ = center_sumsq(zbar) + s.center_sumsq(zbar);
+    ybar_ = zbar;
+    n_ += s.n();
+    sym_ = true;
   }
+
+  MvnSuf * MvnSuf::abstract_combine(Sufstat *s){
+      return abstract_combine_impl(this,s); }
 
   Vec MvnSuf::vectorize(bool minimal)const{
-    Vec ans(sum_);
+    Vec ans(ybar_);
     ans.concat(sumsq_.vectorize(minimal));
     ans.push_back(n_);
     return ans;
   }
 
   Vec::const_iterator MvnSuf::unvectorize(Vec::const_iterator &v, bool){
-    uint dim = sum_.size();
-    sum_.assign(v, v+dim);
+    uint dim = ybar_.size();
+    ybar_.assign(v, v+dim);
     v+=dim;
     sumsq_.unvectorize(v);
     n_ = *v; ++v;
@@ -156,13 +176,17 @@ namespace BOOM{
     return unvectorize(it, minimal);
   }
 
+  ostream & MvnSuf::print(ostream &out)const{
+    out << n_ << endl
+        << ybar_ << endl
+        << sumsq_;
+    return out;
+  }
+
   //======================================================================
-
-
 
   uint MB::dim()const{
     return mu().size();}
-
 
   double MB::Logp(const Vec &x, Vec &g, Mat &h, uint nd)const{
     double ans = dmvn(x,mu(), siginv(), ldsi(), true);
@@ -170,6 +194,10 @@ namespace BOOM{
       g = -(siginv() * (x-mu()));
       if(nd>1) h = -siginv();}
     return ans;}
+
+  Vec MB::sim()const{
+    return rmvn(mu(), Sigma());
+  }
 
   typedef MvnBaseWithParams MBP;
 

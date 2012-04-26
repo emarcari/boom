@@ -28,15 +28,14 @@ namespace BOOM{
     : public PosteriorSampler
   {
   public:
-    BetaBinomialSampler(Ptr<BinomialModel>, Ptr<BetaModel>);
+    BetaBinomialSampler(BinomialModel *, Ptr<BetaModel>);
     virtual void draw();
     virtual double logpri()const;
+    void find_posterior_mode();
   private:
-    Ptr<BinomialModel> mod_;
+    BinomialModel *mod_;
     Ptr<BetaModel> pri_;
   };
-
 }
-
 
 #endif// BOOM_BETA_BINOMIAL_SAMPLER_HPP

@@ -62,7 +62,6 @@ namespace BOOM{
   // per row of X shortly after initialization.  For problems where X
   // or w change frequently then clear_xtwx() and add_x() should be
   // called as needed to manage the changes.
-
   class MvnGivenX
     : public MvnBase,
       public ParamPolicy_2<VectorParams, UnivParams>,
@@ -82,7 +81,6 @@ namespace BOOM{
     MvnGivenX(const MvnGivenX &rhs);
 
     virtual MvnGivenX * clone()const;
-    //    virtual void refresh_xtwx()=0;
     virtual void initialize_params();
     virtual void add_x(const Vec &x, double w=1.0);
     virtual void clear_xtwx();
@@ -101,8 +99,6 @@ namespace BOOM{
     Ptr<UnivParams> Kappa_prm();
 
     double diagonal_weight()const;
-    virtual double pdf(Ptr<Data>, bool logscale)const;
-    virtual double loglike()const;
     virtual Vec sim()const;
   private:
     virtual void set_ivar()const;  // logical constness
@@ -115,48 +111,85 @@ namespace BOOM{
     double sumw_;
     mutable bool current_;
   };
-  // ------------------------------------------------------------
-  // for multinomial logit models
-  class MvnGivenXMlogit{
-  public:
-    MvnGivenXMlogit(MLogitBase *mod,
-		     Ptr<VectorParams> beta_prior_mean,
-		     Ptr<UnivParams> prior_sample_size,
-		     double diag_wgt=0);
-    MvnGivenXMlogit(MLogitBase *mod,
-		     Ptr<VectorParams> beta_prior_mean,
-		     Ptr<UnivParams> prior_sample_size,
-		     const Vec & Lambda,
-		     double diag_wgt=0);
-    MvnGivenXMlogit(const MvnGivenXMlogit &rhs);
-    /* virtual */ MvnGivenXMlogit * clone()const;
-    /* virtual */ void refresh_xtwx();
-  private:
-    MLogitBase *ml_;
-  };
-  //------------------------------------------------------------
-  class MvnGivenXLogit
-    : public MvnGivenX
+
+  //----------------------------------------------------------------------
+  // For multinomial logit models there are separate X's for subject
+  // characteristics and choice characteristics.  The intercept term
+  // is always considered a subject characeristic.  The prior is
+  //
+  //           beta ~ N(b0, B / prior_sample_size),
+  //
+  // where b0 and prior_sample_size are specified, and
+  //
+  // B^{-1} = (1-diagonal_weight) * U + diagonal_weight * diag(U).
+  //
+  // The matrix U is a block diagonal matrix corresponding roughly to
+  // 'unit information'.  There is one block for each choice level
+  // (other than choice level 0) corresponding to characteristic of
+  // the subject making the choice.  These blocks are identical and
+  // equal to X'X/(number of observations * number of choices), where
+  // X is the matrix of subject characteristics (or subject
+  // covariates).
+  //
+  // There is an additional block (in the lower right corner) equal to
+  //
+  // sum_i sum_m w_{im} w_{im}' / (number of observations * number of choices)
+  //
+  // where w_{im} is the vector of predictors describing choice m
+  // faced by subject i.
+  class MvnGivenXMultinomialLogit
+      : public MvnBase,
+        public ParamPolicy_2<VectorParams, UnivParams>,
+        public IID_DataPolicy<GlmCoefs>,
+        public PriorPolicy
   {
   public:
-    MvnGivenXLogit(Ptr<LogisticRegressionModel> mod,
-		   Ptr<VectorParams> beta_prior_mean,
-		   Ptr<UnivParams> prior_sample_size,
-		   double diag_wgt=0);
+    MvnGivenXMultinomialLogit(const Vec & beta_prior_mean,
+                              double prior_sample_size,
+                              double diagonal_weight=0);
+    MvnGivenXMultinomialLogit(Ptr<VectorParams> beta_prior_mean,
+                              Ptr<UnivParams> prior_sample_size,
+                              double diagonal_weight=0);
+    MvnGivenXMultinomialLogit(const MvnGivenXMultinomialLogit &rhs);
+    virtual MvnGivenXMultinomialLogit * clone()const;
 
-    MvnGivenXLogit(Ptr<LogisticRegressionModel> mod,
-		   Ptr<VectorParams> beta_prior_mean,
-		   Ptr<UnivParams> prior_sample_size,
-		   const Vec & Lambda,
-		   double diag_wgt=0);
-    MvnGivenXLogit(const MvnGivenXLogit &rhs);
+    // Args:
+    //   subject_characeristics: An n x p array with rows
+    //     corresponding to subjects, and columns to measurements of
+    //     each subject.
 
-    /* virtual */ MvnGivenXLogit * clone()const;
-    /* virtual */ void refresh_xtwx();
+    //   choice_characteristics: an [n x p x nchoices] array with
+    //     dimensions corresponding to subject, measurements of choice
+    //     characteristics for that choice, and choice.
+    void set_x(const Mat & subject_characeristics,
+               const Array & choice_characteristics);
+
+    Ptr<VectorParams> Mu_prm();
+    const Ptr<VectorParams> Mu_prm()const;
+    void set_mu(const Vec &mu);
+
+    Ptr<UnivParams> Kappa_prm();
+    const Ptr<UnivParams> Kappa_prm()const;
+    double kappa()const;
+    void set_kappa(double kappa);
+
+    virtual const Vector & mu()const;
+    virtual const Spd & Sigma()const;
+    virtual const Spd & siginv()const;
+    virtual double ldsi()const;
+
   private:
-    Ptr<LogisticRegressionModel> mod_;
-  };
+    double diagonal_weight_;
 
+    Spd scaled_subject_xtx_;
+    Spd scaled_choice_xtx_;
+
+    mutable Spd overall_xtx_;
+    mutable bool current_;
+    mutable Ptr<SpdData> Sigma_storage_;
+
+    void make_current()const;
+  };
 
 }
 

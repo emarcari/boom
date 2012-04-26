@@ -22,6 +22,7 @@
 #include <cmath>
 #include <cpputil/math_utils.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
 
 namespace BOOM{
   typedef WeightedRegressionData WRD;
@@ -101,6 +102,9 @@ namespace BOOM{
     sym_ = sym_ && s.sym_;
   }
 
+  WeightedRegSuf * WRS::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s); }
+
   Vec WRS::vectorize(bool minimal)const{
     Vec ans = xtwx_.vectorize(minimal);
     ans.concat(xtwy_);
@@ -126,7 +130,6 @@ namespace BOOM{
     Vec::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
-
 
   //------------------------------------------------------------
   void WRS::setup_mat(uint p){
@@ -159,25 +162,14 @@ namespace BOOM{
     sym_ = false;
   }
 
-
-
   void WRS::clear(){
     xtwx_=0.0;
     xtwy_ = 0.0;
-    yt_w_y_ = n_ = sumlogw_ = n_ = 0.0;
+    yt_w_y_ = n_ = sumlogw_ = 0.0;
     sym_ = false;
   }
 
-
   void WRS::Update(const WRD &d){ add_data(d.x(), d.y(), d.weight());}
-//   void WRS::Update(const RegressionData &d){
-//     try{
-//       const WRD & dc(dynamic_cast<const WRD &>(d));
-//       Update(dc);
-//     }catch(std::bad_cast &e){
-//       add_data(d.x(), d.y(), 1.0);
-//     }
-//   }
 
   //------------------------------------------------------------
   uint WRS::size()const{return xtwx_.nrow();}

@@ -68,9 +68,8 @@ namespace BOOM{
         z+= jp1sq * pow(x, jp1sq-1);
         if(z < u) return false;
       }
-      throw
-          std::runtime_error("something terrible happened in Logit"
-                             "::check_right");
+      throw_exception<std::runtime_error>(
+          "something terrible happened in Logit::check_right");
       return false;
     }
   //------------------------------------------------------------
@@ -103,8 +102,8 @@ namespace BOOM{
         //      if(z>0 && (h + log(z) < logu) ) return false;
         if(h + log(z) < logu) return false;
       }
-      throw std::runtime_error("something terrible happened in "
-                               "Logit::check_left");
+      throw_exception<std::runtime_error>(
+          "something terrible happened in Logit::check_left");
       return false;
     }
   }

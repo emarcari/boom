@@ -25,7 +25,7 @@ namespace BOOM{
     ostringstream err;
     err << "you've used a model with no 'find_posterior_mode' method defined"
 	<< endl;
-    throw std::runtime_error(err.str());
+    throw_exception<std::runtime_error>(err.str());
   }
 
 }

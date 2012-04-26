@@ -21,6 +21,7 @@
 #include <Models/Glm/GlmCoefs.hpp>
 #include <Models/BinomialModel.hpp>
 #include <distributions.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
 
 namespace BOOM{
 
@@ -60,7 +61,6 @@ namespace BOOM{
       mod_->set_prob(prob); }
     double Variable::logp(const Selector &inc)const{
       return mod_->pdf(inc[pos_], true);}
-
     Ptr<BinomialModel> Variable::model(){
       return mod_;}
     const Ptr<BinomialModel> Variable::model()const{
@@ -82,6 +82,14 @@ namespace BOOM{
     bool ME::observed()const{return true;}
     bool ME::parents_are_present(const Selector &)const{
       return true;}
+
+    void ME::make_valid(Selector &inc)const{
+      double p = prob();
+      bool in = inc[pos()];
+      if((p>=1.0 && !in) || (p<=0.0 && in)) {
+        inc.flip(pos());
+      }
+    }
 
     void ME::add_to(VSP & vsp)const{
       vsp.add_main_effect(pos(), prob(), name());}
@@ -109,6 +117,17 @@ namespace BOOM{
       return in ? BOOM::infinity(-1) : 0;
     }
 
+    void MME::make_valid(Selector &inc)const{
+      bool in = inc[pos()];
+      double p = prob();
+      if(p<=0.0 && in){
+        inc.drop(pos());
+      }else if(p >= 1.0 && !in){
+        inc.add(pos());
+        inc.add(obs_ind_pos_);
+      }
+    }
+
     bool MME::observed()const{return false;}
 
     bool MME::parents_are_present(const Selector &g)const{
@@ -116,19 +135,6 @@ namespace BOOM{
 
     void MME::add_to(VSP & vsp)const{
       vsp.add_missing_main_effect(pos(), prob(), obs_ind_pos_, name()); }
-
-    //______________________________________________________________________
-
-//     ObsIndicator::ObsIndicator(uint pos, double prob, uint child_pos)
-//     : MainEffect(pos,prob),
-//       child_pos_(child_pos)
-//     {}
-
-//     ObsIndicator * ObsIndicator::clone()const{
-//       return new ObsIndicator(*this);}
-
-//     bool ObsIndicator::child_is_present(const Selector &g)const{
-//       return g[child_pos_];}
 
     //______________________________________________________________________
 
@@ -156,6 +162,19 @@ namespace BOOM{
 	if(!inc[indx]) return BOOM::infinity(-1);
       }
       return Variable::logp(inc);
+    }
+
+    void Interaction::make_valid(Selector &g)const{
+      double p = prob();
+      bool in = g[pos()];
+      if(p<=0.0 && in) {
+        g.drop(pos());
+      }else if(p>=1.0 && !in) {
+        g.add(pos());
+        for(int i = 0; i < parent_pos_.size(); ++i){
+          g.add(parent_pos_[i]);
+        }
+      }
     }
 
     bool Interaction::parents_are_present(const Selector &g)const{
@@ -203,27 +222,34 @@ namespace BOOM{
   }
 
   void VsSuf::combine(Ptr<VsSuf>){
-    throw std::runtime_error("cannot combine VsSuf");
+    throw_exception<std::runtime_error>("cannot combine VsSuf");
   }
 
   void VsSuf::combine(const VsSuf &){
-    throw std::runtime_error("cannot combine VsSuf");
+    throw_exception<std::runtime_error>("cannot combine VsSuf");
   }
 
+  VsSuf * VsSuf::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s); }
+
   Vec VsSuf::vectorize(bool )const{
-    throw std::runtime_error("cannot vectorize VsSuf");
+    throw_exception<std::runtime_error>("cannot vectorize VsSuf");
     return Vec(1, 0.0);
   }
 
   Vec::const_iterator VsSuf::unvectorize(Vec::const_iterator &v,
                                          bool){
-    throw std::runtime_error("cannot unvectorize VsSuf");
+    throw_exception<std::runtime_error>("cannot unvectorize VsSuf");
     return v;
   }
 
   Vec::const_iterator VsSuf::unvectorize(const Vec &v, bool minimal){
     Vec::const_iterator it = v.begin();
     return unvectorize(it, minimal);
+  }
+
+  ostream & VsSuf::print(ostream &out)const{
+    return out << "VsSuf is hard to print!";
   }
 
 
@@ -285,7 +311,7 @@ namespace BOOM{
 	<< "you passed a vector of size " << n
 	<< " but there are " << vars_.size()
 	<< " variables." <<endl;
-    throw std::runtime_error(err.str());
+    throw_exception<std::runtime_error>(err.str());
   }
 
   void VSP::check_size_gt(uint n, const string &fun)const{
@@ -295,7 +321,7 @@ namespace BOOM{
 	<< "you tried to access a variable at position " << n
 	<< ", but there are only " << vars_.size()
 	<< " variables." << endl;
-    throw std::runtime_error(err.str());
+    throw_exception<std::runtime_error>(err.str());
   }
   void VSP::set_prob(double p, uint i){
     check_size_gt(i, "set_prob");
@@ -382,8 +408,8 @@ namespace BOOM{
   uint VSP::potential_nvars()const{ return vars_.size();}
 
   double VSP::logp(const Selector &inc)const{
-    double neg_inf = BOOM::infinity(-1);
-    if(inc.nvars()==0) return neg_inf;
+    const double neg_inf = BOOM::infinity(-1);
+    //    if(inc.nvars()==0) return neg_inf;
     uint n = vars_.size();
     double ans=0;
     for(uint i=0; i<n; ++i){
@@ -393,6 +419,12 @@ namespace BOOM{
     return ans;
   }
 
+  void VSP::make_valid(Selector &inc)const{
+    int n = vars_.size();
+    for(int i = 0; i < n; ++i){
+      vars_[i]->make_valid(inc);
+    }
+  }
 
   void VSP::add_main_effect(uint pos, double prob, const string &name){
     NEW(MainEffect, me)(pos,prob, name);

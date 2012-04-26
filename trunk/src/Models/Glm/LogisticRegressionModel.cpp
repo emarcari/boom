@@ -71,16 +71,21 @@ namespace BOOM{
 
   double LRM::pdf(dPtr dp, bool logscale) const{
     Ptr<BRD> d = DAT(dp);
-    return pdf(d->y(), d->x(), logscale); }
+    double ans= logp(d->y(), d->x());
+    return logscale ? ans : exp(ans);
+  }
 
-  double LRM::pdf(Ptr<BRD> dp, bool logscale) const{
-    return pdf(dp->y(), dp->x(), logscale); }
+  double LRM::pdf(const Data * dp, bool logscale) const{
+    const BRD * d = DAT(dp);
+    double ans= logp(d->y(), d->x());
+    return logscale ? ans : exp(ans);
+  }
 
-  double LRM::pdf(bool y, const Vec &x, bool logscale)const{
+  double LRM::logp(bool y, const Vec &x)const{
     double btx = predict(x);
     double ans = -lope(btx);
     if(y) ans += btx;
-    return logscale ? ans : exp(ans);
+    return ans;
   }
 
   double LRM::Loglike(Vec &g, Mat &h, uint nd)const{
@@ -138,7 +143,7 @@ namespace BOOM{
       err << "alpha (proportion of non-events retained in the data) "
           << "must be in (0,1]" << endl
           << "you set alpha = " << alpha << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
     log_alpha_ = std::log(alpha);
   }
@@ -201,7 +206,7 @@ namespace BOOM{
       ostringstream err;
       err << "There is a mismatch between the data vector and the vector "
 	  << "of mixing weights in LogitEMC::Loglike." << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
 
     Vec * gp=0;
@@ -261,7 +266,7 @@ namespace BOOM{
       ostringstream err;
       err << "Logit_EMC cannot find posterior mode.  "
 	  << "No prior is set." << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
 
     d2LoglikeTF loglike(this);

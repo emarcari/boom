@@ -29,15 +29,15 @@ namespace BOOM{
     : public PosteriorSampler
   {
   public:
-    MarkovConjSampler(MarkovModel * /*Ptr<MarkovModel>*/ Mod,
+    MarkovConjSampler(MarkovModel * Mod,
 		      Ptr<ProductDirichletModel> Q,
 		      Ptr<DirichletModel> pi0);
-    MarkovConjSampler(MarkovModel * /*Ptr<MarkovModel>*/ Mod,
+    MarkovConjSampler(MarkovModel * Mod,
 		      Ptr<ProductDirichletModel> Q);
 
-    MarkovConjSampler(MarkovModel * /*Ptr<MarkovModel>*/ Mod,
+    MarkovConjSampler(MarkovModel * Mod,
                       const Mat & Nu);
-    MarkovConjSampler(MarkovModel * /*Ptr<MarkovModel>*/ Mod,
+    MarkovConjSampler(MarkovModel * Mod,
                       const Mat & Nu,
                       const Vec & nu);
 
@@ -50,7 +50,6 @@ namespace BOOM{
     const Mat & Nu()const;
     const Vec & nu()const;  // throws if pi0_ is not set
   private:
-    //    Ptr<MarkovModel> mod_;
     MarkovModel * mod_;
     Ptr<ProductDirichletModel> Q_;
     Ptr<DirichletModel> pi0_;

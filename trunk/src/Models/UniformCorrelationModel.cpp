@@ -40,17 +40,18 @@ namespace BOOM{
   UCM * UCM::clone()const{return new UCM(*this);}
   void UCM::initialize_params(){}
 
-  double UCM::pdf(const Corr &m, bool logscale)const{
-    double ans = m.is_pos_def() ? 0.0 : BOOM::infinity(-1);
-    return logscale ? ans : exp(ans);
+  double UCM::logp(const Corr &m)const{
+    return m.is_pos_def() ? 0.0 : BOOM::infinity(-1);
   }
 
   double UCM::pdf(Ptr<Data> dp, bool logscale)const{
-    return pdf(DAT(dp), logscale);}
+    double ans = logp(DAT(dp)->value());
+    return logscale ? ans : exp(ans);
+  }
 
   uint UCM::dim()const{return dim_;}
 
   Corr UCM::sim()const{
-    return LinAlg::random_cor(dim());
+    return random_cor(dim());
   }
 }

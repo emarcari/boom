@@ -40,11 +40,11 @@ class HmmFilter
   friend void intrusive_ptr_release(HmmFilter *d){
       d->down_count(); if(d->ref_count()==0) delete d;}
 
-  HmmFilter(std::vector<Ptr<Model> >, Ptr<MarkovModel> );
+  HmmFilter(std::vector<Ptr<MixtureComponent> >, Ptr<MarkovModel> );
   virtual ~HmmFilter(){}
   uint state_space_size()const;
 
-  double initialize(Ptr<Data>);
+  double initialize(const Data *);
   double loglike(const std::vector<Ptr<Data> > & );
   double fwd(const std::vector<Ptr<Data> > & );
   void bkwd_sampling(const std::vector<Ptr<Data> > &);
@@ -53,7 +53,7 @@ class HmmFilter
   virtual void allocate(Ptr<Data>, uint);
   virtual Vec state_probs(Ptr<Data>)const;
  protected:
-  std::vector<Ptr<Model> > models_;
+  std::vector<Ptr<MixtureComponent> > models_;
   std::vector<Mat> P;
   Vec pi, logp, logpi, one;
   Mat logQ;
@@ -64,11 +64,13 @@ class HmmFilter
 class HmmSavePiFilter
     : public HmmFilter{
  public:
-  HmmSavePiFilter(std::vector<Ptr<Model> >, Ptr<MarkovModel> );
+  HmmSavePiFilter(std::vector<Ptr<MixtureComponent> >,
+                  Ptr<MarkovModel>,
+                  std::map<Ptr<Data>, Vec> &pi_hist);
   virtual void allocate(Ptr<Data> dp, uint h);
   virtual Vec state_probs(Ptr<Data>)const;
  private:
-  std::map<Ptr<Data>, Vec> pi_hist_;
+  std::map<Ptr<Data>, Vec> &pi_hist_;
 };
 //----------------------------------------------------------------------
 class HmmEmFilter

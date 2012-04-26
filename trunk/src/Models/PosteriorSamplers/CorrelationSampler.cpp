@@ -27,7 +27,7 @@ namespace BOOM{
 
   typedef MvnCorrelationSampler CS;
 
-  CS::MvnCorrelationSampler(Ptr<MvnModel> Mod,
+  CS::MvnCorrelationSampler(MvnModel *Mod,
 			    Ptr<CorrModel> Pri,
 			    bool refresh_suf)
       : mod_(Mod),
@@ -39,7 +39,7 @@ namespace BOOM{
     int n = mu.size();
     Sumsq_ = mod_->suf()->center_sumsq(mu);
     df_ = mod_->suf()->n();
-    Vec sigma = LinAlg::sqrt(diag(mod_->Sigma()));
+    Vec sigma = sqrt(diag(mod_->Sigma()));
     R_ = var2cor(mod_->Sigma());
     for(int i = 0; i < n; ++i){
       Sumsq_.row(i)/=sigma[i];
@@ -60,7 +60,7 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   double CS::logpri()const{
-    return pri_->pdf(R_,true);
+    return pri_->logp(R_);
   }
   //----------------------------------------------------------------------
   double CS::Rdet(double r){
@@ -78,7 +78,7 @@ namespace BOOM{
     if(!L.is_pos_def()){
       return BOOM::infinity(-1);
     }
-    double ans = pri_->pdf(R_, true);
+    double ans = pri_->logp(R_);
     ans += -.5*(df_ + R_.nrow() + 1) * L.logdet();
     ans += -.5*trace(L.solve(Sumsq_));
     return(ans);
@@ -117,7 +117,7 @@ namespace BOOM{
         return;
       }
     }
-    throw std::runtime_error("never get here");
+    throw_exception<std::runtime_error>("never get here");
   }
 
   void CS::check_limits(double oldr, double eps){
@@ -129,7 +129,7 @@ namespace BOOM{
           << "hi = " << hi_ << endl
           << "R(" << i_ << ", " << j_ << ") = " << oldr << endl;
       string msg = err.str();
-      throw std::runtime_error(msg);
+      throw_exception<std::runtime_error>(msg);
     }
   }
 

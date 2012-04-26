@@ -22,7 +22,7 @@
 namespace BOOM{
   typedef GlmMvnPriorMeanSampler GMS;
 
-  GMS::GlmMvnPriorMeanSampler(Ptr<GlmMvnPrior> Mod, Ptr<MvnBase> Pri)
+  GMS::GlmMvnPriorMeanSampler(GlmMvnPrior *Mod, Ptr<MvnBase> Pri)
     : mod(Mod),
       pri(Pri),
       ivar(Mod->dim()),
@@ -54,8 +54,6 @@ namespace BOOM{
     mod->set_mu(mu);
   }
 
-
-  double GMS::logpri()const{
-    return pri->logp(mod->mu()); }
+  double GMS::logpri()const{ return pri->logp(mod->mu()); }
 
 }

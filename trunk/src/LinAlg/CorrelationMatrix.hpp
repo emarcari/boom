@@ -21,7 +21,6 @@
 #include "SpdMatrix.hpp"
 
 namespace BOOM{
-  namespace LinAlg{
 
     class CorrelationMatrix : public SpdMatrix{
       // symmetric, positive definite Matrix with unit diagonal
@@ -57,6 +56,5 @@ namespace BOOM{
     CorrelationMatrix var2cor(const SpdMatrix &v);
     SpdMatrix cor2var(const CorrelationMatrix &cor, const Vector &sd);
     CorrelationMatrix random_cor(uint n);
-  }
 }
 #endif // NEW_LA_CORRELATION_MATRIX_H

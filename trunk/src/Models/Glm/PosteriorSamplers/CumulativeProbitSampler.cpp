@@ -26,7 +26,7 @@ namespace BOOM{
 
   typedef CumulativeProbitSampler CPS;
   typedef CumulativeProbitModel CPM;
-  CPS::CumulativeProbitSampler(Ptr<CPM> m,
+  CPS::CumulativeProbitSampler(CPM *m,
                                Ptr<MvnBase> prior)
       : m_(m),
         beta_prior_(prior),
@@ -75,6 +75,8 @@ namespace BOOM{
     m_->set_beta(beta_);
   }
 
+  namespace {
+
   class PartialTarget : public ScalarTargetFun{
    public:
     typedef boost::function<double(const Vec &)> TF;
@@ -93,6 +95,8 @@ namespace BOOM{
     uint pos_;
     mutable Vec v_;
   };
+
+  }  // anonymous namespace
 
   void CPS::draw_delta(){
     delta_ = m_->delta();

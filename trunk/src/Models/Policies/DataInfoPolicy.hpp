@@ -36,6 +36,9 @@ namespace BOOM{
       if(!!dp) return dp.dcast<DataType>();
       return Ptr<DataType>(); }
 
+    const DataType * DAT(const Data *dp)const{
+      return dp ?  dynamic_cast<const DataType *>(dp) : NULL;
+    }
   };
  //======================================================================
   template <>

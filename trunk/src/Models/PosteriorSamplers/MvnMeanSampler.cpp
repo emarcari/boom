@@ -24,21 +24,21 @@ namespace BOOM{
 
   typedef MvnConjMeanSampler MCS;
 
-  MCS::MvnConjMeanSampler(Ptr<MvnModel> Mod)
+  MCS::MvnConjMeanSampler(MvnModel *Mod)
     : mvn(Mod),
       mu0(new VectorParams(Mod->mu().zero())),
       kappa(new UnivParams(0.0))
   {}
 
   MCS::MvnConjMeanSampler
-  (Ptr<MvnModel> Mod, Ptr<VectorParams> Mu0, Ptr<UnivParams> Kappa)
+  (MvnModel *Mod, Ptr<VectorParams> Mu0, Ptr<UnivParams> Kappa)
     : mvn(Mod),
       mu0(Mu0),
       kappa(Kappa)
   {}
 
   MCS::MvnConjMeanSampler
-  (Ptr<MvnModel> Mod, const Vec & Mu0, double Kappa)
+  (MvnModel *Mod, const Vec & Mu0, double Kappa)
     : mvn(Mod),
       mu0(new VectorParams(Mu0)),
       kappa(new UnivParams(Kappa))
@@ -69,21 +69,19 @@ namespace BOOM{
   //----------------------------------------------------------------------
   typedef MvnMeanSampler MMS;
 
-  MMS::MvnMeanSampler(Ptr<MvnModel> m, Ptr<VectorParams> Mu0, Ptr<SpdParams> Omega)
+  MMS::MvnMeanSampler(MvnModel *m, Ptr<VectorParams> Mu0, Ptr<SpdParams> Omega)
     : mvn(m),
       mu0(Mu0),
       omega(Omega)
   {}
 
-  MMS::MvnMeanSampler(Ptr<MvnModel> m, Ptr<MvnModel> Pri)
+  MMS::MvnMeanSampler(MvnModel *m, Ptr<MvnModel> Pri)
     : mvn(m),
       mu0(Pri->Mu_prm()),
       omega(Pri->Sigma_prm())
   {}
 
-
-
-  MMS::MvnMeanSampler(Ptr<MvnModel> m, const Vec &Mu0, const Spd &Omega)
+  MMS::MvnMeanSampler(MvnModel *m, const Vec &Mu0, const Spd &Omega)
     : mvn(m),
       mu0(new VectorParams(Mu0)),
       omega(new SpdParams(Omega))

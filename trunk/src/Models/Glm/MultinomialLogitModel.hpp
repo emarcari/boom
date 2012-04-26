@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2005 Steven L. Scott
+  Copyright (C) 2005-2011 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -38,9 +38,9 @@ namespace BOOM{
     // the function make_catdat_ptrs can make a ResponseVec out of a
     // vector of strings or uints
     MultinomialLogitModel(const std::vector<uint> &y, const Mat &Xsubject_info,
-			  const Arr3 &Xchoice_info);
+			  const Array &Xchoice_info);
     MultinomialLogitModel(const std::vector<string> &y, const Mat &Xsubject_info,
-			  const Arr3 &Xchoice_info);
+			  const Array &Xchoice_info);
 
     MultinomialLogitModel(const std::vector<uint> & y,    // no choice information
 			  const Mat &Xsubject_info);
@@ -48,7 +48,7 @@ namespace BOOM{
 			  const Mat &Xsubject_info);
 
     MultinomialLogitModel(ResponseVec responses, const Mat &Xsubject_info,
-			  const Arr3 &Xchoice_info); //dim=[#obs, #nch, #pch]
+			  const Array &Xchoice_info); //dim=[#obs, #nch, #pch]
     MultinomialLogitModel(ResponseVec responses,    // no choice information
 			  const Mat &Xsubject_info);
     MultinomialLogitModel(uint Nchoices, uint subject_xdim, uint choice_xdim);
@@ -58,9 +58,20 @@ namespace BOOM{
 
     // coefficient vector: elements corresponding to choice level 0
     // (which are constrained to 0 for identifiability) are omitted.
-    //  Thus beta() is of dimension ((nch-1)*psub + pch)
+    // Thus beta() is of dimension ((num_choices-1)*psub + pch)
 
+    // If the choices are labelled 0, 1, 2, ..., M-1 then the elements
+    // of beta are
+    // [ subject_characeristic_beta_for_choice_1,
+    //   subject_characeristic_beta_for_choice_2
+    //   ...
+    //   subject_characeristic_beta_for_choice_M-1
+    //   choice_characteristic_beta ]
     const Vec & beta()const;
+
+    // beta_with_zeros() returns the same thing as beta(), but a
+    // vector of 0's is prepended, with the zeros corresponding to
+    // choice level 0.
     const Vec & beta_with_zeros()const;
     Vec beta_subject(uint choice)const;
     Vec beta_choice()const;
@@ -83,7 +94,7 @@ namespace BOOM{
 
     // computes all logits
     virtual Vec eta(Ptr<ChoiceData>)const;
-    virtual Vec &fill_eta(Ptr<ChoiceData>, Vec &ans)const;
+    virtual Vec &fill_eta(const ChoiceData &, Vec &ans)const;
 
   private:
     mutable Vec beta_with_zeros_;
@@ -109,6 +120,10 @@ namespace BOOM{
     MultinomialLogitEMC * clone()const;
 
     virtual double Loglike(Vec &g, Mat &h, uint nd)const;
+    virtual double pdf(Ptr<Data> dp, bool logscale)const{
+      return MultinomialLogitModel::pdf(dp, logscale);}
+    virtual double pdf(const Data * dp, bool logscale)const{
+      return MultinomialLogitModel::pdf(dp, logscale);}
 
     void add_mixture_data(Ptr<Data>, double prob);
     void clear_data();

@@ -25,37 +25,37 @@ namespace BOOM{
   typedef MultinomialModel MM;
   typedef DirichletModel DM;
 
-  MDS::MultinomialDirichletSampler(Ptr<MM> Mod, const Vec &Nu)
-    : mod(Mod),
-      pri(new DM(Nu))
+  MDS::MultinomialDirichletSampler(MM *Mod, const Vec &Nu)
+    : mod_(Mod),
+      pri_(new DM(Nu))
   {}
 
-  MDS::MultinomialDirichletSampler(Ptr<MM> Mod, Ptr<DM> Pri)
-    : mod(Mod),
-      pri(Pri)
+  MDS::MultinomialDirichletSampler(MM *Mod, Ptr<DM> Pri)
+    : mod_(Mod),
+      pri_(Pri)
   {}
 
   MDS::MultinomialDirichletSampler(const MDS &rhs)
     : PosteriorSampler(rhs),
-      mod(rhs.mod->clone()),
-      pri(rhs.pri->clone())
+      mod_(rhs.mod_->clone()),
+      pri_(rhs.pri_->clone())
   {}
 
   MDS * MDS::clone()const{return new MDS(*this);}
 
   void MDS::draw(){
-    Vec counts = pri->nu() +  mod->suf()->n();
+    Vec counts = pri_->nu() +  mod_->suf()->n();
     Vec pi = rdirichlet_mt(rng(), counts);
-    mod->set_pi(pi);
+    mod_->set_pi(pi);
   }
   void MDS::find_posterior_mode(){
-    Vec counts = pri->nu() +  mod->suf()->n();
+    Vec counts = pri_->nu() +  mod_->suf()->n();
     Vec pi = mdirichlet(counts);
-    mod->set_pi(pi);
+    mod_->set_pi(pi);
   }
 
   double MDS::logpri()const{
-    return pri->logp(mod->pi());
+    return pri_->logp(mod_->pi());
   }
 
 }

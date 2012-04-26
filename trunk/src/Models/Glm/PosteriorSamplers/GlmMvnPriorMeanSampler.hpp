@@ -26,17 +26,15 @@ namespace BOOM{
     : public PosteriorSampler
   {
   public:
-    GlmMvnPriorMeanSampler(Ptr<GlmMvnPrior> Mod,
+    GlmMvnPriorMeanSampler(GlmMvnPrior *Mod,
 			   Ptr<MvnBase> Pri);
     void draw();
     double logpri()const;
   private:
-    Ptr<GlmMvnPrior> mod;
+    GlmMvnPrior *mod;
     Ptr<MvnBase> pri;
     Spd ivar;
     Vec mu;
   };
 }
 #endif// BOOM_MVN_PRIOR_MEAN_SAMPLER_HPP
-
-

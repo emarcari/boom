@@ -24,7 +24,8 @@
 #include "Policies/SufstatDataPolicy.hpp"
 #include "Policies/PriorPolicy.hpp"
 #include "Policies/ParamPolicy_2.hpp"
-#include <Models/GaussianModel.hpp>
+
+#include <Models/GaussianModelBase.hpp>
 
 namespace BOOM{
 
@@ -80,8 +81,6 @@ namespace BOOM{
 
   private:
     Ptr<UnivParams> sigsq_;
-    Ptr<GammaModel> ivar_prior;
-    Ptr<GaussianModelGivenSigma> mu_prior;
   };
 
 }

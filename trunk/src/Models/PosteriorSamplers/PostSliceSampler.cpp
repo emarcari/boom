@@ -37,7 +37,7 @@ namespace BOOM{
   }
 
   PosteriorSliceSampler::PosteriorSliceSampler
-  (Ptr<Params> prm, Ptr<LoglikeModel> mod, Ptr<VectorModel> Pri, bool unimodal)
+  (Ptr<Params> prm, LoglikeModel *mod, Ptr<VectorModel> Pri, bool unimodal)
     : prms(1, prm),
       loglike(mod, prms),
       pri(Pri),
@@ -47,7 +47,7 @@ namespace BOOM{
   {}
 
   PosteriorSliceSampler::PosteriorSliceSampler
-  (const ParamVec &Prms, Ptr<LoglikeModel> mod, Ptr<VectorModel> Pri, bool unimodal)
+  (const ParamVec &Prms, LoglikeModel *mod, Ptr<VectorModel> Pri, bool unimodal)
     : prms(Prms),
       loglike(mod, prms),
       pri(Pri),
@@ -57,7 +57,7 @@ namespace BOOM{
   {}
 
   PosteriorSliceSampler::PosteriorSliceSampler
-  (Ptr<LoglikeModel>mod, Ptr<VectorModel> Pri, bool unimodal)
+  (LoglikeModel *mod, Ptr<VectorModel> Pri, bool unimodal)
     : prms(mod->t()),
       loglike(mod, prms),
       pri(Pri),

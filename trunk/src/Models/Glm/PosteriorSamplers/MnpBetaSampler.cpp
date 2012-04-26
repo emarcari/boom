@@ -23,7 +23,7 @@
 namespace BOOM{
   typedef MnpBetaSampler MBS;
   typedef MultinomialProbitModel MNP;
-  MBS::MnpBetaSampler(Ptr<MNP> Mod, Ptr<MvnModel> Pri)
+  MBS::MnpBetaSampler(MNP *Mod, Ptr<MvnModel> Pri)
     : mnp(Mod),
       pri(Pri),
       b0_fixed(true)

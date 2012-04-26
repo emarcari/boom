@@ -21,7 +21,6 @@
 #include <Models/Glm/WeightedRegressionModel.hpp>
 #include <distributions.hpp>
 
-
 namespace BOOM{
 
   namespace{
@@ -29,7 +28,7 @@ namespace BOOM{
   }
 
   typedef LogitSampler LS;
-  LS::LogitSampler(Ptr<LogisticRegressionModel> mod,
+  LS::LogitSampler(LogisticRegressionModel *mod,
 		   Ptr<MvnBase> pri)
     : mod_(mod),
       pri_(pri),
@@ -38,8 +37,6 @@ namespace BOOM{
 
   void LS::draw(){
     impute_latent_data();
-//     cout << "------- sufstats: ---------------" << endl
-// 	 << *suf_ << endl;
     draw_beta();
   }
 
@@ -59,7 +56,6 @@ namespace BOOM{
       Ptr<BRD> dp = dat[i];
       const Vec &x(dp->x());
       double eta = mod_->predict(x) + log_alpha;
-      //      cout << "observation " << i << endl;
       double z = draw_z(dp->y(), eta);
       double lam = draw_lambda(fabs(z- eta));
       suf_->add_data(x,z, 1.0/lam);
@@ -72,7 +68,6 @@ namespace BOOM{
     ivar_mu = rmvn_suf(ivar, ivar_mu);
     mod_->set_beta(ivar_mu);
   }
-
 
   double LS::draw_z(bool y, double eta)const{
     double trun_prob = plogis(0, eta);

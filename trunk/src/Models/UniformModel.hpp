@@ -49,14 +49,14 @@ namespace BOOM{
     void set_hi(double b);
     void combine(Ptr<UniformSuf>);
     void combine(const UniformSuf &);
-    UniformSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s); }
+    UniformSuf * abstract_combine(Sufstat *s);
 
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
+    virtual ostream &print(ostream &out)const;
   private:
     double lo_, hi_;
   };

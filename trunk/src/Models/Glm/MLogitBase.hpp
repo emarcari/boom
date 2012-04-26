@@ -23,6 +23,8 @@
 #include <Models/Policies/PriorPolicy.hpp>
 #include <Models/Glm/ChoiceData.hpp>
 
+#include <LinAlg/Array.hpp>
+
 #include <boost/shared_ptr.hpp>
 
 namespace BOOM{
@@ -30,14 +32,15 @@ namespace BOOM{
   class MLogitBase
     : public IID_DataPolicy<ChoiceData>,
       public PriorPolicy,
-      public NumOptModel
+      public NumOptModel,
+      public MixtureComponent
   {
   public:
     typedef std::vector<Ptr<CategoricalData> > ResponseVec;
 
     MLogitBase(uint Nch, uint Psub, uint Pch);
     MLogitBase(ResponseVec responses, const Mat &Xsubject,
-	       const Arr3 &Xchoice);
+	       const Array &Xchoice);
     MLogitBase(ResponseVec responses, const Mat &Xsubject);
     MLogitBase(const std::vector<Ptr<ChoiceData> > &dv);
 
@@ -47,14 +50,15 @@ namespace BOOM{
     uint beta_size(bool include_zeros=true)const;
 
     virtual Vec eta(Ptr<ChoiceData>)const=0;
-    virtual Vec &fill_eta(Ptr<ChoiceData>, Vec &ans)const=0;
+    virtual Vec &fill_eta(const ChoiceData &, Vec &ans)const=0;
     //    virtual Selector inc()const=0;
 
     virtual void add_all_slopes()=0;
     virtual void drop_all_slopes(bool keep_icpt=true)=0;
 
     virtual double pdf(Ptr<Data> dp, bool logscale)const;
-    virtual double pdf(Ptr<ChoiceData> dp, bool logscale)const;
+    virtual double pdf(const Data * dp, bool logscale)const;
+    virtual double logp(const ChoiceData & dp)const;
     virtual void add_data(Ptr<ChoiceData>);
     virtual void add_data(Ptr<Data>);
 

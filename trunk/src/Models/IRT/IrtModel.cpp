@@ -30,7 +30,6 @@
 #include <cpputil/random_element.hpp>
 
 #include <LinAlg/CorrelationMatrix.hpp>
-#include <cpputil/simple_random_sample.hpp>
 #include <algorithm>
 
 #include <Models/MvnModel.hpp>
@@ -51,11 +50,6 @@ namespace BOOM{
 
     typedef std::vector<string> StringVec;
 
-//     void intrusive_ptr_add_ref(IrtModel *m){m->up_count();}
-//     void intrusive_ptr_release(IrtModel *it){
-//       it->down_count(); if(it->ref_count()==0) delete it; }
-
-
     inline void set_default_names(StringVec &s){
       for(uint i=0; i<s.size(); ++i){
 	OUTS out;
@@ -63,8 +57,6 @@ namespace BOOM{
 	s[i] = out.str();
       }
     }
-
-
     //------------------------------------------------------------
     IrtModel::IrtModel()
       : subscale_names_(1),
@@ -115,7 +107,7 @@ namespace BOOM{
 	DataPolicy(rhs),
 	PriorPolicy(rhs)
     {
-      throw std::runtime_error("need to implement copy constructor for IrtModel");
+      throw_exception<std::runtime_error>("need to implement copy constructor for IrtModel");
     }
 
     //------------------------------------------------------------
@@ -128,7 +120,7 @@ namespace BOOM{
 	Ptr<Item> item = it->first;
 	Response r = it->second;
       }
-      throw std::runtime_error("need to implement 'pdf' for IrtModel");
+      throw_exception<std::runtime_error>("need to implement 'pdf' for IrtModel");
       return logscale ? ans : exp(ans);
     }
     //------------------------------------------------------------
@@ -163,7 +155,6 @@ namespace BOOM{
       string sep = "   ";
       if(decorate){
 	sz = find_max_length(subscale_names());
-	
 	out << string(2, '-') << sep << string(sz, '-') << endl;
       }
 
@@ -203,7 +194,7 @@ namespace BOOM{
 	  ostringstream msg;
 	  msg << "item with id "<< id
 	      << " not found in IrtModel::find_item";
-	  throw std::runtime_error(msg.str());
+	  throw_exception<std::runtime_error>(msg.str());
 	}
 	return Ptr<Item> ();
       }
@@ -232,7 +223,7 @@ namespace BOOM{
 	  ostringstream msg;
 	  msg << "subject with id "<< id
 	      << " not found in IrtModel::find_subject";
-	  throw std::runtime_error(msg.str());
+	  throw_exception<std::runtime_error>(msg.str());
 	}
 	return Ptr<Subject>();
       }
@@ -292,21 +283,8 @@ namespace BOOM{
       return ans;
     }
     //------------------------------------------------------------
-
-//     class IoVisitor : public boost::static_visitor<uint>{
-//     public:
-//       IoVisitor(IO IoPrm) : io_prm(IoPrm){}
-//       template <class M>
-//       uint operator()(Ptr<M> m){
-// 	return m->io_params(io_prm); }
-//     private:
-//       IO io_prm;
-//     };
-
     uint IrtModel::io_R(IO io_prm){
       return subject_prior_->io_params(io_prm);
-//       IoVisitor iov(io_prm);
-//       return  boost::apply_visitor(iov, subject_prior_);
     }
 
     uint IrtModel::io_theta(IO io_prm){
@@ -343,59 +321,6 @@ namespace BOOM{
  	subject_subset.push_back(find_subject(ids[i]));}}
 
     //------------------------------------------------------------
-//     void read_item_info_file(const string &fname, Ptr<IrtModel> m,
-// 			     const char delim){
-//       // item info file contains
-//       // item id  (1st field)
-//       // item max score  (2nd field:  0.. maxscore)
-//       // either numeric score containing subscale number
-//       // or vector of 0's and 1's
-//       ifstream in(fname.c_str());
-
-//       while(in){
-// 	string line;
-// 	getline(in, line);
-// 	if(!in || is_all_white(line)) break;
-	
-// 	StringVec fields;
-// 	if(delim==' '){    // space delimited
-// 	  fields = split_string(line);
-// 	}else{
-// 	  fields = split_delimited(line, delim);
-// 	}
-
-// 	string id = fields[0];
-// 	uint Maxscore;
-// 	INS(fields[1]) >> Maxscore;
-// 	if(!!m->find_item(id)){
-// 	  OUTS msg;
-// 	  msg << "IrtModel::read_item_info_file..." << endl
-// 	      << "item identifiers must be unique" << endl
-// 	      << "offending id: " << id;
-// 	  throw std::runtime_error(msg.str().c_str());}
-
-// 	uint nf = fields.size();
-// 	if(nf==3){
-// 	  uint subscale;
-// 	  INS(fields[2]) >> subscale;
-// 	  Ptr<Item> item = new Item(id, Maxscore, subscale, m->nscales());
-// 	  m->add_item(item);
-// 	}else if(nf>3){
-// 	  std::vector<bool> subscales(nf-2);
-// 	  for(uint i=2; i<nf; ++i){
-// 	    bool val(false);
-// 	    INS(fields[i]) >> val;
-// 	    subscales[i-2]=val;
-// 	  }
-// 	  Ptr<Item> item = new Item(id, Maxscore, subscales);
-// 	  m->add_item(item);
-// 	}else{
-// 	  throw std::runtime_error
-// 	    ("fewer than 2 fields in IrtModel::read_item_info_file");
-// 	}
-//       }
-//     }
-    //------------------------------------------------------------
     void read_subject_info_file
     (const string &fname, Ptr<IrtModel> m, const char delim){
       ifstream in(fname.c_str());
@@ -405,15 +330,15 @@ namespace BOOM{
 	if(!in || is_all_white(line)) break;
 	StringVec fields =
 	  (delim ==' ')? split_string(line): split_delimited(line, delim);
-	
+
 	uint nf = fields.size();
-	string id=fields[0];	
+	string id=fields[0];
 	if(!!m->find_subject(id, false)){
 	  OUTS msg;
 	  msg << "IrtModel::read_subject_info_file..." << endl
 	      << "subject identifiers must be unique" << endl
 	      << "offending id: " << id;
-	  throw std::runtime_error(msg.str().c_str());}
+	  throw_exception<std::runtime_error>(msg.str().c_str());}
 
 	if(nf==1){
 	  NEW(Subject, s)(id, m->nscales());
@@ -426,7 +351,7 @@ namespace BOOM{
 	}else{
 	  OUTS out;
 	  out << "0 fields in IrtModel::read_subject_info_file";
-	  throw std::runtime_error(out.str().c_str());
+	  throw_exception<std::runtime_error>(out.str().c_str());
 	}
       }
     }
@@ -437,7 +362,7 @@ namespace BOOM{
 	string line;
 	getline(in, line);
 	if(!in || is_all_white(line)) break;
-	
+
 	string subject_id;
 	string item_id;
 	string response_str;
@@ -448,14 +373,14 @@ namespace BOOM{
 	  sub = new Subject(subject_id, m->nscales());
 	  m->add_subject(sub);
 	}
-	
+
 	Ptr<Item> item = m->find_item(item_id, false);
 	if(!item){
 	  OUTS msg;
 	  msg << "item " << item_id
 	      << " present in IrtModel::read_item_response_file,"<< endl
 	      << "but not in IrtModel::read_item_info_file."<< endl;
-	  throw std::runtime_error(msg.str().c_str());
+	  throw_exception<std::runtime_error>(msg.str().c_str());
 	}
 
 	Response r = item->make_response(response_str);
@@ -463,15 +388,6 @@ namespace BOOM{
 	sub->add_item(item,r); // response levels are shared here
       }
     }
-
-//     Response IrtModel::read_response(const string &s)const{
-//       istringstream in(s);
-//       return read_response(in); }
-
-//     Response IrtModel::read_response(istream &in)const{
-//       Response r = response_prototype->create();
-//       r->read(in);
-//       return r; }
 
     void IrtModel::item_report(ostream &out, uint max_name_width)const{
       uint maxw=0;
@@ -485,201 +401,5 @@ namespace BOOM{
 	(*it)->report(out, maxw);
       }
     }
-
-
-//     uint IrtModel::track_progress(const string &dname, bool restart,
-// 				  uint nskip, const string & prog_name){
-//       progress = new ProgressTracker(dname, nskip, restart, prog_name);
-//       uint ans = restart ? progress->restart() : 0 ;
-//       return ans;
-//     }
-//     uint IrtModel::track_progress(ostream &out, uint nskip,
-// 				   const string & prog_name){
-//       progress = new ProgressTracker(out, nskip, prog_name);
-//       return 0;
-//     }
-
-    //------------------------------------------------------------
-
-//     ostream & IrtModel::msg()const{
-//       if(!progress){
-// 	ostringstream out;
-// 	out << "message file not set.  Set it with the 'track_progress'"
-// 	    << " model member function." << endl;
-// 	throw std::logic_error(out.str());
-//       }
-//       return progress->msg();
-//     }
-
-    //------------------------------------------------------------
-//     void IrtModel::draw_item_params(){
-//       for(ItemIt i = items.begin(); i!=items.end(); ++i){
-// 	(*i)->sample_posterior();}
-//     }
-//     //------------------------------------------------------------
-//     void IrtModel::draw_theta(){
-//       for(SI s=subjects_.begin(); s!=subjects_.end(); ++s)
-// 	(*s)->sample_posterior();
-//     }
-//     //------------------------------------------------------------
-//     class SamplePostVisitor : public boost::static_visitor<void>{
-//     public:
-//       SamplePostVisitor(){}
-//       template <class M>
-//       void operator()(Ptr<M> m){ m->sample_posterior();}
-//     };
-
-
-//     void IrtModel::draw_R(){
-//       subject_prior_->sample_posterior();
-//       SamplePostVisitor sp;
-//       boost::apply_visitor(sp, subject_prior_);
-//     }
-
-    //------------------------------------------------------------
-//     void IrtModel::sample_posterior(){
-//       if(!!progress)  progress->update();
-//       draw_theta();
-//       draw_item_params();
-//       draw_R();
-//     }
-
-    //------------------------------------------------------------
-//     void IrtModel::set_method(Ptr<PosteriorSampler> m){
-//       samplers.push_back(m);
-//     }
-    //------------------------------------------------------------
-//     Ptr<Subject> IrtModel::simulate_subject(const string &Id, const Corr &R)const{
-//       uint d = R.nrow();
-//       const Vec zero(d, 0.0);
-//       NEW(Subject, sub)(Id, d);
-//       sub->set_Theta(rmvn(zero, R));
-//       return sub;
-//     }
-//     //------------------------------------------------------------
-//     void IrtModel::simulate_subjects(uint n, const Corr &R){
-//       for(uint i=0; i<n; ++i){
-// 	ostringstream id;
-// 	id << i;
-// 	Ptr<Subject> sub = simulate_subject(id.str(), R);
-// 	add_subject(sub);
-//       }
-//     }
-    //------------------------------------------------------------
-    template <class ID>
-    class IDLess{
-    public:
-      double s2d(const string &s)const
-      {return strtod(s.c_str(), 0);}
-      bool operator()(const Ptr<ID> s1, const Ptr<ID> s2)const{
-	return s2d(s1->id()) < s2d(s2->id());
-      }
-    };
-
-    //------------------------------------------------------------
-
-//      void IrtModel::simulate_data(const uint Nsubjects, uint Nscales,
-// 				   uint Nitems, uint MaxScore,
-// 				   uint MaxAssigned,
-// 				   const ModelVec &models){
-
-//        Corr R = LinAlg::random_cor(Nscales);
-//        ofstream out("R.true");
-//        out << R;
-//        //       NEW(SubjectPrior, spri)(R);
-//        //       set_subject_prior(spri);
-
-//        //       set_subject_hyperprior(new UniformCorrelationPrior());
-
-//        simulate_subjects(Nsubjects, R);
-//        std::vector<Ptr<Subject> > subs(all_subjects());
-
-
-
-//        std::sort(subs.begin(), subs.end(), IDLess<Subject>());
-
-//        ofstream sub_out("Subjects_.sim");
-//        ofstream theta_out("theta.true");
-//        for(uint i=0; i<subs.size(); ++i){
-// 	 subs[i]->display(sub_out);
-// 	 theta_out << subs[i]->Theta() << endl;
-//        }
-
-//        simulate_items(Nitems, MaxScore, Nscales, models);
-//        ofstream item_out("Items.sim");
-//        ofstream params_out("item_params.true");
-//        std::vector<Ptr<Item> > its(all_items());
-//        std::sort(its.begin(), its.end(), IDLess<Item>());
-//        for(uint i=0; i<its.size(); ++i){
-// 	 its[i]->display(item_out);
-// 	 its[i]->display_item_params(params_out, false);
-// 	 params_out << endl;
-//        }
-
-//        simulate_responses(MaxAssigned);
-
-//        ofstream resp_out("Responses.sim");
-//        for(uint i=0; i<subs.size(); ++i){
-// 	 subs[i]->display_responses(resp_out);
-//        }
-	
-//      }
-    //------------------------------------------------------------
-//     void IrtModel::simulate_responses(uint MaxAssigned ){
-
-//       typedef SubjectMap::iterator SMI;
-//       for(SMI it = subjects_.begin(); it!=subjects_.end(); ++it){
-// 	Ptr<Subject> subject = it->second;
-// 	uint nit =random_int(2, MaxAssigned);
-// 	std::vector<Ptr<Item> > items = simple_random_sample(all_items(), nit);
-// 	for(uint j=0; j<items.size(); ++j){
-// 	  Ptr<Item> item = items[j];
-// 	  Response r = subject->simulate_response(item);
-// 	  subject->add_item(item, r);
-// 	}
-//       }
-
-//     }
-    //------------------------------------------------------------
-//     Ptr<Item> IrtModel::simulate_item(const string &Id, uint Nscales,
-// 				      uint Mscore, ModelTypeName whichmod){
-
-//       std::vector<bool> subsc(Nscales);
-//       double prob = 1.0/Nscales;
-
-//       bool empty = true;
-//       while(empty){
-//  	for(uint i=0; i<Nscales; ++i){
-//  	  subsc[i] = runif()<prob;
-//  	  if(subsc[i]) empty=false;}}
-
-//       NEW(Item, item)(Id, Mscore, subsc);
-//       // item still needs a model assigned to it
-//       uint nscales = 0;
-//       for(uint i=0; i<Nscales; ++i) nscales+=subsc[i];
-
-//       if(whichmod==0){
-//  	item->set_item_model(random_mlcm(subsc, Mscore));
-//       }
-
-//       return item;
-//     }
-
-//      void IrtModel::simulate_items(uint nitems, uint max_possible_score,
-//  				   uint Nscales, const ModelVec &whichmods){
-//        for(uint i=0; i<nitems; ++i){
-//  	ostringstream id;
-//  	id << i;
-//  	uint maxscore = random_int(1, max_possible_score);
-//  	ModelTypeName mod_name =
-//  	  random_element(whichmods.begin(), whichmods.end());
-				
-//  	Ptr<Item> item = simulate_item(id.str(), Nscales, maxscore, mod_name);
-//  	add_item(item);
-
-//        }
-//      }
-
-
   } // closes namespace IRT
 } // closes namespace BOOM

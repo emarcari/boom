@@ -31,14 +31,14 @@ namespace BOOM{
     // marginal inverse variances.  A marginally uniform prior is
     // assumed for the correlations.
 
-    GlmMvnSiginvSepStratSampler(Ptr<GlmMvnPrior> mod,
+    GlmMvnSiginvSepStratSampler(GlmMvnPrior *mod,
 				std::vector<Ptr<GammaModel> > S_pri);
     virtual void draw();
     virtual double logpri()const;
     uint dim()const;
 
   private:
-    Ptr<GlmMvnPrior>  mod_;
+    GlmMvnPrior *mod_;
     std::vector<Ptr<GammaModel> > Spri;
     Mat LT;
     Mat Wsp;

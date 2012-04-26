@@ -27,7 +27,7 @@ namespace BOOM{
 
   typedef GlmMvnSiginvIndSampler GSI;
 
-  GSI::GlmMvnSiginvIndSampler(Ptr<GlmMvnPrior> mod, Gvec ivar_ptr)
+  GSI::GlmMvnSiginvIndSampler(GlmMvnPrior *mod, Gvec ivar_ptr)
     : mod_(mod),
       ivar_pri_(ivar_ptr)
   {}

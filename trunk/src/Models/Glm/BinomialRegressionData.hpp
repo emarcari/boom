@@ -27,9 +27,11 @@ namespace BOOM{
     typedef GlmData<IntData> Base;
     BinomialRegressionData(uint y, uint n, const Vec &x, bool add_icpt=false);
     virtual BinomialRegressionData * clone()const;
-    void set_n(uint n, bool check=true);
+    void set_n(uint n, bool check = true);
+    void set_y(uint y, bool check = true);
     uint n()const;
     void check()const;  // throws if n < y
+    virtual ostream & display(ostream &out)const;
    private:
     uint n_;  // number of trials in the binomial process
               // y() is the number of successes

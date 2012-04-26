@@ -19,8 +19,8 @@
 #include "OrdinalCutpointModel.hpp"
 #include <cpputil/math_utils.hpp>
 #include <distributions.hpp>
-#include <cpputil/DataTable.hpp>
-#include <cpputil/DesignMatrix.hpp>
+#include <cpputil/ThrowException.hpp>
+#include <stats/Design.hpp>
 #include <TargetFun/TargetFun.hpp>
 #include <LinAlg/Types.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
@@ -31,8 +31,6 @@
 #include <boost/bind.hpp>
 
 namespace BOOM{
-
-
   inline double compute_delta(uint m, const Vec & v, uint maxscore){
     if(m <= maxscore && m>1){
       return v(m-2);
@@ -43,7 +41,7 @@ namespace BOOM{
      }else if(m==maxscore+1){
        return BOOM::infinity(1);
      }
-    throw std::runtime_error("m out of bounds in OrdinalCutpointModel::delta");
+    throw_exception<std::runtime_error>("m out of bounds in OrdinalCutpointModel::delta");
     return 0.0;
   }
 
@@ -128,7 +126,7 @@ namespace BOOM{
 
   double OCM::pdf(uint y, const Vec &X, bool logscale)const{
     uint M = maxscore();
-    if(y>M) throw std::runtime_error
+    if(y>M) throw_exception<std::runtime_error>
 	      ("ordinal data out of bounds in OrdinalCutpointModel::pdf");
     double btx = predict(X);  // X may or may not contain intercept
     double F1 = y==M ? 1.0 : link_inv(delta(y+1)-btx);
@@ -181,7 +179,7 @@ namespace BOOM{
 //      }else if(m==maxscore()+1){
 //        return BOOM::infinity(1);
 //      }
-//     throw std::runtime_error("m out of bounds in OrdinalCutpointModel::delta");
+//     throw_exception<std::runtime_error>("m out of bounds in OrdinalCutpointModel::delta");
 //     return 0.0;
   }
 

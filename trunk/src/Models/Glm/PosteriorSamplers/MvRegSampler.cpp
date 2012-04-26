@@ -22,7 +22,7 @@ namespace BOOM{
 
   typedef MvRegSampler MRS;
 
-  MRS::MvRegSampler(Ptr<MvReg> m, const Mat &Beta_guess, double prior_beta_nobs,
+  MRS::MvRegSampler(MvReg *m, const Mat &Beta_guess, double prior_beta_nobs,
 		    double Prior_df, const Spd & Sigma_guess)
     : mod(m),
       SS(Sigma_guess * prior_df),

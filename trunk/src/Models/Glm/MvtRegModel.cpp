@@ -21,8 +21,6 @@
 #include <cpputil/nyi.hpp>
 
 namespace BOOM{
-  using LinAlg::QR;
-
   typedef MvtRegModel MVTR;
 
   namespace{

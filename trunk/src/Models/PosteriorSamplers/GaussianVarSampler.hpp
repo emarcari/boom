@@ -33,11 +33,15 @@ namespace BOOM{
     GaussianVarSampler(GaussianModelBase * m, Ptr<GammaModelBase> g);
     virtual void draw();
     double logpri()const;
+    // Call to ensure that sigma (standard deviation) remains below
+    // the specified upper_truncation_point
+    void set_sigma_upper_limit(double max_sigma);
    protected:
     const Ptr<GammaModelBase> ivar()const;
    private:
     Ptr<GammaModelBase> gam;
     GaussianModelBase * mod;
+    double upper_truncation_point_;
   };
 
 

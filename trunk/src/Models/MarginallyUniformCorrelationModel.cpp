@@ -33,17 +33,18 @@ namespace BOOM{
   double MUCM::pdf(Ptr<Data> dp, bool logscale)const{
     // un-normalized!!!
     Ptr<SpdParams> d = DAT(dp);
-    return pdf(d->value(), logscale);
+    double ans = logp(d->value());
+    return logscale ? ans : exp(ans);
   }
 
-  double MUCM::pdf(const Corr & R, bool logscale)const{
+  double MUCM::logp(const Corr & R)const{
     // un-normalized
     uint k = R.dim();
     double ldR = R.logdet();
     double nu = k+1;
     Spd Rinv = R.inv();
     double ans = -.5 * (nu + k + 1) * ldR - .5 * sum(log(Rinv.diag()));
-    return logscale ? ans : exp(ans);
+    return ans;
   }
 
   uint MUCM::dim()const{return dim_;}

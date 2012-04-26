@@ -18,20 +18,22 @@
 
 #ifndef BOOM_MVN_CONJ_SAMPLER_HPP
 #define BOOM_MVN_CONJ_SAMPLER_HPP
-#include <Models/MvnModel.hpp>
+
 #include <Models/MvnGivenSigma.hpp>
 #include <Models/WishartModel.hpp>
 
 namespace BOOM{
 
+  class MvnModel;
+
   class MvnConjSampler
     : public PosteriorSampler
   {
   public:
-    MvnConjSampler(Ptr<MvnModel> mod, const Vec &mu0, double kappa,
+    MvnConjSampler(MvnModel *mod, const Vec &mu0, double kappa,
 		   const Spd & SigmaHat, double prior_df);
 
-    MvnConjSampler(Ptr<MvnModel> mod, Ptr<MvnGivenSigma>, Ptr<WishartModel>);
+    MvnConjSampler(MvnModel *mod, Ptr<MvnGivenSigma>, Ptr<WishartModel>);
 
     void draw();
     void find_posterior_mode();
@@ -41,7 +43,7 @@ namespace BOOM{
     const Vec & mu0()const;
     const Spd & prior_SS()const;
   private:
-    Ptr<MvnModel> mod;
+    MvnModel *mod_;
     Ptr<MvnGivenSigma> mu_;
     Ptr<WishartModel> siginv_;
 

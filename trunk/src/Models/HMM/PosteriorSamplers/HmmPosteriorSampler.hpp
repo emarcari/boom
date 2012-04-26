@@ -27,24 +27,24 @@ namespace BOOM{
 
 class MixtureComponentSampler{
  public:
-  MixtureComponentSampler(Ptr<Model> m) : m_(m){}
+  MixtureComponentSampler(Model *m) : m_(m){}
   void operator()(){m_->sample_posterior();}
   // m_ must have been assigned a thread safe PosteriorSampler, or this
   // will result in a race condition on the random seed of the RNG
  private:
-  Ptr<Model> m_;
+  Model *m_;
 };
 
 class HmmPosteriorSampler
     : public PosteriorSampler{
  public:
-  HmmPosteriorSampler(Ptr<HiddenMarkovModel> hmm);
+  HmmPosteriorSampler(HiddenMarkovModel *hmm);
   virtual void draw();
   virtual double logpri()const;
   void use_threads(bool yn = true);
   void draw_mixture_components();
  private:
-  Ptr<HiddenMarkovModel> hmm_;
+  HiddenMarkovModel *hmm_;
   std::vector<boost::shared_ptr<MixtureComponentSampler> > workers_;
   bool use_threads_;
 };

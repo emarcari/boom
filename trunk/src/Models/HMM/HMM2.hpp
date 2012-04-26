@@ -35,7 +35,6 @@ class HmmFilter;
 class HmmEmFilter;
 class HmmDataImputer;
 
-
 class HiddenMarkovModel :
       public TimeSeriesDataPolicy<Data>,
       public CompositeParamPolicy,
@@ -43,13 +42,10 @@ class HiddenMarkovModel :
       public LoglikeModel
 {
  public:
-  typedef  std::vector<Ptr<Model> >::size_type sz;
-
   // constructors...
-  HiddenMarkovModel(std::vector<Ptr<Model> > Mix, Ptr<MarkovModel> Mark) ;
+  HiddenMarkovModel(std::vector<Ptr<MixtureComponent> > Mix, Ptr<MarkovModel> Mark) ;
   HiddenMarkovModel(const HiddenMarkovModel &rhs);
   virtual HiddenMarkovModel * clone()const;
-  void set_filter(Ptr<HmmFilter> f);
 
   template <class Fwd>        // needed for copy constructor
   void set_mixture_components(Fwd b, Fwd e){
@@ -64,27 +60,33 @@ class HiddenMarkovModel :
 
   double pdf(dPtr dp, bool logscale) const;
   void clear_client_data();
-  void clear_prob_hist();
 
-  std::vector<Ptr<Model> > mixture_components();
-  Ptr<Model> mixture_component(uint s);
+  std::vector<Ptr<MixtureComponent> > mixture_components();
+  Ptr<MixtureComponent> mixture_component(uint s);
 
+  // returns loglike as a side effect
   double impute_latent_data();
   double impute_latent_data_with_threads();
   uint nthreads()const;
-  // returns loglike as a side effect
 
   Ptr<MarkovModel> mark();
   virtual double loglike()const;
+  double saved_loglike()const;
   void randomly_assign_data();
   void save_loglike(const string & fname, uint ping=1);
   void save_logpost(const string & fname, uint ping=1);
+
+  // For managing the distribution of hidden states.
+  void save_state_probs();
+  void clear_prob_hist();
+  Mat report_state_probs(const DataSeriesType &ts)const;
 
   const Vec &pi0() const;
   const Mat &Q() const;
   void set_pi0(const Vec &Pi0);
   void set_Q(const Mat &Q);
 
+  // Options for managing the distribution of the initial state.
   void fix_pi0(const Vec &Pi0);
   void fix_pi0_stationary();
   void fix_pi0_uniform();
@@ -98,9 +100,10 @@ class HiddenMarkovModel :
   void set_logpost(double);
   void write_loglike(double);  // deprecated
   void write_logpost(double);  // deprecated
+  void set_filter(Ptr<HmmFilter> f);
  private:
   Ptr<MarkovModel> mark_;
-  std::vector<Ptr<Model> > mix_;
+  std::vector<Ptr<MixtureComponent> > mix_;
   Ptr<HmmFilter> filter_;
   std::map<Ptr<Data>, Vec > prob_hist_;
   Ptr<UnivParams> loglike_;
@@ -130,7 +133,7 @@ class HMM_EM : public HiddenMarkovModel
   void set_epsilon(double);
  private:
   void find_mode(bool bayes=false, bool save_history=false);
-  std::vector<Ptr<Model> > tomod(const std::vector<Ptr<EMC> > &v)const;
+  std::vector<Ptr<MixtureComponent> > tomod(const std::vector<Ptr<EMC> > &v)const;
 
   std::vector<Ptr<EMC> > mix_;
   Ptr<HmmEmFilter> filter_;

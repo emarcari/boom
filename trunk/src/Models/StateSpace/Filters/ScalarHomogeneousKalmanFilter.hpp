@@ -23,52 +23,53 @@
 #include <Models/MvnModel.hpp>
 
 namespace BOOM{
-
   class ScalarHomogeneousKalmanFilter
     : private RefCounted
   {
-  public:
+   public:
     ScalarHomogeneousKalmanFilter();
-    ScalarHomogeneousKalmanFilter(const Vec &Z, double H, const Mat & T, const Mat &R, const Spd & Q,
+    ScalarHomogeneousKalmanFilter(const Vec &Z, double H, const Mat & T,
+                                  const Mat &R, const Spd & Q,
                                   Ptr<MvnModel>);
 
     virtual ScalarHomogeneousKalmanFilter * clone()const;
-    double fwd(const TimeSeries<DoubleData> &ts);          // returns log p(ts | theta)
+
+  // returns log p(ts | theta)
+    double fwd(const TimeSeries<DoubleData> &ts);
     double fwd(const Vec & ts);
 
     Mat  bkwd_sampling();  // returns state
     void bkwd_smoother();
 
     void set_initial_state_distribution(Ptr<MvnModel> m);
-    void set_matrices(const Vec &Z, double H, const Mat & T, const Mat &R, const Spd & Q);
+    void set_matrices(const Vec &Z, double H, const Mat & T,
+                      const Mat &R, const Spd & Q);
     void impute_state(const TimeSeries<DoubleData> & ts);
 
     void state_mean_smoother();
-    Vec disturbance_smoother();                                     // returns r0
+    Vec disturbance_smoother(); // returns r0
     Vec disturbance_smoother(std::vector<ScalarKalmanStorage> &g, uint n);
     void state_mean_smoother(std::vector<ScalarKalmanStorage> &g, uint n);
     const Vec & a(uint i)const;
 
-    friend void intrusive_ptr_add_ref(ScalarHomogeneousKalmanFilter *d){d->up_count();}
+    friend void intrusive_ptr_add_ref(ScalarHomogeneousKalmanFilter *d){
+      d->up_count();}
     friend void intrusive_ptr_release(ScalarHomogeneousKalmanFilter *d){
       d->down_count(); if(d->ref_count()==0) delete d;}
 
-  private:
-
-    // update
+   private:
     double update(double y, Vec &a, Spd & P, Vec &K, double &F, double &v,
 		  bool missing=false);
 
     void kalman_smoother_update(Vec &a, Spd &P, const Vec &K, double F);
 
-    double fwd_vec(const Vec & ts, std::vector<ScalarKalmanStorage> &);  // returns p(ts | theta)
+    // returns p(ts | theta)
+    double fwd_vec(const Vec & ts, std::vector<ScalarKalmanStorage> &);
 
     double initialize(ScalarKalmanStorage &s);
 
     std::pair<Vec, Mat> simulate_fake_data(uint n);
     Vec simulate_initial_state()const;
-
-
 
     Ptr<MvnModel> initial_state_distribution_;
 

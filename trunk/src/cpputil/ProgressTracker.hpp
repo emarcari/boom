@@ -16,10 +16,15 @@ namespace BOOM{
     void start(const string & prog_name);
     ProgressTracker(const ProgressTracker &) : RefCounted(){}
   public:
+    // Write progress messages to a file named "msg" in directory dname.
     ProgressTracker(const string &dname, uint nskip=100,
                     bool restart=false, const string & prog_name="",
                     bool keep_existing_msg=false);
+
+    // Write progress messages to std::cout
     ProgressTracker(uint nskip=100, const string & prog_name="");
+
+    // Write progress to an arbitrary stream
     ProgressTracker(ostream &out, uint nskip=100, const string & prog_name="");
     ~ProgressTracker();
     ProgressTracker & operator++(){update(); return *this;}

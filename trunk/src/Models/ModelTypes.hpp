@@ -21,7 +21,6 @@
 #include <BOOM.hpp>
 #include "ParamTypes.hpp"
 #include <LinAlg/Types.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace BOOM{
@@ -43,7 +42,7 @@ namespace BOOM{
   // a PriorPolicy
 
 
-  class Model : public LinAlgTypes, private RefCounted{
+  class Model : private RefCounted{
   public:
     friend void intrusive_ptr_add_ref(Model *d){d->up_count();}
     friend void intrusive_ptr_release(Model *d){
@@ -60,7 +59,6 @@ namespace BOOM{
 
     virtual ~Model(){}
 
-    virtual double pdf(Ptr<Data>, bool logscale)const=0;
     //----------- parameter interface  ---------------------
     virtual ParamVec t()=0;              // over-ridden in ParmPolicy
     virtual const ParamVec t()const=0;
@@ -74,19 +72,15 @@ namespace BOOM{
     virtual void stream_params();
     virtual uint io_params(IO io_prm);  // deprecated
 
-
     virtual Vec vectorize_params(bool minimal=true)const;
     virtual void unvectorize_params(const Vec &v, bool minimal=true);
     virtual void set_bufsize(uint p);
     virtual void reset_stream();
+
     //------------ functions over-ridden in DataPolicy  -----
     virtual void add_data(Ptr<Data>)=0;    //
     virtual void clear_data()=0;    //
     virtual void combine_data(const Model & , bool just_suf=true)=0;
-
-    //    virtual Data * create_DataPoint()const=0;
-    // creates a prototype data point of the appropriate type.  Useful
-    // for reading data, etc.
 
     //------------ functions over-ridden in PriorPolicy ----
     virtual void sample_posterior()=0;
@@ -132,7 +126,7 @@ namespace BOOM{
   public:
     virtual double d2loglike(Vec &g, Mat &H)const=0;
     virtual void mle();
-    virtual boost::tuple<double,Vec,Mat> mle_result();
+    virtual double mle_result(Vec &gradient, Mat &hessian);
     virtual d2LoglikeModel *clone()const=0;
   };
   class NumOptModel : public d2LoglikeModel{
@@ -147,7 +141,7 @@ namespace BOOM{
   class LatentVariableModel : virtual public Model{
   public:
     virtual void impute_latent_data()=0;
-    virtual double complete_data_loglike()const=0;
+    //    virtual double complete_data_loglike()const=0;
     virtual LatentVariableModel * clone()const=0;
   };
   //======================================================================
@@ -155,9 +149,16 @@ namespace BOOM{
     : virtual public Model{
   public:
     virtual CorrModel * clone()const=0;
-    virtual double pdf(Ptr<Data>, bool logsc)const=0;
-    virtual double pdf(const Corr &, bool logsc)const=0;
+    virtual double logp(const Corr &)const=0;
   };
   //======================================================================
+  class MixtureComponent
+      : virtual public Model{
+   public:
+    //    virtual double pdf(Ptr<Data>, bool logscale)const=0;
+    virtual double pdf(const Data *, bool logscale)const=0;
+    virtual MixtureComponent * clone()const=0;
+  };
+
 }
 #endif // BOOM_MODEL_TYPES_HPP

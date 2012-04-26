@@ -38,7 +38,7 @@ namespace BOOM{
           << "a        = " << a << endl
           << "logf(a)  = " << logf[0] << endl
           << "dlogf(a) = " << dlogf[0] << endl;
-      throw std::runtime_error(err.str());
+      throw_exception<std::runtime_error>(err.str());
     }
     update_cdf();
   }
@@ -85,6 +85,10 @@ namespace BOOM{
   double d1 = dlogf[k-1];
   double x2 = x[k];
   double x1 = x[k-1];
+
+  // If d2 == d1 then you've reached a spot of exponential decay, or
+  // else x2 == x1.
+  if(d2 == d1) return x1;
 
   double ans = ( y1 - d1*x1) - (y2 - d2 * x2);
   ans /= (d2-d1);
@@ -138,7 +142,9 @@ namespace BOOM{
    double target = f(cand);
    double hull = h(cand, k);
    double logu = hull - rexp_mt(rng, 1);
-   if(logu < target) return cand;
+   // The <= in the following statement is important in edge cases
+   // where you're very close to the boundary.
+   if(logu <= target) return cand;
    add_point(cand);
    return draw(rng);
  }

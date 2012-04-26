@@ -59,6 +59,8 @@ namespace BOOM{
 
     //--- the main job of glm's...
     double predict(const Vec &x)const;
+    double predict(const VectorView &x)const;
+    double predict(const ConstVectorView &x)const;
 
     //------ operations for only included variables --------
     Vec beta()const;
@@ -101,7 +103,6 @@ namespace BOOM{
     //    void watch_beta(const Vec &);
     void fill_beta()const;
     void setup_obs();
-    void incompatible_covariates(const Vec &x, const string &fname)const;
 
     double & operator[](uint i);
     double operator[](uint i)const;

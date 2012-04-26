@@ -33,7 +33,7 @@ namespace BOOM{
 
   class MlvsDataImputer : private RefCounted{
   public:
-    MlvsDataImputer(Ptr<MLogitBase> Mod, Ptr<MlvsCdSuf> Suf, uint nthreads);
+    MlvsDataImputer(MLogitBase *Mod, Ptr<MlvsCdSuf> Suf, uint nthreads);
     void draw();
 
     friend void intrusive_ptr_add_ref(MlvsDataImputer *d){
@@ -56,7 +56,7 @@ namespace BOOM{
       friend void intrusive_ptr_release(MDI_worker *d){
 	d->down_count(); if(d->ref_count()==0) delete d;}
 
-      MDI_worker(Ptr<MLogitBase> mod,
+      MDI_worker(MLogitBase *mod,
 		 Ptr<MlvsCdSuf> s,
 		 uint Thread_id=0,
 		 uint Nthreads=1);
@@ -67,7 +67,7 @@ namespace BOOM{
       void seed(unsigned long);
 
     private:
-      Ptr<MLogitBase> mlm;
+      MLogitBase *mlm;
       Ptr<MlvsCdSuf> suf_;
 
       const uint thread_id;
@@ -101,10 +101,10 @@ namespace BOOM{
     //======================================================================
     class MDI_unthreaded : public MDI_base {
     public:
-      MDI_unthreaded(Ptr<MLogitBase> m, Ptr<MlvsCdSuf> s);
+      MDI_unthreaded(MLogitBase *m, Ptr<MlvsCdSuf> s);
       virtual void draw();
     private:
-      Ptr<MLogitBase> mlm;
+      MLogitBase *mlm;
       Ptr<MlvsCdSuf> suf;
       MDI_worker imp;
     };
@@ -112,10 +112,10 @@ namespace BOOM{
     //======================================================================
     class MDI_threaded : public MDI_base {
     public:
-      MDI_threaded(Ptr<MLogitBase> m, Ptr<MlvsCdSuf> s, uint nthreads);
+      MDI_threaded(MLogitBase *m, Ptr<MlvsCdSuf> s, uint nthreads);
       virtual void draw();
     private:
-      Ptr<MLogitBase> mlm;
+      MLogitBase *mlm;
       Ptr<MlvsCdSuf> suf;
       std::vector<Ptr<MDI_worker> > crew;
     };

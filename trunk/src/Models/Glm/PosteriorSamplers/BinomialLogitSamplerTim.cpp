@@ -21,7 +21,7 @@
 namespace BOOM{
 
   typedef BinomialLogitSamplerTim BLST;
-BLST::BinomialLogitSamplerTim(Ptr<BinomialLogitModel> m,
+BLST::BinomialLogitSamplerTim(BinomialLogitModel *m,
                               Ptr<MvnBase> pri,
                               bool mode_is_stable,
                               double nu)
@@ -30,7 +30,6 @@ BLST::BinomialLogitSamplerTim(Ptr<BinomialLogitModel> m,
         sam_(boost::bind(&BLST::logp, this, _1),
              boost::bind(&BLST::dlogp, this, _1, _2),
              boost::bind(&BLST::d2logp, this, _1, _2, _3),
-             m->xdim(),
              nu)
   {
     if(mode_is_stable) sam_.fix_mode();

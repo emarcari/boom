@@ -25,7 +25,9 @@
 #define NEW(T,y) Ptr<T> y = new T
 // NEW(very_long_type_name, variable_name)(constructor, arguments)
 // is shorthand for
-// Ptr<very_long_type_name> variable_name = new very_long_type_name(constructor, arguments)
+//
+// Ptr<very_long_type_name> variable_name = new
+// very_long_type_name(constructor, arguments)
 
 namespace BOOM{
 
@@ -71,6 +73,10 @@ namespace BOOM{
     T & operator*() const{ return *pt;}
     T * operator->() const{ return pt.operator->();}
     T * dumb_ptr() const{return pt.get();}
+    // The get() method has become a standard idiom for accessing a
+    // traditional pointer from a smart pointer.  In the future, use
+    // get(), and consider dumb_ptr() deprecated.
+    T * get() const{return pt.get();}
 
     template <class U>
     Ptr<U, true> dcast()const{
@@ -98,17 +104,10 @@ namespace BOOM{
     bool operator!=(const Ptr &rhs)const{
       return pt!=rhs.pt;}
 
-    //      bool operator<(const Ptr &rhs)const{
-    //        return pt < rhs.pt;
-    //      }
-
     void swap(Ptr &b){ pt.swap(b.get_boost());}
-    void reset(){ pt = 0;}
+    void reset(){ pt.reset();}
+    void reset(T *new_value){ pt.reset(new_value);}
   };
-
-
-
-
 
   //======================================================================
   template <class T>

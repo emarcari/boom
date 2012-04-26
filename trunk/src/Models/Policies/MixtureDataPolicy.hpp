@@ -57,10 +57,26 @@ namespace BOOM{
     virtual void add_data(Ptr<Data> dp);
     virtual void combine_data(const Model &, bool just_suf=true);
 
+    void add_data_with_known_source(Ptr<Data>, int source);
+
+    // Sets the source of each observation.  Negative numbers mean the
+    // source is uncertain.  Non negative numbers less than the number
+    // of mixture components indicate which component generated each
+    // observation.  Greater numbers are an error.  The length of the
+    // argument must match the number of observations at the time
+    void set_data_source(const std::vector<int> &which_mixture_component);
+
+    // Indicates which mixture component the specified observation
+    // comes from.  A negative answer (the usual case) means the
+    // source of the observation is uncertain.
+    int which_mixture_component(int observation_number)const;
   private:
     dsetPtr dat_;  // Model owns pointer to its data.
     std::vector<Ptr<CategoricalData> > latent_;
     Ptr<CatKey> pkey_;
+
+    // The following vector will be empty in most cases.  It will be filled when
+    std::vector<int> known_data_source_;
   };
   //======================================================================
 

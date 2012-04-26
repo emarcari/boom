@@ -37,27 +37,8 @@ namespace BOOM{
   class MvnGivenXandSigma;
   class GammaModel;
 
-//   class RegressionData: public GlmData{
-//     double y_;
-//   public:
-//     RegressionData(double Y, const Vec &X);
-//     RegressionData(const RegressionData &rhs);
-//     RegressionData *clone()const;
-
-//     RegressionData & operator=(const RegressionData &);
-
-//     const Vec & x()const { return GlmData::x(); }
-//     void set_x(const Vec &X, bool allow_any=false){
-//       GlmData::set_x(X, allow_any);}
-//     const double & y()const { return y_;}
-//     void set_y(double Y);
-
-//     virtual ostream & display(ostream &out)const;
-//     virtual istream & read(istream &in);
-//   };
-//   //------------------------------------------------------------------
   class anova_table{
-  public:
+   public:
     double SSE, SSM, SST;
     double MSM, MSE;
     double dfe, dfm, dft;
@@ -98,7 +79,11 @@ namespace BOOM{
     virtual void add_mixture_data(double y, const Vec &x, double prob)=0;
     virtual void combine(Ptr<RegSuf>)=0;
 
+    virtual ostream &print(ostream &out)const;
   };
+  inline ostream & operator<<(ostream &out, const RegSuf &suf){
+    return suf.print(out);
+  }
   //------------------------------------------------------------------
   class QrRegSuf :
     public RegSuf,
@@ -134,33 +119,30 @@ namespace BOOM{
     //    void check_raw_data(const Mat &X, const Vec &y);
     virtual void combine(Ptr<RegSuf>);
     virtual void combine(const RegSuf &);
-    QrRegSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s); }
+    QrRegSuf * abstract_combine(Sufstat *s);
 
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
+    virtual ostream &print(ostream &out)const;
   };
   //------------------------------------------------------------------
   class NeRegSuf
     : public RegSuf,
       public SufstatDetails<RegressionData>
   {   // directly solves 'normal equations'
-  private:
-    Spd xtx_;
-    Vec xty_;
-    double sumsqy;
   public:
     NeRegSuf(uint p);
     NeRegSuf(const Mat &X, const Vec &y, bool add_icpt=true);
-    NeRegSuf(const Spd &xtx, const Vec &xty, double yty);
+    NeRegSuf(const Spd &xtx, const Vec &xty, double yty, double n);
     template <class Fwd>
     NeRegSuf(Fwd b, Fwd e);
     NeRegSuf(const NeRegSuf &rhs);
 
     NeRegSuf *clone()const;
+    void fix_xtx(bool tf = true);
     virtual void add_mixture_data(double y, const Vec &x, double prob);
     virtual void clear();
     virtual void Update(const RegressionData & rdp);
@@ -177,15 +159,26 @@ namespace BOOM{
     virtual double n()const;
     virtual void combine(Ptr<RegSuf>);
     virtual void combine(const RegSuf &);
-    NeRegSuf * abstract_combine(Sufstat *s){
-      return abstract_combine_impl(this,s); }
-
+    NeRegSuf * abstract_combine(Sufstat *s);
 
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
+    virtual ostream &print(ostream &out)const;
+
+    // Adding data only updates the upper triangle of xtx_.  This
+    // fills in the lower triangle as well, if needed.
+    void reflect()const;
+  private:
+    mutable Spd xtx_;
+    mutable bool needs_to_reflect_;
+    Vec xty_;
+    bool xtx_is_fixed_;
+    double sumsqy;
+    double n_;
+    double sumy_;
   };
 
   template <class Fwd>
@@ -226,7 +219,6 @@ namespace BOOM{
   {}
 
   //------------------------------------------------------------------
-
 
   class RegressionModel
     : public GlmModel,
@@ -282,8 +274,10 @@ namespace BOOM{
 
     //--- probability calculations ----
     virtual void mle();
-    virtual double Loglike(Vec &g, Mat &h, uint nd) const;
+    virtual double Loglike(Vec &g, Mat &h, uint nd)const;
     virtual double pdf(dPtr, bool)const;
+    virtual double pdf(const Data *, bool)const;
+    double empty_loglike(Vec &g, Mat &h, uint nd)const;
 
     // directives for how to store data and sufficient statistics
     void use_normal_equations();

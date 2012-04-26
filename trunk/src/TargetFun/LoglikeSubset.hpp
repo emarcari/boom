@@ -34,13 +34,13 @@ namespace BOOM{
     // (2) conditional log likelihood for a subset
     // (3) conditional log likelihood for a single parameter
 
-    LoglikeSubsetTF(Ptr<LoglikeModel>);
-    LoglikeSubsetTF(Ptr<LoglikeModel>, const ParamVec &v);
-    LoglikeSubsetTF(Ptr<LoglikeModel> m, Ptr<Params> T);
+    LoglikeSubsetTF(LoglikeModel *);
+    LoglikeSubsetTF(LoglikeModel *, const ParamVec &v);
+    LoglikeSubsetTF(LoglikeModel *m, Ptr<Params> T);
 
     double operator()(const Vec &x)const;
   private:
-    Ptr<LoglikeModel> mod;   // provides loglike();
+    LoglikeModel *mod;   // provides loglike();
     mutable Vec wsp;
   protected:
     ParamVecHolder hold_params(const Vec &x)const;
@@ -51,14 +51,14 @@ namespace BOOM{
   class Selector;
   class dLoglikeSubsetTF : public LoglikeSubsetTF{
   public:
-    dLoglikeSubsetTF(Ptr<dLoglikeModel> d);
-    dLoglikeSubsetTF(Ptr<dLoglikeModel> d, const ParamVec &);
-    dLoglikeSubsetTF(Ptr<dLoglikeModel> d, Ptr<Params> t);
+    dLoglikeSubsetTF(dLoglikeModel *d);
+    dLoglikeSubsetTF(dLoglikeModel *d, const ParamVec &);
+    dLoglikeSubsetTF(dLoglikeModel *d, Ptr<Params> t);
     double operator()(const Vec &x)const{
       return LoglikeSubsetTF::operator()(x);}
     double operator()(const Vec &x, Vec &g)const;
   private:
-    Ptr<dLoglikeModel> dmod;
+    dLoglikeModel *dmod;
     boost::shared_ptr<Selector> pos_;
     void get_pos();  // called during construction
   protected:
@@ -68,9 +68,9 @@ namespace BOOM{
   //----------------------------------------------------------------------
   class d2LoglikeSubsetTF : public dLoglikeSubsetTF{
   public:
-    d2LoglikeSubsetTF(Ptr<d2LoglikeModel> d2);
-    d2LoglikeSubsetTF(Ptr<d2LoglikeModel> d2, Ptr<Params>);
-    d2LoglikeSubsetTF(Ptr<d2LoglikeModel> d2, const ParamVec &);
+    d2LoglikeSubsetTF(d2LoglikeModel *d2);
+    d2LoglikeSubsetTF(d2LoglikeModel *d2, Ptr<Params>);
+    d2LoglikeSubsetTF(d2LoglikeModel *d2, const ParamVec &);
 
     double operator()(const Vec &x)const{
       return LoglikeSubsetTF::operator()(x);}
@@ -78,7 +78,7 @@ namespace BOOM{
       return dLoglikeSubsetTF::operator()(x,g);}
     double operator()(const Vec &x, Vec &g, Mat &h)const;
   private:
-    Ptr<d2LoglikeModel> d2mod;
+    d2LoglikeModel *d2mod;
   };
   //------------------------------------------------------------
 }

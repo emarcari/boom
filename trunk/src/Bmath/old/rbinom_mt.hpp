@@ -80,7 +80,7 @@ namespace Rmath{
     //    if (n != nin) ML_ERR_return_NAN;
 
     if ( !R_FINITE(pp) ||pp < 0. || pp > 1.){
-      throw std::runtime_error("must have 0<= p <= 1 in rbinom");
+      throw_exception<std::runtime_error>("must have 0<= p <= 1 in rbinom");
     }
     /* n=0, p=0, p=1 are not errors <TSL>*/
 

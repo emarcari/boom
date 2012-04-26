@@ -19,10 +19,14 @@
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <Models/DirichletModel.hpp>
 #include <Models/PosteriorSamplers/MultinomialDirichletSampler.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
+
 #include <distributions.hpp>
 
 #include <cmath>
 #include <stdexcept>
+
+#include <boost/bind.hpp>
 
 namespace BOOM{
   typedef MultinomialSuf MS;
@@ -56,6 +60,8 @@ namespace BOOM{
 
   void MS::combine(Ptr<MS> s){ counts += s->counts; }
   void MS::combine(const MS & s){ counts += s.counts; }
+  MultinomialSuf * MS::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s); }
 
   Vec MS::vectorize(bool)const{
     return counts;
@@ -74,6 +80,9 @@ namespace BOOM{
     return unvectorize(it,minimal);
   }
 
+  ostream & MS::print(ostream &out)const{
+    return out << counts;
+  }
   //======================================================================
 
   typedef MultinomialModel MM;
@@ -82,7 +91,8 @@ namespace BOOM{
   MM::MultinomialModel(uint p)
     : ParamPolicy(new VectorParams(p, 1.0/p)),
       DataPolicy(new MS(p)),
-      ConjPriorPolicy()
+      ConjPriorPolicy(),
+      logp_current_(false)
   {}
 
   uint  count_levels(const StringVec &sv){
@@ -94,13 +104,15 @@ namespace BOOM{
   MM::MultinomialModel(const Vec &probs)
     : ParamPolicy(new VectorParams(probs)),
       DataPolicy(new MS(probs.size())),
-      ConjPriorPolicy()
+      ConjPriorPolicy(),
+      logp_current_(false)
   {}
 
   MM::MultinomialModel(const StringVec &names)
     : ParamPolicy(new VectorParams(1)),
       DataPolicy(new MS(1)),
-      ConjPriorPolicy()
+      ConjPriorPolicy(),
+      logp_current_(false)
   {
     std::vector<Ptr<CD> >
       dvec(make_catdat_ptrs(names));
@@ -120,7 +132,8 @@ namespace BOOM{
       DataPolicy(rhs),
       ConjPriorPolicy(rhs),
       LoglikeModel(rhs),
-      EmMixtureComponent(rhs)
+      EmMixtureComponent(rhs),
+      logp_current_(false)
   {}
 
   MM * MM::clone()const{return new MM(*this);}
@@ -133,7 +146,10 @@ namespace BOOM{
   uint MM::nlevels()const{return pi().size();}
   const double & MM::pi(int s) const{ return pi()[s];}
   const Vec & MM::pi()const{return Pi_prm()->value();}
-  void MM::set_pi(const Vec &probs){ Pi_prm()->set(probs); }
+  void MM::set_pi(const Vec &probs){
+    Pi_prm()->set(probs);
+    check_logp();
+  }
 
   uint MM::size()const{return pi().size();}
 
@@ -156,16 +172,25 @@ namespace BOOM{
     set_pi(n/tot);
   }
 
-  double MM::pdf(Ptr<Data> dp, bool logscale)const{
+  double MM::pdf(const Data * dp, bool logscale)const{
+    check_logp();
     uint i = DAT(dp)->value();
     if(i >=size()){
       string msg = "too large a value passed to MultinomialModel::pdf";
-      throw std::runtime_error(msg);
+      throw_exception<std::runtime_error>(msg);
     }
-    double p = pi(i);
-    return logscale ? log(p) : p;
+    return logscale ? logp_[i] : pi(i);
   }
 
+  double MM::pdf(Ptr<Data> dp, bool logscale)const{
+    check_logp();
+    uint i = DAT(dp)->value();
+    if(i >=size()){
+      string msg = "too large a value passed to MultinomialModel::pdf";
+      throw_exception<std::runtime_error>(msg);
+    }
+    return logscale ? logp_[i] : pi(i);
+  }
 
   uint MM::simdat()const{ return rmulti(pi()); }
 
@@ -186,5 +211,19 @@ namespace BOOM{
 
   void MM::set_conjugate_prior(Ptr<MultinomialDirichletSampler> sam){
     ConjPriorPolicy::set_conjugate_prior(sam);
+  }
+
+  void MM::observe_logp(){
+    logp_current_ = false;
+  }
+
+  boost::function<void(void)> MM::create_logp_observer(){
+    return boost::bind(&MM::observe_logp, this);
+  }
+
+  void MM::check_logp()const{
+    if(logp_current_) return;
+    logp_ = log(pi());
+    logp_current_ = true;
   }
 }

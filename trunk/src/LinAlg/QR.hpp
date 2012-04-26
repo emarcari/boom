@@ -22,29 +22,27 @@
 #include "Vector.hpp"
 
 namespace BOOM{
-  namespace LinAlg{
-    class QR{
-      Matrix dcmp;
-      Vector tau;
-      Vector work;  // work space
-      int lwork;
-    public:
-      QR(){}
-      QR(const Matrix &m);
-      Matrix getQ()const;
-      Matrix getR()const;
-      Matrix solve(const Matrix &B)const;
-      Vector solve(const Vector &b)const;
-      Vector Qty(const Vector &y)const;
-      Matrix QtY(const Matrix &Y)const;
-      Vector Rsolve(const Vector &Qty)const;
-      Matrix Rsolve(const Matrix &QtY)const;
-      double det()const;
-      void decompose(const Matrix &m);
-      void clear();
-      uint nrow()const{return dcmp.nrow();}
-      uint ncol()const{return dcmp.ncol();}
-    };
-  }
+  class QR{
+    Matrix dcmp;
+    Vector tau;
+    Vector work;  // work space
+    int lwork;
+   public:
+    QR(){}
+    QR(const Matrix &m);
+    Matrix getQ()const;
+    Matrix getR()const;
+    Matrix solve(const Matrix &B)const;
+    Vector solve(const Vector &b)const;
+    Vector Qty(const Vector &y)const;
+    Matrix QtY(const Matrix &Y)const;
+    Vector Rsolve(const Vector &Qty)const;
+    Matrix Rsolve(const Matrix &QtY)const;
+    double det()const;
+    void decompose(const Matrix &m);
+    void clear();
+    uint nrow()const{return dcmp.nrow();}
+    uint ncol()const{return dcmp.ncol();}
+  };
 }
 #endif //BOOM_NEWLA_QR_HPP

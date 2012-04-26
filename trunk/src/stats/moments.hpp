@@ -31,9 +31,18 @@ namespace BOOM{
 
   double mean(const Vec &x);
   double var(const Vec &x);
+  double sd(const Vec &v);
 
   double mean(const std::vector<double> &x);
   double var(const std::vector<double> &x);
+  double sd(const std::vector<double> &x);
 
+  double mean(const std::vector<double> &x, double missing_value_code);
+  double var(const std::vector<double> &x, double missing_value_code);
+  double sd(const std::vector<double> &x, double missing_value_code);
+
+  double mean(const std::vector<double> &x, const std::vector<bool> &observed);
+  double var(const std::vector<double> &x, const std::vector<bool> &observed);
+  double sd(const std::vector<double> &x, const std::vector<bool> &observed);
 }
 #endif // BOOM_MOMENTS_HPP

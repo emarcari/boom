@@ -19,6 +19,7 @@
 #include <Models/UniformModel.hpp>
 #include <cpputil/math_utils.hpp>
 #include <distributions.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
 
 namespace BOOM{
 
@@ -88,6 +89,9 @@ namespace BOOM{
     hi_ = std::max<double>(hi_, s.hi_);
   }
 
+  UniformSuf * US::abstract_combine(Sufstat *s){
+    return abstract_combine_impl(this,s); }
+
   Vec US::vectorize(bool)const{
     Vec ans(2);
     ans[0] = lo_;
@@ -104,6 +108,10 @@ namespace BOOM{
   Vec::const_iterator US::unvectorize(const Vec &v, bool minimal){
     Vec::const_iterator it = v.begin();
     return unvectorize(it, minimal);
+  }
+
+  ostream &US::print(ostream &out)const{
+    return out << lo_ << " " << hi_;
   }
 
   //____________________________________________________________

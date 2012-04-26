@@ -38,6 +38,8 @@ namespace BOOM{
     void set_upper_limit(double hi);
     void unset_limits();
     void set_suggested_dx(double dx);
+    void estimate_dx(bool should_dx_be_estimated);
+    void set_min_dx(double dx);
     virtual double draw(double x);
     virtual double logp(double x)const;
   private:
@@ -46,6 +48,7 @@ namespace BOOM{
     double lo_;
     double hi_;
     double suggested_dx_;
+    double min_dx_;
     //    double x_;
     double logplo_;
     double logphi_;
@@ -56,6 +59,7 @@ namespace BOOM{
     bool lo_set_manually_;
     bool hi_set_manually_;
     bool unimodal_;
+    bool estimate_dx_;
 
     void find_limits(double x);
     void find_lower_limit(double x);
@@ -82,22 +86,10 @@ namespace BOOM{
     bool upper_bounded()const;
     bool unbounded()const;  // on either side
     void throw_exception(const std::string & msg, double x)const;
+    std::string error_message(double lo, double hi, double x,
+                              double logplo, double logphi,
+                              double logp_slice)const;
+
   };
-
-struct ScalarSliceSamplerException : public std::exception{
-  std::string msg_;
-  double lo_;
-  double hi_;
-  double x_;
-  double logplo_;
-  double logphi_;
-  double logp_slice_;
-  ScalarSliceSamplerException(const std::string & msg,
-                              double lo, double hi, double x,
-                              double logplo, double logphi, double logp_slice);
-  ~ScalarSliceSamplerException()throw(){}
-  virtual const char * what()const throw();
-};
-
 }
 #endif// BOOM_SCALAR_SLICE_SAMPLER_HPP
