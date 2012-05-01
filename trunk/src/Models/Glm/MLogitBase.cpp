@@ -21,6 +21,7 @@
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
 #include <cpputil/lse.hpp>
+#include <cpputil/report_error.hpp>
 
 #include <numopt.hpp>
 
