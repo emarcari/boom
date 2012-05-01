@@ -176,42 +176,49 @@ namespace BOOM{
     return new MvnGivenXMultinomialLogit(*this);}
 
   void MvnGivenXMultinomialLogit::set_x(const Matrix &subject_characeristics,
-                                        const Array & choice_characteristics){
+                                        const std::vector<Mat> & choice_characteristics,
+                                        int number_of_choices){
 
-    if(choice_characteristics.ndim() > 0
-       && choice_characteristics.ndim() != 3){
-      report_error("choice_characteristics must either be empty or a 3-way array");
+    bool have_choice_predictors = !choice_characteristics.empty();
+
+    if(have_choice_predictors
+       && choice_characteristics.size() != nrow(subject_characeristics)){
+      report_error("the sizes of subject_characeristics and "
+                   "choice_characteristics must match");
     }
     current_ = false;
     scaled_subject_xtx_.resize(ncol(subject_characeristics));
     scaled_subject_xtx_ = 0;
     int number_of_observations = nrow(subject_characeristics);
     int number_of_subject_predictors = ncol(subject_characeristics);
+    scaled_subject_xtx_.add_inner(subject_characeristics,
+                                  1.0/number_of_observations);
 
-    const std::vector<int> & choice_dimension(choice_characteristics.dim());
-    int number_of_choice_observations = choice_dimension[0];
-    int number_of_choice_predictors = choice_dimension[1];
-    int number_of_choices = choice_dimension[2];
-    double weight = 1.0/(number_of_choices * number_of_observations);
-
-    scaled_subject_xtx_.add_outer(subject_characeristics);
-    scaled_subject_xtx_ *= weight;
-
-    scaled_choice_xtx_.resize(number_of_choice_predictors);
-    scaled_choice_xtx_ = 0;
-    for(int i = 0; i < number_of_choice_observations; ++i){
-      ConstVectorView baseline_predictors(
-          choice_characteristics.vector_slice(
-              ConstArrayBase::index3(i, -1, 0)));
-      for(int m = 1; m < number_of_choices; ++m){
-        const ConstVectorView choice_predictors(
-            choice_characteristics.vector_slice(
-                ConstArrayBase::index3(i, -1, m)));
-        scaled_choice_xtx_.add_outer(
-            choice_predictors - baseline_predictors);
+    int number_of_choice_predictors = 0;
+    if(have_choice_predictors){
+      int number_of_choice_observations = choice_characteristics.size();
+      number_of_choice_predictors = ncol(choice_characteristics[0]);
+      if(nrow(choice_characteristics[0]) != number_of_choices){
+        ostringstream err;
+        err << "The number_of_choices argument to set_x must match the "
+            << "number of rows in the first element of choice_characteristics."
+            << endl;
+        report_error(err.str());
       }
+
+      double weight = 1.0/(number_of_choices * number_of_observations);
+
+      scaled_choice_xtx_.resize(number_of_choice_predictors);
+      scaled_choice_xtx_ = 0;
+      for(int i = 0; i < number_of_choice_observations; ++i){
+        ConstVectorView baseline_predictors(choice_characteristics[i].row(0));
+        for(int m = 1; m < number_of_choices; ++m){
+          const ConstVectorView choice_predictors(choice_characteristics[i].row(m));
+          scaled_choice_xtx_.add_outer(choice_predictors - baseline_predictors);
+        }
+      }
+      scaled_choice_xtx_ *= weight;
     }
-    scaled_choice_xtx_ *= weight;
 
     // Build overall_xtx_ as a sequence of blocks of scaled_subject_xtx_ with
     // single scaled_choice_xtx_ block at the end.
@@ -227,9 +234,12 @@ namespace BOOM{
       block = scaled_subject_xtx_;
       lo = hi + 1;
     }
-    int hi = lo + number_of_choice_predictors - 1;
-    SubMatrix block(overall_xtx_, lo, hi, lo, hi);
-    block = scaled_choice_xtx_;
+
+    if(have_choice_predictors){
+      int hi = lo + number_of_choice_predictors - 1;
+      SubMatrix block(overall_xtx_, lo, hi, lo, hi);
+      block = scaled_choice_xtx_;
+    }
 
     if(diagonal_weight_ > 0){
       Vec d(overall_xtx_.diag());
@@ -281,6 +291,9 @@ namespace BOOM{
   }
 
   void MvnGivenXMultinomialLogit::make_current()const{
+    if(!Sigma_storage_){
+      Sigma_storage_.reset(new SpdData(nrow(overall_xtx_)));
+    }
     if(!current_){
       Sigma_storage_->set_ivar(overall_xtx_ * kappa());
       current_ = true;

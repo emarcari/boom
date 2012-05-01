@@ -33,18 +33,13 @@ namespace BOOM{
     // each column of beta_subject corresponds to a different choice.
     MLogitSplit(const Mat & beta_subject, const Vec &beta_choice);
 
-    // the function make_catdat_ptrs can make a ResponseVec out of a
-    // vector of strings or uints
-    MLogitSplit(ResponseVec responses, const Mat &Xsubject_info,
-		const Array &Xchoice_info);
-    // dim(Xchoice_info) = [#obs, #choices, #choice x's]
+    MLogitSplit(const std::vector<Ptr<CategoricalData> > & responses,
+                const Mat &Xsubject_info,
+		const std::vector<Mat> &Xchoice_info = std::vector<Mat>());
 
-    MLogitSplit(ResponseVec responses,    // no choice information
-		const Mat &Xsubject_info);
-
-    MLogitSplit(const std::vector<Ptr<ChoiceData> > &);
     MLogitSplit(uint Nchoices, uint Xdim_subject, uint Xdim_choice=0);
     MLogitSplit(const MLogitSplit &rhs);
+
     MLogitSplit * clone()const;
 
     virtual Vec eta(Ptr<ChoiceData>)const;

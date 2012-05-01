@@ -22,7 +22,6 @@
 #include <cpputil/lse.hpp>
 
 #include <LinAlg/VectorView.hpp>
-#include <LinAlg/Array3.hpp>
 #include <numopt.hpp>
 #include <TargetFun/Loglike.hpp>
 #include <TargetFun/LogPost.hpp>
@@ -66,144 +65,16 @@ namespace BOOM{
     set_beta(make_vector(beta_subject,beta_choice));
   }
   //------------------------------------------------------------
-  template<class T>
-  uint num_unique(const std::vector<T> &y){
-    std::set<T> tmp(y.begin(), y.end());
-    return tmp.size();
-  }
-
-  MLM::MultinomialLogitModel(const std::vector<uint> &y,
-			     const Mat &Xsubject,
-			     const Array &Xchoice)
-    : MLB(num_unique(y), Xsubject.ncol(), Xchoice.dim(1))
-  {
-    setup();
-    std::set<uint> tmp(y.begin(), y.end());
-    uint n = tmp.size();
-    uint ymax = *(tmp.rbegin());
-    if(n!= (++ymax) ){
-      ostringstream err;
-      err << "MultinomialLogitModel was initialized with a vector of integers "
-	  << "that skipped some values:  "
-	  << FreqDist(y) << endl;
-      throw_exception<std::runtime_error>(err.str());
-    }
-    NEW(CatKey, key)(n);
-
-    uint nch = Xchoice.dim(1);
-    for(uint i=0; i<n; ++i){
-      NEW(VectorData, xsub)(Xsubject.row(i));
-      std::vector<Ptr<VectorData> > ch;
-      for(uint j=0; j<nch; ++j){
-	NEW(VectorData, xch)(Xchoice.vector_slice(Array::index3(i, j, -1)));
-	ch.push_back(xch);
-      }
-      NEW(ChoiceData, d)(y[i], key, ch, xsub);
-      add_data(d);
-    }
-  }
-  //------------------------------------------------------------
-  MLM::MultinomialLogitModel(const std::vector<uint> &y,
-			     const Mat &Xsubject)
-    : MLB(num_unique(y), Xsubject.ncol(), 0)
-  {
-    setup();
-    std::set<uint> tmp(y.begin(), y.end());
-    uint n = tmp.size();
-    uint ymax = *(tmp.rbegin());
-    ++ymax;
-    if(n!=ymax){
-      ostringstream err;
-      err << "MultinomialLogitModel was initialized with a vector of integers "
-	  << "that skipped some values:  "
-	  << FreqDist(y) << endl;
-      throw_exception<std::runtime_error>(err.str());
-    }
-    NEW(CatKey, key)(n);
-
-    uint nobs = y.size();
-    if(Xsubject.nrow() != nobs){
-      ostringstream err;
-      err << "MultinmoalLogitModel:  size of y vector was " << nobs << endl
-          << "but X had " << Xsubject.nrow() << " rows" << endl
-          << "they should be the same" << endl;
-      throw_exception<std::runtime_error>(err.str());
-    }
-    for(uint i=0; i<nobs; ++i){
-      NEW(VectorData, xsub)(Xsubject.row(i));
-      NEW(ChoiceData, d)(y[i], key, xsub);
-      add_data(d);
-    }
-  }
-  //------------------------------------------------------------
-
-  MLM::MultinomialLogitModel(const std::vector<string> &y,
-			     const Mat &Xsubject,
-			     const Array &Xchoice)
-    : MLB(num_unique(y), Xsubject.ncol(), Xchoice.dim(1))
-  {
-    setup();
-    std::set<string> tmp(y.begin(), y.end());
-    uint n = tmp.size();
-    std::vector<string> labs(tmp.begin(), tmp.end());
-    NEW(CatKey, key)(labs);
-
-    uint nch = Xchoice.dim(1);
-    for(uint i=0; i<n; ++i){
-      NEW(VectorData, xsub)(Xsubject.row(i));
-      std::vector<Ptr<VectorData> > ch;
-      for(uint j=0; j<nch; ++j){
-	NEW(VectorData, xch)(Xchoice.vector_slice(Array::index3(i, j, -1)));
-	ch.push_back(xch);
-      }
-      NEW(ChoiceData, d)(y[i], key, ch, xsub);
-      add_data(d);
-    }
-  }
-
-  //------------------------------------------------------------
-  MLM::MultinomialLogitModel(const std::vector<string> &y,
-			     const Mat &Xsubject)
-    : MLB(num_unique(y), Xsubject.ncol(),0)
-  {
-    setup();
-    std::set<string> tmp(y.begin(), y.end());
-    uint n = tmp.size();
-    std::vector<string> labs(tmp.begin(), tmp.end());
-    NEW(CatKey, key)(labs);
-
-    for(uint i=0; i<n; ++i){
-      NEW(VectorData, xsub)(Xsubject.row(i));
-      NEW(ChoiceData, d)(y[i], key, xsub);
-      add_data(d);
-    }
-  }
-
-  //------------------------------------------------------------
-  MLM::MultinomialLogitModel(ResponseVec responses,
-			     const Mat &Xsubject,
-			     const Array &Xchoice)
+  MLM::MultinomialLogitModel(
+      const std::vector<Ptr<CategoricalData> > & responses,
+      const Mat &Xsubject,
+      const std::vector<Mat> &Xchoice)
     : MLB(responses, Xsubject, Xchoice),
       ParamPolicy()
   {
     setup();
   }
   //------------------------------------------------------------
-  MLM::MultinomialLogitModel(ResponseVec responses, const Mat &Xsubject)
-    : MLB(responses, Xsubject),
-      ParamPolicy()
-  {
-    setup();
-  }
-  //------------------------------------------------------------
-  MLM::MultinomialLogitModel(const std::vector<Ptr<ChoiceData> >  &dv)
-    : MLB(dv),
-      ParamPolicy()
-  {
-    setup();
-  }
-  //------------------------------------------------------------
-
   MLM::MultinomialLogitModel(const MultinomialLogitModel &rhs)
     : Model(rhs),
       MLE_Model(rhs),

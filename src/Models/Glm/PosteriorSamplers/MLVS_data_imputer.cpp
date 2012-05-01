@@ -149,7 +149,6 @@ namespace BOOM{
       uint i = thread_id;
       while(i < n){
 	Ptr<ChoiceData> dp(dat[i]);
-	dp->set_wsp(thisX);
 	impute_u(dp);
 	suf_->update(dp, wgts, u);
 	i+= nthreads;}

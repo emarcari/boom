@@ -23,8 +23,6 @@
 #include <Models/Policies/PriorPolicy.hpp>
 #include <Models/Glm/ChoiceData.hpp>
 
-#include <LinAlg/Array.hpp>
-
 #include <boost/shared_ptr.hpp>
 
 namespace BOOM{
@@ -39,10 +37,9 @@ namespace BOOM{
     typedef std::vector<Ptr<CategoricalData> > ResponseVec;
 
     MLogitBase(uint Nch, uint Psub, uint Pch);
-    MLogitBase(ResponseVec responses, const Mat &Xsubject,
-	       const Array &Xchoice);
-    MLogitBase(ResponseVec responses, const Mat &Xsubject);
-    MLogitBase(const std::vector<Ptr<ChoiceData> > &dv);
+    MLogitBase(ResponseVec responses,
+               const Mat &Xsubject,
+	       const std::vector<Mat> &Xchoice);
 
     MLogitBase(const MLogitBase &rhs);
     MLogitBase * clone()const=0;

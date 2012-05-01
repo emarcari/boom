@@ -21,112 +21,25 @@
 namespace BOOM{
 
   typedef ChoiceData CHD;
-  typedef CategoricalData CAT;
   typedef VectorData VD;
 
-//   CHD::ChoiceData(Ptr<CAT> y, const Vec & subject, const Mat &choice,
-// 		  bool add_subject_icpt, bool add_choice_icpt)
-//     : y_(y),
-//       xsubject_(),
-//       xchoice_(choice.nrow())
-//   {
-//     if(add_subject_icpt) xsubject_ = new VD(concat(1.0, subject));
-//     else xsubject_ = new VD(subject);
-
-//     uint n = choice.nrow();
-//     assert(n==0 || n==y->nlevels());
-//     for(uint i=0; i<n; ++i){
-//       if(add_choice_icpt) xchoice_[i] = new VD(concat(1.0, choice.row(i)));
-//       else xchoice_[i] = new VD(choice.row(i));
-//     }
-//   }
-
-  CHD::ChoiceData(uint val, uint Nlevels, Ptr<VectorData> subject)
-    : CAT(val, Nlevels),
-      xsubject_(subject),
-      xchoice_()
+  ChoiceData::ChoiceData(const CategoricalData &y,
+                         const Ptr<VectorData> &subject_x,
+                         const std::vector<Ptr<VectorData> > & choice_x)
+      : CategoricalData(y),
+        xsubject_(subject_x),
+        xchoice_(choice_x),
+        big_x_current_(false)
   {}
 
-
-  CHD::ChoiceData(uint val, Ptr<CatKey> key, Ptr<VectorData> subject)
-    : CAT(val, key),
-      xsubject_(subject),
-      xchoice_()
-  {}
-
-  CHD::ChoiceData(const string & lab, Ptr<CatKey> key,
-	       Ptr<VectorData> subject, bool grow)
-    : CAT(lab, key, grow),
-      xsubject_(subject),
-      xchoice_()
-  {}
-
-  CHD::ChoiceData(uint val, Ptr<ChoiceData> last,
-	       Ptr<VectorData> subject)
-    : CAT(val, last->key()),
-      xsubject_(subject),
-      xchoice_()
-  {}
-
-  CHD::ChoiceData(const string & lab, Ptr<ChoiceData> last,
-	       Ptr<VectorData> subject, bool grow)
-    : CAT(lab, last->key(), grow),
-      xsubject_(subject),
-      xchoice_()
-  {}
-
-  inline Ptr<VectorData> getsub(Ptr<VectorData> s){
-    if(!!s) return s;
-    return new VectorData(1, 1.0);
-  }
-
-  CHD::ChoiceData(uint val, uint Nlevels,
-		  std::vector<Ptr<VectorData> > choice,
-		  Ptr<VectorData> subject)
-    : CAT(val, Nlevels),
-      xsubject_(getsub(subject)),
-      xchoice_(choice)
-  {}
-
-  CHD::ChoiceData(uint val, Ptr<CatKey> key,
-	       std::vector<Ptr<VectorData> > choice,
-	       Ptr<VectorData> subject)
-    : CAT(val, key),
-      xsubject_(getsub(subject)),
-      xchoice_(choice)
-  {}
-
-  CHD::ChoiceData(const string & lab, Ptr<CatKey> key,
-	       std::vector<Ptr<VectorData> > choice,
-	       Ptr<VectorData> subject, bool grow)
-    : CAT(lab, key, grow),
-      xsubject_(getsub(subject)),
-      xchoice_(choice)
-  {}
-
-  CHD::ChoiceData(uint val, Ptr<ChoiceData> last,
-	       std::vector<Ptr<VectorData> > choice,
-	       Ptr<VectorData> subject)
-    : CAT(val, last->key()),
-      xsubject_(getsub(subject)),
-      xchoice_(choice)
-  {}
-
-  CHD::ChoiceData(const string & lab, Ptr<ChoiceData> last,
-		  std::vector<Ptr<VectorData> > choice,
-		  Ptr<VectorData> subject, bool grow)
-    : CAT(lab, last->key(), grow),
-      xsubject_(getsub(subject)),
-      xchoice_(choice)
-  {}
-  //------------------------------------------------------------
   CHD::ChoiceData(const CHD &rhs)
     : Data(rhs),
-      CAT(rhs),
+      CategoricalData(rhs),
       xsubject_(rhs.xsubject_->clone()),
       xchoice_(rhs.xchoice_.size()),
       avail_(rhs.avail_),
-      bigX(rhs.bigX)
+      bigX_(rhs.bigX_),
+      big_x_current_(rhs.big_x_current_)
   {
     uint n = rhs.xsubject_->size();
     for(uint i=0; i<n; ++i) xchoice_[i] = rhs.xchoice_[i]->clone();
@@ -137,28 +50,20 @@ namespace BOOM{
   //======================================================================
 
   ostream & CHD::display(ostream &out)const{
-    out << CAT::display(out) << " " << *xsubject_ << " ";
+    out << CategoricalData::display(out) << " " << *xsubject_ << " ";
     for(uint i=0; i<xchoice_.size(); ++i) out << Xchoice(i) << " ";
     return out;
   }
 
-//   istream & CHD::read(istream &in){
-//     CAT::read(in);
-//     xsubject_->read(in);
-//     for(uint i=0; i<xchoice_.size(); ++i) xchoice_[i]->read(in);
-//     return in;
-//   }
-
   uint CHD::size(bool minimal)const{
-    uint ans = CAT::size(minimal);
+    uint ans = CategoricalData::size(minimal);
     ans += xsubject_->size(minimal);
     for(uint i=0; i<xchoice_.size(); ++i)
       ans += Xchoice(i).size();
     return ans;
   }
 
-
-  uint CHD::nchoices()const{ return CAT::nlevels();}
+  uint CHD::nchoices()const{ return CategoricalData::nlevels();}
   uint CHD::n_avail()const{return avail_.nvars();}
   bool CHD::avail(uint i)const{return avail_[i];}
 
@@ -167,15 +72,15 @@ namespace BOOM{
     if(xchoice_.empty()) return 0;
     return xchoice_[0]->size();}
 
-  const uint & CHD::value()const{return CAT::value();}
-  void CHD::set_y(uint y){CAT::set(y);}
+  const uint & CHD::value()const{return CategoricalData::value();}
+  void CHD::set_y(uint y){CategoricalData::set(y);}
 
-  const string & CHD::lab()const{return CAT::lab();}
+  const string & CHD::lab()const{return CategoricalData::lab();}
 
   const std::vector<string> & CHD::labels()const{
-    return CAT::labels();}
+    return CategoricalData::labels();}
 
-  void CHD::set_y(const string & y){CAT::set(y);}
+  void CHD::set_y(const string & y){CategoricalData::set(y);}
 
   const Vec & CHD::Xsubject()const{return xsubject_->value();}
 
@@ -211,23 +116,19 @@ namespace BOOM{
       it = X.row_begin(m) + (inc ? M : M-1) *psub;
       std::copy(xch.begin(), xch.end(), it);
     }
+    big_x_current_ = true;
     return X;
   }
 
   const Mat & CHD::X(bool inc_zeros)const{
-    if(!bigX){ bigX.reset(new Mat); }
-    write_x(*bigX,inc_zeros);
-    return *bigX;
+    if(!check_big_x(inc_zeros)) write_x(bigX_, inc_zeros);
+    return bigX_;
   }
 
-  void CHD::set_wsp(boost::shared_ptr<Mat> newX){
-    bigX = newX;
+  bool CHD::check_big_x(bool include_zeros)const{
+    if(!big_x_current_) return false;
+    return bigX_.size() == choice_nvars() +
+        subject_nvars() * (nchoices() - 1 + include_zeros);
   }
 
-  void CHD::ref_x(const ChoiceData &rhs){
-    xsubject_ = rhs.xsubject_;
-    xchoice_ = rhs.xchoice_;
-    avail_ = rhs.avail_;
-    bigX = rhs.bigX;
-  }
 }
