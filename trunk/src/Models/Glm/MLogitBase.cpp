@@ -22,7 +22,6 @@
 #include <cpputil/math_utils.hpp>
 #include <cpputil/lse.hpp>
 
-#include <LinAlg/Array3.hpp>
 #include <numopt.hpp>
 
 #include <boost/bind.hpp>
@@ -41,35 +40,9 @@ namespace BOOM{
   {
   }
   //------------------------------------------------------------
-  MLB::MLogitBase(ResponseVec responses, const Mat &Xsubject,
-		  const Array &Xchoice)
-    : DataPolicy(),
-      PriorPolicy(),
-      choice_data_wsp_(new Mat),
-      nch_(responses[0]->nlevels()),
-      psub_(Xsubject.ncol()),
-      pch_(Xchoice.dim(2))
-  {
-    assert(nch_==Xchoice.dim(1));
-
-    uint n = responses.size();
-    Ptr<CatKey> key = responses[0]->key();
-    for(uint i=0; i<n; ++i){
-      NEW(VectorData, subject)(Xsubject.row(i));
-      std::vector<Ptr<VectorData> > choice;
-      for(uint j=0; j<nch_; ++j){
-	NEW(VectorData, ch)(Xchoice.vector_slice(Array::index3(i, j, -1)));
-	choice.push_back(ch);
-      }
-
-      NEW(ChoiceData, dp)(responses[i]->lab(), key, choice, subject);
-      dp->set_wsp(choice_data_wsp_);
-      add_data(dp);
-    }
-
-  }
-  //------------------------------------------------------------
-  MLB::MLogitBase(ResponseVec responses, const Mat &Xsubject)
+  MLB::MLogitBase(ResponseVec responses,
+                  const Mat &Xsubject,
+		  const std::vector<Mat> &Xchoice)
     : DataPolicy(),
       PriorPolicy(),
       choice_data_wsp_(new Mat),
@@ -78,24 +51,53 @@ namespace BOOM{
       pch_(0)
   {
     uint n = responses.size();
-    Ptr<CatKey> key = responses[0]->key();
+    if(nrow(Xsubject) != n
+       || (!Xchoice.empty() && Xchoice.size() != n)){
+      ostringstream err;
+      err << "Predictor sizes do not match in MLogitBase constructor" << endl
+          << "responses.size() = " << n << endl
+          << "nrow(Xsubject)   = " << nrow(Xsubject) << endl;
+      if(!Xchoice.empty()){
+        err << "Xchoice.size()   = " << Xchoice.size() << endl;
+      }
+      report_error(err.str());
+    }
+
     for(uint i=0; i<n; ++i){
-      NEW(VectorData, xsub)(Xsubject.row(i));
-      Ptr<ChoiceData> dp(new ChoiceData(responses[i]->lab(), key, xsub));
-      dp->set_wsp(choice_data_wsp_);
+      NEW(VectorData, subject)(Xsubject.row(i));
+      std::vector<Ptr<VectorData> > choice;
+      if(!Xchoice.empty()){
+        const Mat & choice_matrix(Xchoice[i]);
+        if(pch_ == 0){
+          pch_ = ncol(choice_matrix);
+        }else if(pch_ != ncol(choice_matrix)){
+          ostringstream err;
+          err << "The number of columns in the choice matrix for observation "
+              << i
+              << " did not match previous observations." << endl
+              << "ncol(Xsubject[i]) = " << ncol(choice_matrix) << endl
+              << "previously:         " << pch_ << endl;
+          report_error(err.str());
+        }
+
+        if(nrow(choice_matrix) != nch_){
+          ostringstream err;
+          err << "The number of rows in choice matrix does not match the "
+              << "number of choices available in the response." << endl
+              << "response:  " << nch_ << endl
+              << "Xchoice[" << i << "]: " << nrow(choice_matrix) << endl;
+          report_error(err.str());
+        }
+        for(uint j=0; j<nch_; ++j){
+          NEW(VectorData, ch)(choice_matrix.row(j));
+          choice.push_back(ch);
+        }
+      }
+
+      NEW(ChoiceData, dp)(*responses[i], subject, choice);
       add_data(dp);
     }
-  }
 
-  MLB::MLogitBase(const std::vector<Ptr<ChoiceData> >  &dv)
-    : DataPolicy(),
-      PriorPolicy(),
-      choice_data_wsp_(new Mat),
-      nch_(dv[0]->nchoices()),
-      psub_(dv[0]->subject_nvars()),
-      pch_(dv[0]->choice_nvars())
-  {
-    set_data(dv.begin(), dv.end());
   }
 
   MLB::MLogitBase(const MLogitBase &rhs)
@@ -180,7 +182,6 @@ namespace BOOM{
 
 
   void MLB::add_data(Ptr<ChoiceData> dp){
-    dp->set_wsp(choice_data_wsp_);
     DataPolicy::add_data(dp);
   }
 

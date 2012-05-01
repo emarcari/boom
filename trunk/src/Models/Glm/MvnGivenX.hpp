@@ -157,12 +157,14 @@ namespace BOOM{
     //   subject_characeristics: An n x p array with rows
     //     corresponding to subjects, and columns to measurements of
     //     each subject.
-
-    //   choice_characteristics: an [n x p x nchoices] array with
-    //     dimensions corresponding to subject, measurements of choice
-    //     characteristics for that choice, and choice.
+    //   choice_characteristics: a vector of [nchoices x p] matrices
+    //     containing characteristics of the objects to be chosen.
+    //   number_of_choices: The number of choices available for the
+    //     response.  If choice_characteristics is provided, this
+    //     argument must match.
     void set_x(const Mat & subject_characeristics,
-               const Array & choice_characteristics);
+               const std::vector<Mat> & choice_characteristics,
+               int number_of_choices);
 
     Ptr<VectorParams> Mu_prm();
     const Ptr<VectorParams> Mu_prm()const;

@@ -34,25 +34,21 @@ namespace BOOM{
 
     // each column of beta_subject corresponds to a different choice.
     MultinomialLogitModel(const Mat & beta_subject, const Vec &beta_choice);
-
-    // the function make_catdat_ptrs can make a ResponseVec out of a
-    // vector of strings or uints
-    MultinomialLogitModel(const std::vector<uint> &y, const Mat &Xsubject_info,
-			  const Array &Xchoice_info);
-    MultinomialLogitModel(const std::vector<string> &y, const Mat &Xsubject_info,
-			  const Array &Xchoice_info);
-
-    MultinomialLogitModel(const std::vector<uint> & y,    // no choice information
-			  const Mat &Xsubject_info);
-    MultinomialLogitModel(const std::vector<string> &y,    // no choice information
-			  const Mat &Xsubject_info);
-
-    MultinomialLogitModel(ResponseVec responses, const Mat &Xsubject_info,
-			  const Array &Xchoice_info); //dim=[#obs, #nch, #pch]
-    MultinomialLogitModel(ResponseVec responses,    // no choice information
-			  const Mat &Xsubject_info);
     MultinomialLogitModel(uint Nchoices, uint subject_xdim, uint choice_xdim);
-    MultinomialLogitModel(const std::vector<Ptr<ChoiceData> > &);
+
+    // Args:
+    //   responses:  The vector of responses
+    //   Xsubject_info: A matrix of subject level predictors.  Each
+    //     row describes a subject associated with that observation.
+    //   Xchoice_info: Each entry is a matrix of predictors describing
+    //     the characteristics of the choices for that observation.
+    //     Rows of the matrix correspond to choices.  Columns
+    //     correspond to predictors.  The vector can be empty to
+    //     signify that there is no choice-level data available.
+    MultinomialLogitModel(const std::vector<Ptr<CategoricalData> > & responses,
+                          const Mat &Xsubject_info,
+                          const std::vector<Mat> & Xchoice_info = std::vector<Mat>());
+
     MultinomialLogitModel(const MultinomialLogitModel &rhs);
     MultinomialLogitModel * clone()const;
 

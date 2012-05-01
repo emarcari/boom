@@ -26,7 +26,6 @@
 #include <boost/bind.hpp>
 
 #include <LinAlg/SubMatrix.hpp>
-#include <LinAlg/Array.hpp>
 
 namespace BOOM{
 
@@ -62,31 +61,15 @@ namespace BOOM{
     setup_params();
   }
   //------------------------------------------------------------
-  MLS::MLogitSplit(ResponseVec responses,
+  MLS::MLogitSplit(const std::vector<Ptr<CategoricalData> > & responses,
 		   const Mat &Xsubject,
-		   const Array &Xchoice)
+		   const std::vector<Matrix> &Xchoice)
     : MLB(responses, Xsubject, Xchoice),
-      ParamPolicy(),
-      beta_choice_(new GlmCoefs(Xchoice.dim(2)))
+      ParamPolicy()
   {
-    setup_beta_subject();
-    setup_params();
-  }
-  //------------------------------------------------------------
-  MLS::MLogitSplit(ResponseVec responses, const Mat &Xsubject)
-    : MLB(responses, Xsubject),
-      ParamPolicy(),
-      beta_choice_(new GlmCoefs(0) )
-  {
-    setup_beta_subject();
-    setup_params();
-  }
-  //------------------------------------------------------------
-  MLS::MLogitSplit(const std::vector<Ptr<ChoiceData> >  &dv)
-    : MLB(dv),
-      ParamPolicy(),
-      beta_choice_(new GlmCoefs(dv[0]->choice_nvars()))
-  {
+    if(!Xchoice.empty()){
+      beta_choice_.reset(new GlmCoefs(choice_nvars()));
+    }
     setup_beta_subject();
     setup_params();
   }

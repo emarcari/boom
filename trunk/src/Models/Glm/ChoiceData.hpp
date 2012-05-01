@@ -25,49 +25,20 @@
 
 namespace BOOM{
 
-  class ChoiceData
-    : virtual public CategoricalData
+  class ChoiceData : public CategoricalData
   {
-    /*
-      virtual inheritance is needed for MarkovChoiceData because both
-      MarkovData and ChoiceData inherit publicly from CategoricalData
-     */
-
   public:
-//     ChoiceData(Ptr<CategoricalData> y,
-// 	       const Vec &subject_x,
-// 	       const Mat & choice_x,   // nrows = number of choices
-// 	       bool add_cust_icpt=true,
-// 	       bool add_choice_icpt=false);
 
-    ChoiceData(uint val, uint Nlevels, Ptr<VectorData> subject);
-
-    ChoiceData(uint val, Ptr<CatKey>, Ptr<VectorData> subject);
-    ChoiceData(const string & lab, Ptr<CatKey>,
-	       Ptr<VectorData> subject, bool grow=false);
-    ChoiceData(uint val, Ptr<ChoiceData> last, Ptr<VectorData> subject);
-    ChoiceData(const string & lab, Ptr<ChoiceData> last,
-	       Ptr<VectorData> subject, bool grow=false);
-
-
-    ChoiceData(uint val, uint Nlevels,
-	       std::vector<Ptr<VectorData> > choice,
-	       Ptr<VectorData> subject=0);
-
-    ChoiceData(uint val, Ptr<CatKey>,
-	       std::vector<Ptr<VectorData> > choice,
-	       Ptr<VectorData> subject=0);
-    ChoiceData(const string & lab, Ptr<CatKey>,
-	       std::vector<Ptr<VectorData> > choice,
-	       Ptr<VectorData> subject=0, bool grow=false);
-    ChoiceData(uint val, Ptr<ChoiceData> last,
-	       std::vector<Ptr<VectorData> > choice,
-	       Ptr<VectorData> subject=0);
-
-    ChoiceData(const string & lab, Ptr<ChoiceData> last,
-	       std::vector<Ptr<VectorData> > choice,
-	       Ptr<VectorData> subject=0, bool grow=false);
-
+    // Args:
+    //   y:  The response
+    //   subject_x: A vector of predictors describing subject level
+    //     characteristics.  Should contain an intercept.
+    //   choice_x: A vector of vectors describing characteristics of
+    //     the object being chosen.  May be empty if all data is
+    //     subject-level data.
+    ChoiceData(const CategoricalData &y,
+               const Ptr<VectorData> &subject_x,
+               const std::vector<Ptr<VectorData> > & choice_x);
 
     ChoiceData(const ChoiceData &rhs);
 
@@ -107,15 +78,19 @@ namespace BOOM{
 
     virtual void set_Xsubject(const Vec &x);
     virtual void set_Xchoice(const Vec &x, uint i);
-    void set_wsp(boost::shared_ptr<Mat> newX);
-
-    void ref_x(const ChoiceData &);   // this uses the same space for x as rhs
   private:
     Ptr<VectorData> xsubject_;                // age of car buyer
     std::vector<Ptr<VectorData> > xchoice_;   // price of car
+
     Selector avail_;                          // which choices are available
     Vec null_;           // zero length.  return for null reference.
-    mutable boost::shared_ptr<Mat> bigX;
+
+    // All subject and choice predictors stretched out into a single
+    // predictor vector
+    mutable Matrix bigX_;
+    mutable bool big_x_current_;
+
+    bool check_big_x(bool include_zeros)const;
   };
   //______________________________________________________________________
 }
