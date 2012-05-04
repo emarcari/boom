@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <BOOM.hpp>
 
  /*======================================================================*/
  namespace BOOM{

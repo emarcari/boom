@@ -86,7 +86,7 @@ namespace BOOM{
        double u = runif() * std::numeric_limits<unsigned long>::max();
        // convert from double to long long (using llround), and then
        // from long long to unsigned long.
-       unsigned long ans(llround(u));
+       unsigned long ans(round(u)); // TODO Why is std::llround() not available?
        return ans;
      }
     //======================================================================

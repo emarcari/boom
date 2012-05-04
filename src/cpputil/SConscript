@@ -7,14 +7,12 @@ check_empty.cpp
 check_directory.cpp
 compare_vector_bool.cpp
 count_lines.cpp
-DataTable.cpp
 Date.cpp
 DateTime.cpp
 DefaultVnames.cpp
 get_date.cpp
 get_dpath.cpp
 gll.cpp
-include.cpp
 io.cpp
 io_manager.cpp
 infinity.cpp
@@ -30,15 +28,12 @@ ParamHolder.cpp
 ProgramOptions.cpp
 ProgressTracker.cpp
 print_columns.cpp
-pwd.cpp
 Redirector.cpp
 replace_all.cpp
 read_file.cpp
 rep.cpp
 report_error.cpp
-Resampler.cpp
 safelog.cpp
-simple_random_sample.cpp
 split.cpp
 split_delimited.cpp
 split_string.cpp
@@ -48,6 +43,13 @@ strip_path.cpp
 strip_white_space.cpp
 trim_white_space.cpp
 """)
+
+## REMOVED
+# DataTable.cpp
+# Resampler.cpp
+# include.cpp
+# pwd.cpp
+# simple_random_sample.cpp
 
 obj = env.Object(file_list)
 Return('obj')

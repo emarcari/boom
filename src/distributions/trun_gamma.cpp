@@ -23,6 +23,7 @@
 #include <cpputil/report_error.hpp>
 #include <distributions/trun_gamma.hpp>
 #include <distributions/BoundedAdaptiveRejectionSampler.hpp>
+#include <BOOM.hpp>
 
 namespace BOOM{
 

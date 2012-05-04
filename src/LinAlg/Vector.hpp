@@ -60,7 +60,7 @@ namespace BOOM{
     Vector(const std::string &s, const std::string &sep);
 
     // A vector can be build using a stream of numbers, e.g. from a file.
-    explicit Vector(istream &in);
+    explicit Vector(std::istream &in);
 
     // Conversion from std::vector<double> is covered under the
     // template container structure, but the specialization for

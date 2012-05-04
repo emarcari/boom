@@ -3,6 +3,7 @@ Import('env')
 file_list = Split("""
 Array3.cpp
 Array.cpp
+ArrayIterator.cpp
 Cholesky.cpp
 CorrelationMatrix.cpp
 DiagonalMatrix.cpp
@@ -13,6 +14,7 @@ LU.cpp
 Matrix.cpp
 MatrixPartition.cpp
 QR.cpp
+Selector.cpp
 SpdMatrix.cpp
 SVD.cpp
 SWEEP.cpp

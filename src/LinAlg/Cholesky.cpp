@@ -18,6 +18,7 @@
 #include "Cholesky.hpp"
 #include <cpputil/report_error.hpp>
 #include <sstream>
+#include <BOOM.hpp>
 #include "Vector.hpp"
 
 extern "C"{

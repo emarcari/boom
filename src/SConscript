@@ -1,7 +1,7 @@
 import os
 
 Import('flags Libname Libhome OtherInc be')
-allflags = " -Wall -Wunused -Wextra -Werror -Woverloaded-virtual -Wsign-promo "
+allflags = " -Wall -Wunused -Wextra -Woverloaded-virtual -Wsign-promo -Wno-attributes "
 allflags += " -Wno-uninitialized "
 flags = flags + allflags
 
@@ -30,11 +30,6 @@ Models/Policies
 Models/PosteriorSamplers
 Models/Glm
 Models/Glm/PosteriorSamplers
-Models/HMM
-Models/HMM/PosteriorSamplers
-Models/StateSpace
-Models/StateSpace/Filters
-Models/StateSpace/PosteriorSamplers
 Models/IRT
 Samplers
 TargetFun
@@ -43,6 +38,14 @@ distributions
 numopt
 stats
 """)
+
+## Moved out because there are missing files
+
+# Models/HMM
+# Models/HMM/PosteriorSamplers
+# Models/StateSpace
+# Models/StateSpace/Filters
+# Models/StateSpace/PosteriorSamplers
 
 ## Models/TimeSeries  ## all headers.  See StateSpace
 
