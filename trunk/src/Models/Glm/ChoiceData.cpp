@@ -29,7 +29,8 @@ namespace BOOM{
       : CategoricalData(y),
         xsubject_(subject_x),
         xchoice_(choice_x),
-        big_x_current_(false)
+        big_x_current_(false),
+        not_so_big_x_current_(false)
   {}
 
   CHD::ChoiceData(const CHD &rhs)
@@ -39,7 +40,9 @@ namespace BOOM{
       xchoice_(rhs.xchoice_.size()),
       avail_(rhs.avail_),
       bigX_(rhs.bigX_),
-      big_x_current_(rhs.big_x_current_)
+      not_so_bigX_(rhs.not_so_bigX_),
+      big_x_current_(rhs.big_x_current_),
+      not_so_big_x_current_(rhs.not_so_big_x_current_)
   {
     uint n = rhs.xsubject_->size();
     for(uint i=0; i<n; ++i) xchoice_[i] = rhs.xchoice_[i]->clone();
@@ -116,13 +119,28 @@ namespace BOOM{
       it = X.row_begin(m) + (inc ? M : M-1) *psub;
       std::copy(xch.begin(), xch.end(), it);
     }
-    big_x_current_ = true;
+//    if (inc_zero) {
+//    	big_x_current_ = true;
+//    } else {
+//    	not_so_big_x_current_ = true;
+//    }
     return X;
   }
 
   const Mat & CHD::X(bool inc_zeros)const{
-    if(!check_big_x(inc_zeros)) write_x(bigX_, inc_zeros);
-    return bigX_;
+  	if (inc_zeros) {
+  		if (!big_x_current_) {
+  			write_x(bigX_, inc_zeros);
+  			big_x_current_ = true;
+  		}
+  		return bigX_;
+    } else {
+    	if (!not_so_big_x_current_) {
+    		write_x(not_so_bigX_, inc_zeros);
+    		not_so_big_x_current_ = true;
+    	}
+    	return not_so_bigX_;
+    }
   }
 
   bool CHD::check_big_x(bool include_zeros)const{

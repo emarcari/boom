@@ -19,6 +19,7 @@
 #include <Models/Glm/PosteriorSamplers/MlogitRwm.hpp>
 #include <Models/MvnModel.hpp>
 #include <distributions.hpp>
+#include <Bmath/nmath.hpp>
 
 namespace BOOM{
 

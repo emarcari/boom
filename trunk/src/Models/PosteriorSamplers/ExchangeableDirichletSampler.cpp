@@ -18,6 +18,7 @@
 #include <Models/PosteriorSamplers/ExchangeableDirichletSampler.hpp>
 #include <Samplers/ScalarSliceSampler.hpp>
 #include <distributions.hpp>
+#include <Bmath/nmath.hpp>
 
 namespace BOOM{
 

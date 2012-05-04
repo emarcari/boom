@@ -55,6 +55,8 @@
  */
 
 #include <Bmath/Bmath.hpp>
+#include <Bmath/nmath.hpp>
+#include <uint.hpp>
 #include <cpputil/report_error.hpp>
 
 #include <vector>
@@ -87,13 +89,13 @@ namespace Rmath{
      *  where rN[j] ~ Bin(n, prob[j]) ,  sum_j rN[j] == n,  sum_j prob[j] == 1,
      */
 
-    int K = prob.size();
+    BOOM::uint K = prob.size();
     if(rN.size()!=K) rN.resize(K);
     if(K < 1){
       BOOM::report_error("empty argument 'prob' in rmultinom_mt");
     }
 
-    int k;
+    BOOM::uint k;
     double pp, p_tot = 0.;
 
     /* Note: prob[K] is only used here for checking  sum_k prob[k] = 1 ;
@@ -106,7 +108,7 @@ namespace Rmath{
         err << "rmultinom:  element " << k
             << " (counting from 0) of 'prob' is illegal."
             << std::endl << "prob =";
-        for(int m = 0; m < K; ++m){
+        for(BOOM::uint m = 0; m < K; ++m){
           err << " " << prob[m];
         }
         err << std::endl;

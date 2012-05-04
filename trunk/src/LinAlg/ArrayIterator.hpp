@@ -49,13 +49,13 @@ using std::endl;
       return !(*this == rhs); }
 
     ArrayIterator & operator++(){
-      for(int d = 0; d < dims_.size(); ++d){
+      for(uint d = 0; d < dims_.size(); ++d){
         ++pos_[d];
         if(pos_[d] < dims_[d]) return *this;
         pos_[d] = 0;
       }
       pos_ = dims_;
-      for(int i = 1; i < dims_.size(); ++i) --pos_[i];
+      for(uint i = 1; i < dims_.size(); ++i) --pos_[i];
       return *this;
     }
 
