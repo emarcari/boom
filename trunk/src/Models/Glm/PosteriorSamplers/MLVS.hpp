@@ -37,10 +37,13 @@ namespace BOOM{
   public:
     MlvsCdSuf_ml(uint dim);
 
+    MlvsCdSuf_ml(const Spd & inMatrix, const Vec & inVector);
+
     virtual MlvsCdSuf_ml * clone()const;
     virtual void clear();
     virtual void update(const Ptr<ChoiceData> dp, const Vec &wgts,
 			const Vec &u);
+    void update(const Spd & mat, const Vec & weightedU);
     virtual void add(Ptr<MlvsCdSuf>);
     void add(Ptr<MlvsCdSuf_ml>);
 
@@ -67,7 +70,8 @@ namespace BOOM{
 	 Ptr<MvnBase> Pri,
 	 Ptr<VariableSelectionPrior> vPri,
 	 uint nthreads=1,
-	 bool check_initial_condition=true);
+	 bool check_initial_condition=true,
+	 int mode=0);
     virtual double logpri()const;
     virtual void impute_latent_data();
     virtual void draw_beta();

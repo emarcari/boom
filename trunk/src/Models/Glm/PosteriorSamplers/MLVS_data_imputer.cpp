@@ -28,12 +28,16 @@
 #include <distributions.hpp>
 #include <cmath>
 
+#ifdef CUDA_ENABLED
+#include <GPU/GPU_MDI_worker.hpp>
+#endif
+
 namespace BOOM{
 
   typedef MlvsDataImputer MDI;
-  MDI::MlvsDataImputer(MLogitBase *Mod, Ptr<MlvsCdSuf> Suf, uint nthreads){
+  MDI::MlvsDataImputer(MLogitBase *Mod, Ptr<MlvsCdSuf> Suf, uint nthreads, int computeMode){
     if(nthreads<=1){
-      imp = new mlvs_impute::MDI_unthreaded(Mod, Suf);
+      imp = new mlvs_impute::MDI_unthreaded(Mod, Suf, computeMode);
     }else{
       imp = new mlvs_impute::MDI_threaded(Mod, Suf, nthreads);
     }
@@ -48,12 +52,27 @@ namespace BOOM{
     using boost::thread;
     typedef MDI_worker MDIW;
 
-  MDI_unthreaded::MDI_unthreaded(MLogitBase *m, Ptr<MlvsCdSuf> s)
+  MDI_unthreaded::MDI_unthreaded(MLogitBase *m, Ptr<MlvsCdSuf> s, int computeMode)
       : mlm(m),
-	suf(s),
-	imp(mlm, s)
-    {}
-    void MDI_unthreaded::draw(){ imp(); }
+	suf(s)
+    {
+#ifndef CUDA_ENABLED
+    	imp = new MDI_worker(mlm, s);
+#else
+    	switch (computeMode) {
+    		case ComputeMode::GPU :
+    			imp = new GPU_MDI_worker(mlm, s);
+    			break;
+    		case ComputeMode::CPU_RNG :
+    			imp = new CPU_MDI_worker(mlm, s);
+    			break;
+    		default :
+    			imp = new MDI_worker(mlm, s);
+    			break;
+    	}
+#endif
+    }
+    void MDI_unthreaded::draw(){ (*imp)(); }
     //======================================================================
 
     MDI_threaded::MDI_threaded(MLogitBase *m,  Ptr<MlvsCdSuf> s,

@@ -8,6 +8,7 @@ check_directory.cpp
 compare_vector_bool.cpp
 count_lines.cpp
 Date.cpp
+DataTable.cpp
 DateTime.cpp
 DefaultVnames.cpp
 get_date.cpp
@@ -28,6 +29,7 @@ ParamHolder.cpp
 ProgramOptions.cpp
 ProgressTracker.cpp
 print_columns.cpp
+pwd.cpp
 Redirector.cpp
 replace_all.cpp
 read_file.cpp
@@ -48,7 +50,6 @@ trim_white_space.cpp
 # DataTable.cpp
 # Resampler.cpp
 # include.cpp
-# pwd.cpp
 # simple_random_sample.cpp
 
 obj = env.Object(file_list)

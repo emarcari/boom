@@ -42,10 +42,16 @@ link_directories(
 
 set(SOURCE_FILES
     gpu_example.cpp
-#	MLAuxMixSampler_test.cpp
-#	MersenneTwister_kernel.cu
-#	GPU_MDI_worker.cpp
-#	GPU_MDI_worker_kernel.cu
+	MersenneTwister_kernel.cu
+	GPU_MDI_worker.cpp
+	GPU_MDI_worker_kernel.cu
+	)
+	
+set(OLD_SOURCE_FILES    
+    old_test.cpp
+	MersenneTwister_kernel.cu
+	GPU_MDI_worker.cpp
+	GPU_MDI_worker_kernel.cu
 	)	
 	
 if (APPLE)
@@ -99,11 +105,14 @@ if(CUDA_FOUND)
 	     add_definitions(-DGTX280)	
  	endif(APPLE)		
  	set(CUDA_NVCC_FLAGS -arch compute_11)
- 	cuda_add_executable(mlaux ${SOURCE_FILES})	
+ 	cuda_add_executable(mlaux ${SOURCE_FILES})
+ 	cuda_add_executable(old_mlaux ${OLD_SOURCE_FILES})
 else(CUDA_FOUND)
 	add_executable(mlaux ${SOURCE_FILES})
+	add_executable(old_mlaux ${OLD_SOURCE_FILES})
 endif(CUDA_FOUND)
 
 target_link_libraries(mlaux BOOM ${BOOST_LIBRARIES} ${MATH_LIBRARIES})
+target_link_libraries(old_mlaux BOOM ${BOOST_LIBRARIES} ${MATH_LIBRARIES})
 
 
