@@ -32,7 +32,7 @@
 namespace BOOM{
   class DesignMatrix;
 
-   class DataTable : public LinAlgTypes{
+   class DataTable { //: public LinAlgTypes{
      // A DataTable is created by reading a plain text file and
      // storing "variables" in a table.  Variables can be extracted
      // from the DataTable either individually (e.g. to get the y

@@ -39,13 +39,14 @@ namespace BOOM{
 
   MLVS::MLVS(MLM *Mod, Ptr<MvnBase> Pri,
 	     Ptr<VariableSelectionPrior> Vpri,
-	     uint nthreads, bool check_initial_condition)
+	     uint nthreads, bool check_initial_condition,
+	     int mode)
     : MLVS_base(Mod),
       mod_(Mod),
       pri(Pri),
       vpri(Vpri),
       suf(new MLVSS(Mod->beta_size(false))),
-      imp(new MlvsDataImputer(mod_, suf, nthreads))
+      imp(new MlvsDataImputer(mod_, suf, nthreads, mode))
   {
     if(check_initial_condition){
       if(!BOOM::finite(this->logpri())){
@@ -89,6 +90,11 @@ namespace BOOM{
       sym_(false)
   {}
 
+  MLVSS::MlvsCdSuf_ml(const Spd & inMatrix, const Vec & inVector)
+	  : xtwx_(inMatrix), xtwu_(inVector), sym_(false) {
+	  // Do nothing
+  }
+
   MLVSS * MLVSS::clone()const{ return new MLVSS(*this);}
 
   void MLVSS::clear(){
@@ -102,6 +108,12 @@ namespace BOOM{
     xtwx_.add_inner(X, wgts,false);   // corresponding to subject X's at
     xtwu_ += X.Tmult(wgts*u);         // choice level 0.
     sym_ = false;
+  }
+
+  void MlvsCdSuf_ml::update(const Spd & mat, const Vec & weightedU) {
+	  xtwx_ += mat;
+	  xtwu_ += weightedU;
+	  sym_ = false;
   }
 
   void MLVSS::add(Ptr<MlvsCdSuf> s){

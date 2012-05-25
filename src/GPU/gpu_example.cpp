@@ -3,8 +3,11 @@
 #include <Models/Glm/PosteriorSamplers/MLAuxMixSampler.hpp>
 
 #include <cpputil/string_utils.hpp>
+#include <cpputil/file_utils.hpp>
 #include <cpputil/Split.hpp>
 #include <cpputil/ProgramOptions.hpp>
+
+#include <GPU_MDI_worker.hpp>
 
 #include <vector>
 #include <fstream>
@@ -22,8 +25,9 @@ void ReadChoiceData(const std::string &datafile,
 
   std::vector<std::string> lines;
   int count = 0;
+  int defaultDisplay = 1000;
   while (getline(in, line)) {
-    if (++count % 1000 == 0) {
+    if (++count % defaultDisplay == 0) {
       cout << "read line " << count << endl;
     }
     if(is_all_white(line)) continue;
@@ -46,18 +50,22 @@ void ReadChoiceData(const std::string &datafile,
   StringSplitter split;
   std::vector<std::string> vnames = split(lines[0]);
   if(vnames[84] != "y1"){
-    cout << "vnames[84] should be 'y1', but it is " << vnames[84] << endl;
+    cout << "vnames[84] should be 'y1', but it is [" << vnames[84] << "]" << endl;
   }
-  if(strip_white_space(vnames[85]) != "y1"){
+  if(strip_white_space(vnames[85]) != "y2"){
     cout << "vnames[85] should be 'y2', but it is [" << vnames[85] << "]" << endl;
   }
   assert(strip_white_space(vnames[84]) == "y1");
   assert(strip_white_space(vnames[85]) == "y2");
 
   int observation_number = -1;
+  int display = static_cast<int>(lines.size() / 10.0);
+  if (display < defaultDisplay) {
+    display = defaultDisplay;
+  }
   cout << "processing input" << endl;
   for (int line_number = 1; line_number < nlines; ++line_number) {
-    if (line_number % 1000 == 0) {
+    if (line_number % display == 0) {
       cout << "processing line " << line_number << endl;
     }
     std::vector<std::string> fields = split(lines[line_number]);
@@ -102,7 +110,8 @@ int main(int argc, char **argv) {
   Matrix subject_characteristics;             // Indexed by observation number,
 
 //  std::string datafile = options.get_required_option<std::string>("datafile");
-    std::string datafile = "disguised-data-1.txt";  
+//     std::string datafile = "disguised-data-1.txt";  
+  std::string datafile = "disguised-short.txt";
 
   std::cout << "reading data" << endl;
   ReadChoiceData(datafile,
@@ -115,6 +124,13 @@ int main(int argc, char **argv) {
   NEW(MultinomialLogitModel, model)(make_catdat_ptrs(choice),
                                     subject_characteristics,
                                     choice_characteristics);
+                                    
+  // Set output
+  string hist = "";
+  string base = BOOM::add_to_path(BOOM::pwd(), hist);
+  string name = base + "/beta.hist";
+  model->set_param_filename(base+"/beta.hist");
+                                    
   std::cout << "done building model" << endl;
 
   // Set the prior
@@ -127,17 +143,37 @@ int main(int argc, char **argv) {
   beta_prior->set_x(subject_characteristics,
                     choice_characteristics,
                     model->Nchoices());
-  NEW(MLAuxMixSampler, sampler)(model.get(), beta_prior);
+                    
+  int nthreads = 1;                    
+//  bool useGPU = false;
+  int computeMode = BOOM::ComputeMode::GPU;
+  
+  NEW(MLAuxMixSampler, sampler)(model.get(), beta_prior, nthreads, computeMode);
   std::cout << "all done with prior" << endl;
   model->set_method(sampler);
 
 //  int niter = options.get_with_default<int>("niter", 1000);
-  int niter = 1000;
+//   int niter = 1000;
+//   int writeInterval = 10;
+//   int ping = 100;
 
-  for (int i = 0; i < niter; ++i) {
-    std::cout << "iteration " << i << endl;
-    model->sample_posterior();
-    cout << model->beta() << endl;
-  }
+  int niter = 2;
+  int writeInterval = 1;
+  int ping = 1;
 
+//   for (int i = 0; i < niter; ++i) {
+//     std::cout << "iteration " << i << endl;
+//     model->sample_posterior();
+//    cout << model->beta() << endl;
+    model->io_params(CLEAR);
+    model->track_progress(ping);
+    model->set_bufsize(ping);
+    for(uint i=0; i<niter; ++i){
+      model->sample_posterior();
+      if (i % writeInterval == 0) {
+    	  model->io_params(WRITE);
+      }
+    }
+    model->io_params(FLUSH);    
+//   }
 }
