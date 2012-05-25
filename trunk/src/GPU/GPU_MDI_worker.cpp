@@ -100,7 +100,7 @@ void CMDIW::operator()() {
 
 typedef GPU_MDI_worker GMDIW;
 
-GWDIW::GPU_MDI_worker(MLogitBase *mod, Ptr<MlvsCdSuf> s,
+GMDIW::GPU_MDI_worker(MLogitBase *mod, Ptr<MlvsCdSuf> s,
 		uint Thread_id, uint Nthreads, uint device) :
 	MDI_worker(mod, s, Thread_id, Nthreads) {
 
