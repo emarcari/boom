@@ -146,7 +146,36 @@ int main(int argc, char **argv) {
                     
   int nthreads = 1;                    
 //  bool useGPU = false;
-  int computeMode = BOOM::ComputeMode::GPU;
+
+int mode = BOOM::ComputeMode::CPU;
+
+ if (argc > 1) {
+	  std::string option = argv[1];
+	  if (option == "GPU" || option == "gpu") {
+		  mode = BOOM::ComputeMode::GPU;
+	  }
+	  if (option == "ORIGINAL" || option == "original") {
+	      mode = BOOM::ComputeMode::CPU_ORIGINAL;
+	  }
+	  
+	  if (option == "FLOW" || option == "flow") {
+	    mode = BOOM::ComputeMode::CPU_NEW_FLOW; 
+	  }
+	  
+	  if (option == "PARALLEL" || option == "parallel") {
+	    mode = BOOM::ComputeMode::CPU_PARALLEL;
+	  }  
+	  
+	  	  if (option == "NEW" || option == "new") {
+	    mode = BOOM::ComputeMode::CPU_NEW_PARALLEL;
+	  }  
+	  
+	  std::cerr << "Mode = " << mode << std::endl;
+  }
+
+//    int computeMode = BOOM::ComputeMode::CPU_NEW_PARALLEL;
+//  int computeMode = BOOM::ComputeMode::CPU;
+int computeMode = mode;
   
   NEW(MLAuxMixSampler, sampler)(model.get(), beta_prior, nthreads, computeMode);
   std::cout << "all done with prior" << endl;
