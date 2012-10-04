@@ -43,6 +43,7 @@ link_directories(
 set(SOURCE_FILES
     gpu_example.cpp
 	MersenneTwister_kernel.cu
+	CPU_MDI_worker_MS.cpp
 	GPU_MDI_worker.cpp
 	GPU_MDI_worker_kernel.cu
 	)
@@ -50,6 +51,7 @@ set(SOURCE_FILES
 set(OLD_SOURCE_FILES    
     old_test.cpp
 	MersenneTwister_kernel.cu
+	CPU_MDI_worker_MS.cpp
 	GPU_MDI_worker.cpp
 	GPU_MDI_worker_kernel.cu
 	)	

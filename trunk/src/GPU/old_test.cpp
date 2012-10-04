@@ -21,6 +21,8 @@
 #include <time.h>
 #include <sys/time.h>
 
+#include "GPU_MDI_worker.hpp"
+
 using namespace std;
 using namespace BOOM;
 using BOOM::uint;
@@ -48,14 +50,32 @@ int main(int argc, char **argv){
   double inc_prob = .50;
 
   uint  nthreads=1;
-  bool useGPU = false;
+//   bool useGPU = false;
+  int mode = ComputeMode::CPU;
   std::string fileName = "AutoPref.txt";
 //  if(argc>1) sscanf(argv[1], "%u", &nthreads);
   if (argc > 2) {
 	  std::string option = argv[2];
 	  if (option == "GPU" || option == "gpu") {
-		  useGPU = true;
+		  mode = ComputeMode::GPU;
 	  }
+	  if (option == "ORIGINAL" || option == "original") {
+	      mode = ComputeMode::CPU_ORIGINAL;
+	  }
+	  
+	  if (option == "FLOW" || option == "flow") {
+	    mode = ComputeMode::CPU_NEW_FLOW; 
+	  }
+	  
+	  if (option == "PARALLEL" || option == "parallel") {
+	    mode = ComputeMode::CPU_PARALLEL;
+	  }  
+	  
+	  	  if (option == "NEW" || option == "new") {
+	    mode = ComputeMode::CPU_NEW_PARALLEL;
+	  }  
+	  
+	  std::cerr << "Mode = " << mode << std::endl;
   }
 
   if (argc > 1) {
@@ -90,7 +110,7 @@ int main(int argc, char **argv){
 //  X = cbind(X,trash);
 
   cout << "MLAuxMix with " << ncol(X) << " X's and " << n << " Y's." << endl;
-  mod = make_mod(y,X, inc_prob, "hist.mlaux", nthreads, useGPU ? 1 : 0);
+  mod = make_mod(y,X, inc_prob, "hist.mlaux", nthreads, mode);
 
   struct timeval time1, time2;
   gettimeofday(&time1, NULL);

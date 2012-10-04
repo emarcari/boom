@@ -16,7 +16,7 @@ typedef float Real;
 namespace BOOM {
 
 namespace ComputeMode {
-	enum { CPU=0, GPU, CPU_RNG, CPU_PARALLEL };
+	enum { CPU=0, GPU, CPU_ORIGINAL, CPU_NEW_FLOW, CPU_PARALLEL, CPU_NEW_PARALLEL };
 }
 
 namespace mlvs_impute {

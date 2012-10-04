@@ -10,9 +10,9 @@
 
 #define DO_CPU
 
-#define DO_GPU
-#define REDUCE_ON_GPU
-#define MT_ON_GPU
+//#define DO_GPU
+//#define REDUCE_ON_GPU
+//#define MT_ON_GPU
 
 #include "GPU_MDI_worker.hpp"
 #include "Models/Glm/PosteriorSamplers/MLVS.hpp"
@@ -44,59 +44,60 @@ namespace BOOM {
 
 namespace mlvs_impute {
 
-typedef CPU_MDI_worker CMDIW;
+//typedef CPU_MDI_worker CMDIW;
 //#define ORIGINAL_FLOW // Turns on/off pre-modification random number stream
 
-CMDIW::CPU_MDI_worker(MLogitBase *mod, Ptr<MlvsCdSuf> s, uint Thread_id,
-			uint Nthreads, uint device) : MDI_worker(mod, s, Thread_id, Nthreads) {
-	std::cerr << "In CPU_MDI_worker cstor" << std::endl;
-}
-
-CMDIW::~CPU_MDI_worker() { }
-
-void CMDIW::impute_u(Ptr<ChoiceData> dp, uint index) {
-	mlm->fill_eta(*dp, eta); // eta+= downsampling_logprob
-	if (downsampling_)
-		eta += log_sampling_probs_; //
-	uint M = mlm->Nchoices();
-	uint y = dp->value();
-	assert(y<M);
-
-	double loglam = lse(eta);
-	double logzmin = rlexp_mt(rng, loglam);
-
-	u[y] = -logzmin;
-	for (uint m = 0; m < M; ++m) {
-		if (m != y) {
-			double tmp = rlexp_mt(rng, eta[m]);
-			double logz = lse2(logzmin, tmp);
-			u[m] = -logz;
-		} else {
-#ifndef ORIGINAL_FLOW
-			double tmp = rlexp_mt(rng, 0.0); // Make access to random numbers regular
-#endif
-		}
-		uint k = unmix(u[m] - eta[m]);
-		u[m] -= mu_[k];
-		wgts[m] = sigsq_inv_[k];
-	}
-}
-
-void CMDIW::operator()() {
-	const std::vector<Ptr<ChoiceData> > & dat(mlm->dat());
-	suf_->clear();
-	uint n = dat.size();
-	uint i = thread_id;
-	uint index = 0;
-	while (i < n) {
-		Ptr<ChoiceData> dp(dat[i]);
-//		dp->set_wsp(thisX); // TODO Why was this removed in new version?
-		impute_u(dp, index);
-		suf_->update(dp, wgts, u);
-		i += nthreads;
-		index++;
-	}
-}
+//CMDIW::CPU_MDI_worker(MLogitBase *mod, Ptr<MlvsCdSuf> s, uint Thread_id,
+//			uint Nthreads, uint device) : MDI_worker(mod, s, Thread_id, Nthreads) {
+//	std::cerr << "In CPU_MDI_worker cstor" << std::endl;
+//}
+//
+//CMDIW::~CPU_MDI_worker() { }
+//
+//void CMDIW::impute_u(Ptr<ChoiceData> dp, uint index) {
+//	mlm->fill_eta(*dp, eta); // eta+= downsampling_logprob
+//	if (downsampling_)
+//		eta += log_sampling_probs_; //
+//	uint M = mlm->Nchoices();
+//	uint y = dp->value();
+//	assert(y<M);
+//
+//	double loglam = lse(eta);
+//	double logzmin = rlexp_mt(rng, loglam);
+//
+//	u[y] = -logzmin;
+//	for (uint m = 0; m < M; ++m) {
+//		if (m != y) {
+//			double tmp = rlexp_mt(rng, eta[m]);
+//			double logz = lse2(logzmin, tmp);
+//			u[m] = -logz;
+//		} else {
+//#ifndef ORIGINAL_FLOW
+//			double tmp = rlexp_mt(rng, 0.0); // Make access to random numbers regular
+//#endif
+//		}
+//		uint k = unmix(u[m] - eta[m]);
+//		u[m] -= mu_[k];
+//		wgts[m] = sigsq_inv_[k];
+//	}
+//}
+//
+//void CMDIW::operator()() {
+//	const std::vector<Ptr<ChoiceData> > & dat(mlm->dat());
+//	suf_->clear();
+//	uint n = dat.size();
+//	uint i = thread_id;
+//	uint index = 0;
+//	while (i < n) {
+//		Ptr<ChoiceData> dp(dat[i]);
+////		dp->set_wsp(thisX); // TODO Why was this removed in new version?
+//		impute_u(dp, index);
+//		suf_->update(dp, wgts, u);
+//		i += nthreads;
+//		index++;
+//		std::cerr << "Here!" << std::endl;
+//	}
+//}
 
 typedef GPU_MDI_worker GMDIW;
 
@@ -187,7 +188,7 @@ void GMDIW::initializeData() {
 		const Mat &datumFalse(dp->X(false));
 		cerr << datumFalse << endl;
 		cerr << endl;
-		exit(-1);
+//		exit(-1);
 
 		const double* oldDatum = datumX.data();
 		for (uint k = 0; k < nSubjectVars; k++) { // TODO betaSize
@@ -626,34 +627,34 @@ uint GMDIW::sampleOneU(Real x, Real unif) {
 	return K;
 }
 
-void GMDIW::impute_u(Ptr<ChoiceData> dp, uint index) {
-
-	mlm->fill_eta(*dp, eta); // eta+= downsampling_logprob
-	if (downsampling_)
-		eta += log_sampling_probs_; //
-	uint M = mlm->Nchoices();
-	uint y = dp->value();
-	assert(y<M);
-
-	double loglam = lse(eta);
-	double logzmin = rlexp_mt(rng, loglam);
-
-	u[y] = -logzmin;
-	for (uint m = 0; m < M; ++m) {
-		if (m != y) {
-			double tmp = rlexp_mt(rng, eta[m]);
-			double logz = lse2(logzmin, tmp);
-			u[m] = -logz;
-		} else {
-#ifndef ORIGINAL_FLOW
-			double tmp = rlexp_mt(rng, 0.0); // Make access to random numbers regular
-#endif
-		}
-		uint k = unmix(u[m] - eta[m]);
-		u[m] -= mu_[k];
-		wgts[m] = sigsq_inv_[k];
-	}
-}
+//void GMDIW::impute_u(Ptr<ChoiceData> dp, uint index) {
+//
+//	mlm->fill_eta(*dp, eta); // eta+= downsampling_logprob
+//	if (downsampling_)
+//		eta += log_sampling_probs_; //
+//	uint M = mlm->Nchoices();
+//	uint y = dp->value();
+//	assert(y<M);
+//
+//	double loglam = lse(eta);
+//	double logzmin = rlexp_mt(rng, loglam);
+//
+//	u[y] = -logzmin;
+//	for (uint m = 0; m < M; ++m) {
+//		if (m != y) {
+//			double tmp = rlexp_mt(rng, eta[m]);
+//			double logz = lse2(logzmin, tmp);
+//			u[m] = -logz;
+//		} else {
+//#ifndef ORIGINAL_FLOW
+//			double tmp = rlexp_mt(rng, 0.0); // Make access to random numbers regular
+//#endif
+//		}
+//		uint k = unmix(u[m] - eta[m]);
+//		u[m] -= mu_[k];
+//		wgts[m] = sigsq_inv_[k];
+//	}
+//}
 
 //----------------------------------------------------------------------
 
