@@ -13,6 +13,9 @@
 #include <fstream>
 #include <string>
 
+#include <time.h>
+#include <sys/time.h>
+
 using namespace BOOM;
 using std::ifstream;
 
@@ -112,6 +115,9 @@ int main(int argc, char **argv) {
 //  std::string datafile = options.get_required_option<std::string>("datafile");
 //     std::string datafile = "disguised-data-1.txt";  
   std::string datafile = "disguised-short.txt";
+  if (argc > 1) {
+    datafile = argv[1];
+  }
 
   std::cout << "reading data" << endl;
   ReadChoiceData(datafile,
@@ -149,32 +155,10 @@ int main(int argc, char **argv) {
 
 int mode = BOOM::ComputeMode::CPU;
 
- if (argc > 1) {
-	  std::string option = argv[1];
-	  if (option == "GPU" || option == "gpu") {
-		  mode = BOOM::ComputeMode::GPU;
-	  }
-	  if (option == "ORIGINAL" || option == "original") {
-	      mode = BOOM::ComputeMode::CPU_ORIGINAL;
-	  }
-	  
-	  if (option == "FLOW" || option == "flow") {
-	    mode = BOOM::ComputeMode::CPU_NEW_FLOW; 
-	  }
-	  
-	  if (option == "PARALLEL" || option == "parallel") {
-	    mode = BOOM::ComputeMode::CPU_PARALLEL;
-	  }  
-	  
-	  	  if (option == "NEW" || option == "new") {
-	    mode = BOOM::ComputeMode::CPU_NEW_PARALLEL;
-	  }  
-	  
-	  std::cerr << "Mode = " << mode << std::endl;
+ if (argc > 2) {
+    mode = BOOM::ComputeMode::parseComputeModel(argv[2]);
   }
 
-//    int computeMode = BOOM::ComputeMode::CPU_NEW_PARALLEL;
-//  int computeMode = BOOM::ComputeMode::CPU;
 int computeMode = mode;
   
   NEW(MLAuxMixSampler, sampler)(model.get(), beta_prior, nthreads, computeMode);
@@ -186,9 +170,9 @@ int computeMode = mode;
 //   int writeInterval = 10;
 //   int ping = 100;
 
-  int niter = 2;
-  int writeInterval = 1;
-  int ping = 1;
+  int niter = 100;
+  int writeInterval = 10;
+  int ping = 10;
 
 //   for (int i = 0; i < niter; ++i) {
 //     std::cout << "iteration " << i << endl;
@@ -197,12 +181,22 @@ int computeMode = mode;
     model->io_params(CLEAR);
     model->track_progress(ping);
     model->set_bufsize(ping);
+    
+  struct timeval time1, time2;
+  gettimeofday(&time1, NULL);    
+    
     for(uint i=0; i<niter; ++i){
       model->sample_posterior();
       if (i % writeInterval == 0) {
     	  model->io_params(WRITE);
       }
     }
-    model->io_params(FLUSH);    
+    model->io_params(FLUSH);  
+    
+  gettimeofday(&time2, NULL);
+  double timeInSec = time2.tv_sec - time1.tv_sec +
+		  (double)(time2.tv_usec - time1.tv_usec) / 1000000.0;
+  cout << endl << "MCMC update duration: " << timeInSec << endl;    
+    
 //   }
 }

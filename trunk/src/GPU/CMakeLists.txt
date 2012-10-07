@@ -9,15 +9,15 @@ else (APPLE)
      set(CMAKE_CXX_COMPILER "g++44")
 endif (APPLE)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -g -pg")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -g -pg")
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O2 -pg")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -O2 -pg")
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake ${CMAKE_MODULE_PATH})
 
-set(CMAKE_VERBOSE_MAKEFILE on )
+#set(CMAKE_VERBOSE_MAKEFILE on )
 
 find_package(CUDA)
 
@@ -46,6 +46,7 @@ set(SOURCE_FILES
 	CPU_MDI_worker_MS.cpp
 	GPU_MDI_worker.cpp
 	GPU_MDI_worker_kernel.cu
+	WeightedSYRK.cu
 	)
 	
 set(OLD_SOURCE_FILES    
@@ -54,6 +55,7 @@ set(OLD_SOURCE_FILES
 	CPU_MDI_worker_MS.cpp
 	GPU_MDI_worker.cpp
 	GPU_MDI_worker_kernel.cu
+	WeightedSYRK.cu
 	)	
 	
 if (APPLE)
@@ -109,6 +111,8 @@ if(CUDA_FOUND)
  	set(CUDA_NVCC_FLAGS -arch compute_11)
  	cuda_add_executable(mlaux ${SOURCE_FILES})
  	cuda_add_executable(old_mlaux ${OLD_SOURCE_FILES})
+ 	CUDA_ADD_CUBLAS_TO_TARGET(mlaux)
+ 	CUDA_ADD_CUBLAS_TO_TARGET(old_mlaux)
 else(CUDA_FOUND)
 	add_executable(mlaux ${SOURCE_FILES})
 	add_executable(old_mlaux ${OLD_SOURCE_FILES})

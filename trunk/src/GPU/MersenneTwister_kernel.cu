@@ -126,17 +126,19 @@ __global__ void RandomGPU(
 
 cudaError_t gpuRandomMT(
 		float *rng,
-		int nTotal) {
+		int nTotal,
+		bool bigGPU) {
 	int N_PER_RNG = nTotal / MT_RNG_COUNT;
-#ifdef GTX280	
-	RandomGPU<<<32, 128>>>(rng, N_PER_RNG);
-#else
-	RandomGPU<<<4, 128>>>(rng, N_PER_RNG);
-#endif
+    if (bigGPU) {
+    	RandomGPU<<<32, 128>>>(rng, N_PER_RNG);
+    } else {
+    	RandomGPU<<<4, 128>>>(rng, N_PER_RNG);
+    }
 
 #ifdef ACCURATE_TIMING
 	cudaThreadSynchronize();
 #endif
+    return cudaSuccess;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -13,7 +13,8 @@
 
 cudaError_t gpuRandomMT(
 		float *rng,
-		int nTotal);
+		int nTotal,
+		bool bigGPU);
 
 void loadMTGPU(const char *fname);
 void seedMTGPU(unsigned int seed);
