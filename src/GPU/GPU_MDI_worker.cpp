@@ -5,14 +5,7 @@
  *      Author: msuchard
  */
 
-#define UNIFY_RNG
-#define LOG_TEST
-
-#define DO_CPU
-
-//#define DO_GPU
-//#define REDUCE_ON_GPU
-//#define MT_ON_GPU
+//#define DEBUG_PRINT
 
 #include "GPU_MDI_worker.hpp"
 #include "Models/Glm/PosteriorSamplers/MLVS.hpp"
@@ -28,6 +21,8 @@
 #include <cuda_runtime_api.h>
 #include <cuda.h>
 
+#include "gpu_lapack_internal.h"
+
 #include "GPU_MDI_worker_kernel.h"
 #include "MersenneTwister.h"
 #include "MersenneTwister_kernel.h"
@@ -42,74 +37,336 @@ using namespace std;
 
 namespace BOOM {
 
+namespace ComputeMode {
+	int parseComputeModel(std::string option) {
+		boost::to_upper(option);
+		int mode;
+		if (option == "GPU") {
+			mode = GPU;
+		} else
+		if (option == "ORIGINAL") {
+			mode = CPU_ORIGINAL;
+		}	else
+		if (option == "FLOW") {
+			mode = CPU_NEW_FLOW;
+		} else
+		if (option == "PARALLEL") {
+			mode = CPU_PARALLEL;
+		} else
+		if (option == "NEW") {
+			mode = CPU_NEW_PARALLEL;
+		} else
+		if (option == "NEWGPU") {
+			mode = GPU_NEW;
+		} else
+		if (option == "GPUHOSTMT") {
+			mode = GPU_HOST_MT;
+		} else
+		if (option == "NEWGPUHOSTMT") {
+			mode = GPU_NEW_HOST_MT;
+		} else {
+			mode = CPU;
+		}
+		cout << "ComputeMode = " << option << "(" << mode << ")" << endl;
+		return mode;
+	}
+}
+
 namespace mlvs_impute {
 
-//typedef CPU_MDI_worker CMDIW;
-//#define ORIGINAL_FLOW // Turns on/off pre-modification random number stream
+typedef GPU_MDI_worker_new_parallel GMDIWNP;
+typedef CPU_MDI_worker_new_parallel CMDIWNP;
 
-//CMDIW::CPU_MDI_worker(MLogitBase *mod, Ptr<MlvsCdSuf> s, uint Thread_id,
-//			uint Nthreads, uint device) : MDI_worker(mod, s, Thread_id, Nthreads) {
-//	std::cerr << "In CPU_MDI_worker cstor" << std::endl;
-//}
-//
-//CMDIW::~CPU_MDI_worker() { }
-//
-//void CMDIW::impute_u(Ptr<ChoiceData> dp, uint index) {
-//	mlm->fill_eta(*dp, eta); // eta+= downsampling_logprob
-//	if (downsampling_)
-//		eta += log_sampling_probs_; //
-//	uint M = mlm->Nchoices();
-//	uint y = dp->value();
-//	assert(y<M);
-//
-//	double loglam = lse(eta);
-//	double logzmin = rlexp_mt(rng, loglam);
-//
-//	u[y] = -logzmin;
-//	for (uint m = 0; m < M; ++m) {
-//		if (m != y) {
-//			double tmp = rlexp_mt(rng, eta[m]);
-//			double logz = lse2(logzmin, tmp);
-//			u[m] = -logz;
-//		} else {
-//#ifndef ORIGINAL_FLOW
-//			double tmp = rlexp_mt(rng, 0.0); // Make access to random numbers regular
-//#endif
-//		}
-//		uint k = unmix(u[m] - eta[m]);
-//		u[m] -= mu_[k];
-//		wgts[m] = sigsq_inv_[k];
-//	}
-//}
-//
-//void CMDIW::operator()() {
-//	const std::vector<Ptr<ChoiceData> > & dat(mlm->dat());
-//	suf_->clear();
-//	uint n = dat.size();
-//	uint i = thread_id;
-//	uint index = 0;
-//	while (i < n) {
-//		Ptr<ChoiceData> dp(dat[i]);
-////		dp->set_wsp(thisX); // TODO Why was this removed in new version?
-//		impute_u(dp, index);
-//		suf_->update(dp, wgts, u);
-//		i += nthreads;
-//		index++;
-//		std::cerr << "Here!" << std::endl;
-//	}
-//}
+GMDIWNP::GPU_MDI_worker_new_parallel(MLogitBase *mod, Ptr<MlvsCdSuf> s, bool mtOnGpu_, uint Thread_id,
+		uint Nthreads, uint device_) :
+		CPU_MDI_worker_new_parallel(mod, s, Thread_id, Nthreads, device), mtOnGpu(mtOnGpu_), device(device_),
+		gpuType(GPUType::SMALL) {
+//	std::cerr << "In GPU_MDI_worker_new_parallel ctor" << std::endl;
+
+	dY = NULL;
+	dX = NULL; dBeta = NULL;
+  dRng = NULL; dEta = NULL; dLogZMin = NULL; dU = NULL;
+  dWeight = NULL; dXtX = NULL; dXWU = NULL;
+
+  dMu = NULL; dLogPriorWeight = NULL; dSigmaSqInv = NULL;
+}
+
+GMDIWNP::~GPU_MDI_worker_new_parallel() {
+	// TODO Free all CUDA memory, should be released when context goes out of scope
+}
+
+
+int GMDIWNP::initializeData() {
+	int error = CMDIWNP::initializeData(); if (error) return error;
+
+	// Load data onto GPU
+	dY = (uint*) util::allocateGPUMemory(sizeof(uint) * paddedDataChuckSize);
+	if (!dY) return DeviceError::OUT_OF_MEMORY;
+
+//	dX = (Real*) util::allocateGPUMemory(sizeof(Real) * paddedDataChuckSize * nChoices * paddedBetaSize);
+//	if (!dX) return DeviceError::OUT_OF_MEMORY;
+
+	dX = (Real*) util::allocateGPUMemory(sizeof(Real) * paddedDataChuckSize * nChoices * paddedBetaSize);
+	if (!dX) return DeviceError::OUT_OF_MEMORY;
+
+	cudaMemcpy(dY, &hY[0], sizeof(uint) * paddedDataChuckSize,
+			cudaMemcpyHostToDevice);
+
+	cudaMemcpy(dX, &hX[0], sizeof(Real) * paddedDataChuckSize * nChoices * paddedBetaSize,
+			cudaMemcpyHostToDevice);
+
+	std::cout << "Loaded data onto device!" << endl;
+
+	// TODO Free hY and hX/hXt
+
+	return DeviceError::NO_ERROR;
+}
+
+int GMDIWNP::initializeDevice() {
+	cout << "Attempting to initialize GPU device(s)..." << endl;
+	int totalNumDevices = util::getGPUDeviceCount();
+	if (totalNumDevices == 0) {
+		cerr << "No GPU devices found!" << endl;
+		return DeviceError::NO_DEVICE;
+	}
+
+	if (totalNumDevices <= device) {
+		cerr << "Fewer than " << (device + 1) << " devices found!" << endl;
+		return DeviceError::NO_DEVICE;
+	}
+	util::printGPUInfo(device);
+	cudaSetDevice(device);
+
+	cublasStatus_t stat = cublasCreate(&handle);
+	if	( stat !=	CUBLAS_STATUS_SUCCESS )	{
+		cerr << "CUBLAS initialization failed" << endl;
+		return	DeviceError::NO_DEVICE;
+	}
+	cout << "Device enabled!" << endl;
+	return DeviceError::NO_ERROR;
+}
+
+int GMDIWNP::initializeInternalMemory(bool, bool) {
+	int error = CMDIWNP::initializeInternalMemory(!mtOnGpu, false); if (error) return error;
+
+	nRandomNumbers = paddedDataChuckSize * (2 * nChoices + 1);
+	if (mtOnGpu) {
+		uint remainder = nRandomNumbers % MT_RNG_COUNT;
+		if (remainder != 0) {
+			nRandomNumbers += MT_RNG_COUNT - remainder;
+		}
+	}
+
+	dBeta = (Real*) util::allocateGPUMemory(sizeof(Real) * paddedBetaSize);
+	dEta = (Real*) util::allocateGPUMemory(sizeof(Real) * getEtaSize());
+	dLogZMin = (Real*) util::allocateGPUMemory(sizeof(Real) * paddedDataChuckSize);
+	dRng = (Real*) util::allocateGPUMemory(sizeof(Real) * nRandomNumbers);
+	dU = (Real*) util::allocateGPUMemory(sizeof(Real) * getEtaSize());
+	dWeight = (Real*) util::allocateGPUMemory(sizeof(Real) * getEtaSize());
+	if (!dBeta || !dEta || !dLogZMin || !dRng || !dU || !dWeight) return DeviceError::OUT_OF_MEMORY;
+
+	if (mtOnGpu) {
+    loadMTGPU("MersenneTwister.dat"); // TODO Convert to mtrg in CUDA library
+	}
+
+  cout << "Completed internal allocation!" << endl;
+	return DeviceError::NO_ERROR;
+}
+
+int GMDIWNP::initializeMixturePrior() {
+	int error = CMDIWNP::initializeMixturePrior(); if (error) return error;
+	gpuLoadConstantMemory(hMu, hSigmaSqInv, hLogPriorWeight, sizeof(Real) * priorMixtureSize);
+	cout << "Completed constant memory load!" << endl;
+	return DeviceError::NO_ERROR;
+}
+
+
+int GMDIWNP::initializeOutProducts() {
+	const uint dim = paddedBetaSize;
+//	const uint dim2 = dim * (betaSize + 1) / 2;
+	const uint dim2 = dim * dim;
+
+	dXtX = (Real*) util::allocateGPUMemory(sizeof(Real) * (dim2 + dim));
+	dXWU = dXtX + dim2;
+
+	hTmp = (Real*) calloc(sizeof(Real), (dim + dim * dim));
+	cout << "Finished all initialization on GPU!" << endl;
+	return DeviceError::NO_ERROR;
+}
+
+void GMDIWNP::operator()() {
+	uploadBeta();
+	generateRngNumbers();
+	computeEta();
+	reduceEta();
+	sampleAllU();
+	computeWeightedOuterProducts();
+}
+
+void GMDIWNP::uploadBeta() {
+	CMDIWNP::uploadBeta();
+	cudaMemcpy(dBeta, hBeta, sizeof(Real) * betaSize, cudaMemcpyHostToDevice);
+}
+
+void GMDIWNP::reduceEta() {
+	gpuReduceEta_new(dLogZMin, dEta, dRng, paddedDataChuckSize, nChoices);
+#ifdef DEBUG_PRINT
+	cerr << endl;
+	util::printfCudaVector(dLogZMin, dataChuckSize);
+#endif
+}
+
+void GMDIWNP::generateRngNumbers() {
+	if (mtOnGpu) {
+		uint seed = 0;
+		while (seed <= 2) {
+			double u = runif_mt(rng) * std::numeric_limits<int>::max();
+			seed = lround(u);
+		}
+		seedMTGPU(seed); // cudaMemcpyHostToDevice inside
+		gpuRandomMT(dRng, nRandomNumbers, gpuType = GPUType::BIG);
+	} else {
+		CMDIWNP::generateRngNumbers();
+		cudaMemcpy(dRng, hRng, sizeof(Real) * nRandomNumbers, cudaMemcpyHostToDevice);
+	}
+}
+
+void GMDIWNP::computeEta() {
+//	gpuComputeEta_new(handle, dEta, dX, dBeta, paddedDataChuckSize, betaSize);
+	Real alpha = 1;
+	Real beta = 0;
+
+	cublasSgemv(handle, CUBLAS_OP_N, paddedDataChuckSize * nChoices, paddedBetaSize,  &alpha, dX, paddedDataChuckSize * nChoices,
+				dBeta, 1, &beta, dEta, 1);
+
+#ifdef DEBUG_PRINT
+	cerr << endl << "beta: " << betaSize << ": ";
+	util::printfCudaVector(dBeta, betaSize);
+	cerr << "eta: ";
+	util::printfCudaVector(dEta, paddedDataChuckSize * nChoices);
+//	exit(-1);
+#endif
+}
+
+void GMDIWNP::sampleAllU() {
+	assert(priorMixtureSize < 16);
+	gpuSampleAllU_new(dU, dWeight, dY, dEta, dLogZMin, dRng,
+			dMu, dSigmaSqInv, dLogPriorWeight,
+			paddedDataChuckSize, dataChuckSize, nChoices, priorMixtureSize);
+#ifdef DEBUG_PRINT
+	cerr << endl << endl << "START";
+	cerr << endl << "lzm:  ";
+	util::printfCudaVector(dLogZMin, paddedDataChuckSize);
+	cerr << endl << "eta:  ";
+	util::printfCudaVector(dEta, paddedDataChuckSize * nChoices);
+	cerr << endl << "u:    ";
+	util::printfCudaVector(dU, paddedDataChuckSize * nChoices);
+  cerr << endl << "wgts: ";
+  util::printfCudaVector(dWeight, paddedDataChuckSize * nChoices);
+
+//	exit(-1);
+#endif
+}
+
+void GMDIWNP::computeWeightedOuterProducts() {
+
+	Spd totalWeightedXXt(betaSize);
+	std::vector<double> totalWeightedUtility(betaSize);
+
+	bool smallBeta = false;
+
+	if (smallBeta) {
+		gpuReduceXtWX_new(dXtX,
+				dX, dWeight, nChoices,
+				paddedDataChuckSize, betaSize, paddedBetaSize);
+	} else {
+
+		int k = paddedDataChuckSize * nChoices;
+		int n = paddedBetaSize;
+#if 0
+		// Compare timing to CUBLAS SSYRK
+		std::vector<Real> result(paddedBetaSize * paddedBetaSize);
+		Real* dResult = (Real*) util::allocateGPUMemory(sizeof(Real) * paddedBetaSize * paddedBetaSize);
+
+		p2_t C(dResult, paddedBetaSize);
+		p2_t A(dX, paddedDataChuckSize * nChoices);
+
+		Real alpha = 1;
+		Real beta = 0;
+
+		cublasSsyrk(handle, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, n, k, &alpha, A.A, A.lda, &beta, C.A, C.lda );
+		cudaThreadSynchronize();
+#endif
+
+		ripSsyrk (n, k, dX, paddedDataChuckSize * nChoices, dWeight, dXtX, paddedBetaSize);
+	}
+
+	gpuReduceXtWU_new(dXWU,
+			dX, dU, dWeight, nChoices,
+			paddedDataChuckSize, betaSize);
+
+	cudaMemcpy(hTmp, dXtX, sizeof(Real) * (paddedBetaSize + 1) * paddedBetaSize,
+				cudaMemcpyDeviceToHost);
+
+#if 1
+	for (uint i = 0; i < betaSize; ++i) {
+		for (uint j = 0; j < betaSize; ++j) {
+			totalWeightedXXt(i,j) = hTmp[i * paddedBetaSize + j];
+		}
+	}
+#else
+	uint index = 0;
+	for (uint i = 0; i < betaSize; ++i) {
+		for (uint j = i; j < betaSize; ++j) {
+			totalWeightedXXt(i,j) = hTmp[index];
+			index++;
+		}
+	}
+#endif
+
+
+
+	const Real* tmp = hTmp  + paddedBetaSize * paddedBetaSize;
+	for (uint i = 0; i < betaSize; ++i) {
+		totalWeightedUtility[i] = tmp[i];
+	}
+
+	Ptr<MlvsCdSuf_ml> try2 = new MlvsCdSuf_ml(totalWeightedXXt, totalWeightedUtility);
+	suf_->clear();
+	suf_->add(try2);
+
+#ifdef DEBUG_PRINT
+	  cerr << endl << "dxtx: ";
+	  util::printfCudaVector(dXtX, paddedBetaSize * (paddedBetaSize + 1));
+	  cerr << "XtWU: ";
+//	  util::printfCudaVector(dXWU, betaSize);
+//	  cerr << endl;
+		util::printfVector(&totalWeightedUtility[0], betaSize);
+		cerr << endl;
+//		util::printfCudaVector(dXtX, dim2);
+		cerr << totalWeightedXXt;
+//		cerr << "SUF = " << endl << suf_->xtwx() << endl;
+//		cerr << "SUF = " << suf_->xtwu() << endl;
+//		cerr << "New GPU" << endl;
+		cerr << endl;
+//		util::printfCudaVector(dWeight, paddedDataChuckSize * nChoices + 2);
+//		exit(0);
+#endif
+}
+
+/*****************/
 
 typedef GPU_MDI_worker GMDIW;
 
 GMDIW::GPU_MDI_worker(MLogitBase *mod, Ptr<MlvsCdSuf> s,
+		bool mtOnGpu_,
 		uint Thread_id, uint Nthreads, uint device) :
-	MDI_worker(mod, s, Thread_id, Nthreads) {
+	MDI_worker(mod, s, Thread_id, Nthreads), mtOnGpu(mtOnGpu_),
+	gpuType(GPUType::SMALL) {
 
 	std::cerr << "In GPU constructor" << std::endl;
 
-#ifdef DO_GPU
-	initializeGPU(device); // TODO All initializers should throw exception if error
-#endif
+	initializeGPU(device);
 
 	initializeData();
 
@@ -119,28 +376,19 @@ GMDIW::GPU_MDI_worker(MLogitBase *mod, Ptr<MlvsCdSuf> s,
 
 	initializeOutProducts();
 
-#ifdef MT_ON_GPU
+	if (mtOnGpu) {
     loadMTGPU("MersenneTwister.dat"); // TODO Convert to mtrg in CUDA library
-#endif
-
+	}
 }
 
 void GMDIW::initializeData() {
-//  uint MLB::subject_nvars()const{ return psub_;}
-//  uint MLB::choice_nvars()const{return pch_;}
-//  uint MLB::Nchoices()const{return nch_;}
 
 	// Initialize data
 	nSubjectVars = mlm->subject_nvars();
 	nChoiceVars = mlm->choice_nvars();
 	nChoices = mlm->Nchoices();
 
-//	cerr << "nSV: " << nSubjectVars << endl;
-	cerr << "nCV: " << nChoiceVars << endl;
-	cerr << "nC : " << nChoices << endl;
-
 	nNonZeroChoices = nChoices - 1; // For eta, U, etc., only need eta, u, etc., for y > 0
-//	nSubjectVars = mlm->beta_size() / nChoices; // OLD
 
 	const std::vector<Ptr<ChoiceData> > & dat(mlm->dat());
 	uint nTotalData = dat.size();
@@ -161,19 +409,10 @@ void GMDIW::initializeData() {
 		}
 	}
 	betaSize = nSubjectVars * nNonZeroChoices + nChoiceVars;
-	paddedBetaSize = betaSize; // TODO make multiple of 16 ?
+	paddedBetaSize = betaSize;  // No need to pad in this dimension of X
 	priorMixtureSize = post_prob_.size();
 
-	cerr << "dataChuckSize = " << dataChuckSize << endl;
-	cerr << "paddedDataChuckSize = " << paddedDataChuckSize << endl;
-	cerr << "nChoices = " << nChoices << endl;
-	cerr << "nSubjectVars = " << nSubjectVars << endl;
-	cerr << "nChoiceVars = " << nChoiceVars << endl;
-	cerr << "betaSize = " << betaSize << endl;
-	cerr << "paddedBetaSize = " << paddedBetaSize << endl;
-	cerr << "mixture size = " << priorMixtureSize << endl;
-
-	hX = (Real*) calloc(sizeof(Real), // TODO Make much larger :-)
+	hX = (Real*) calloc(sizeof(Real),
 			paddedDataChuckSize	* nSubjectVars); // temporary contiguous host memory to hold design matrix
 
 	for (uint index = 0; index < dataChuckSize; index++) {
@@ -181,71 +420,53 @@ void GMDIW::initializeData() {
 		Ptr<ChoiceData> dp(dat[datumIndex]);
 		const Mat &datumX(dp->X());
 
-		cerr << "cols = " << datumX.ncol() << endl;
-		cerr << "rows = " << datumX.nrow() << endl;
-		cerr << datumX << endl;
-
-		const Mat &datumFalse(dp->X(false));
-		cerr << datumFalse << endl;
-		cerr << endl;
-//		exit(-1);
-
 		const double* oldDatum = datumX.data();
-		for (uint k = 0; k < nSubjectVars; k++) { // TODO betaSize
-			// TODO New design:
-			// Let x_{ij} be the row vector of attributes for subject i and choice j, then
-			// X = ( x_{11}, \ldots, x_{N1}, x_{12}, \ldots, x_{N2}, \ldots, x_{NC} )^t
-			// Column-major storage
-			//
+		for (uint k = 0; k < nSubjectVars; k++) {
 			hX[index + paddedDataChuckSize * k] = (Real) oldDatum[nChoices * k];
-//			hXt[k + nSubjectVars * index] = (Real) oldDatum[nChoices * k];
 		}
 	}
 	for (uint index = dataChuckSize; index < paddedBetaSize; index++) {
-		for (uint k = 0; k < nSubjectVars; k++) { // TODO betaSize
+		for (uint k = 0; k < nSubjectVars; k++) {
 			hX[index + paddedDataChuckSize * k] = 0;
 		}
 	}
 
 	// Load data onto GPU
-#ifdef DO_GPU
-	dY = (uint*) allocateGPUMemory(sizeof(uint) * paddedDataChuckSize);
-	dX = (Real*) allocateGPUMemory(sizeof(Real) * paddedDataChuckSize * nSubjectVars);
+	dY = (uint*) util::allocateGPUMemory(sizeof(uint) * paddedDataChuckSize);
+	dX = (Real*) util::allocateGPUMemory(sizeof(Real) * paddedDataChuckSize * nSubjectVars);
 
 	cudaMemcpy(dY, &hY[0], sizeof(uint) * paddedDataChuckSize,
 			cudaMemcpyHostToDevice);
 	cudaMemcpy(dX, hX, sizeof(Real) * paddedDataChuckSize * nSubjectVars,
 			cudaMemcpyHostToDevice);
-#endif
-
 }
 
 void GMDIW::initializeInternalMemory() {
 
 	nRandomNumbers = paddedDataChuckSize * (2 * nChoices + 1);
-#ifdef MT_ON_GPU
-	uint remainder = nRandomNumbers % MT_RNG_COUNT;
-	if (remainder != 0) {
-		nRandomNumbers += MT_RNG_COUNT - remainder;
+	if (mtOnGpu) {
+		uint remainder = nRandomNumbers % MT_RNG_COUNT;
+		if (remainder != 0) {
+			nRandomNumbers += MT_RNG_COUNT - remainder;
+		}
 	}
-#endif
 
 	hBeta = (Real*) calloc(sizeof(Real), paddedBetaSize);
 	hEta = (Real*) calloc(sizeof(Real), paddedDataChuckSize * nNonZeroChoices);
 	hLogZMin = (Real*) malloc(sizeof(Real) * paddedDataChuckSize);
-	hRng = (Real*) malloc(sizeof(Real) * paddedDataChuckSize * (2 * nChoices + 1) ); // Two draws per datum
+	hRng = (Real*) malloc(sizeof(Real) * nRandomNumbers);
+//			paddedDataChuckSize * (2 * nChoices + 1) ); // Two draws per datum
 	hU = (Real*) malloc(sizeof(Real) * paddedDataChuckSize * nNonZeroChoices);
 	hK = (uint*) malloc(sizeof(uint) * paddedDataChuckSize * nNonZeroChoices);
 	hWeight = (Real*) malloc(sizeof(Real) * paddedDataChuckSize * nNonZeroChoices);
 
-#ifdef DO_GPU
-	dBeta = (Real*) allocateGPUMemory(sizeof(Real) * paddedBetaSize);
-	dEta = (Real*) allocateGPUMemory(sizeof(Real) * paddedDataChuckSize * nNonZeroChoices);
-	dLogZMin = (Real*) allocateGPUMemory(sizeof(Real) * paddedDataChuckSize);
-	dRng = (Real*) allocateGPUMemory(sizeof(Real) * nRandomNumbers);
-	dU = (Real*) allocateGPUMemory(sizeof(Real) * paddedDataChuckSize * nNonZeroChoices);
-	dWeight = (Real*) allocateGPUMemory(sizeof(Real) * paddedDataChuckSize * nNonZeroChoices);
-#endif
+
+	dBeta = (Real*) util::allocateGPUMemory(sizeof(Real) * paddedBetaSize);
+	dEta = (Real*) util::allocateGPUMemory(sizeof(Real) * paddedDataChuckSize * nNonZeroChoices);
+	dLogZMin = (Real*) util::allocateGPUMemory(sizeof(Real) * paddedDataChuckSize);
+	dRng = (Real*) util::allocateGPUMemory(sizeof(Real) * nRandomNumbers);
+	dU = (Real*) util::allocateGPUMemory(sizeof(Real) * paddedDataChuckSize * nNonZeroChoices);
+	dWeight = (Real*) util::allocateGPUMemory(sizeof(Real) * paddedDataChuckSize * nNonZeroChoices);
 }
 
 void GMDIW::initializeMixturePrior() {
@@ -265,8 +486,6 @@ void GMDIW::initializeMixturePrior() {
 		hSigmaSqInv[k] = (Real) sigsq_inv_[k];
 	}
 
-#ifdef DO_GPU
-
 #ifdef USE_CONSTANT
 
 	gpuLoadConstantMemory(hMu, hSigmaSqInv, hLogPriorWeight, priorMemorySize);
@@ -275,9 +494,9 @@ void GMDIW::initializeMixturePrior() {
 //	cudaMemcpyToSymbol(cPrec, hSigmaSqInv, priorMemorySize, 0, cudaMemcpyHostToDevice);
 
 #else
-	dMu = (Real*) allocateGPUMemory(priorMemorySize);
-	dLogPriorWeight = (Real*) allocateGPUMemory(priorMemorySize);
-	dSigmaSqInv = (Real*) allocateGPUMemory(priorMemorySize);
+	dMu = (Real*) util::allocateGPUMemory(priorMemorySize);
+	dLogPriorWeight = (Real*) util::allocateGPUMemory(priorMemorySize);
+	dSigmaSqInv = (Real*) util::allocateGPUMemory(priorMemorySize);
 
 	cudaMemcpy(dMu, hMu, priorMemorySize,
 			cudaMemcpyHostToDevice);
@@ -285,7 +504,6 @@ void GMDIW::initializeMixturePrior() {
 			cudaMemcpyHostToDevice);
 	cudaMemcpy(dSigmaSqInv, hSigmaSqInv, priorMemorySize,
 			cudaMemcpyHostToDevice);
-#endif
 #endif
 }
 
@@ -330,35 +548,13 @@ GMDIW::~GPU_MDI_worker() {
 }
 
 void GMDIW::initializeOutProducts() {
-
-#ifdef DO_CPU
-	// Precompute all cross terms for speed
-	uint nTerms = nSubjectVars * (nSubjectVars + 1) / 2;
-//	hXtX = (Real*) malloc(sizeof(Real) * paddedDataChuckSize * nTerms);
-//	for (uint index = 0; index < paddedDataChuckSize; index++) {
-//		uint term = 0;
-//		for (uint i = 0; i < nSubjectVars; i++) {
-//			Real xi = hX[index + paddedDataChuckSize * i];
-//			for (uint j = i; j < nSubjectVars; j++) {
-//				Real xj = hX[index + paddedDataChuckSize *j];
-//				hXtX[index + paddedDataChuckSize * term] = xi * xj;
-//				term++;
-//			}
-//		}
-//	}
-#endif
-
-#ifdef DO_GPU
-#ifdef REDUCE_ON_GPU
 	const uint dim = nNonZeroChoices * nSubjectVars;
 	const uint dim2 = dim * (nSubjectVars + 1) / 2;
 
-	dXtX = (Real*) allocateGPUMemory(sizeof(Real) * (dim2 + dim)); // * nXtXReducedRows);
+	dXtX = (Real*) util::allocateGPUMemory(sizeof(Real) * (dim2 + dim)); // * nXtXReducedRows);
 	dXWU = dXtX + dim2;
 
 	hTmp = (Real*) malloc(sizeof(Real) * (dim + dim * dim));
-#endif
-#endif
 }
 
 void GMDIW::computeWeightedOuterProducts() {
@@ -369,8 +565,6 @@ void GMDIW::computeWeightedOuterProducts() {
 	Spd totalWeightedXXt(dim);
 	std::vector<double> totalWeightedUtility(dim);
 
-#ifdef REDUCE_ON_GPU
-#ifdef DO_GPU
 	gpuReduceXtWX(dXtX,
 			dX,dWeight, 0, nXtXReducedRows, nNonZeroChoices,
 			paddedDataChuckSize, nSubjectVars);
@@ -398,72 +592,10 @@ void GMDIW::computeWeightedOuterProducts() {
 	for (uint i = 0; i < dim; ++i) {
 		totalWeightedUtility[i] = tmp[i];
 	}
-#endif
-#else
-#ifdef DO_GPU
-	cudaMemcpy(hU, dU, sizeof(Real) * paddedDataChuckSize * nNonZeroChoices,
-			cudaMemcpyDeviceToHost);
-	cudaMemcpy(hWeight, dWeight, sizeof(Real) * paddedDataChuckSize * nNonZeroChoices,
-			cudaMemcpyDeviceToHost);
-#endif
-	for (uint choice = 0; choice < nNonZeroChoices; choice++) {
-		uint offset = (choice - 0) * nSubjectVars;
-		const Real* thisWeight = hWeight + choice * paddedDataChuckSize;
 
-
-		// Compute outer products
-//		uint termTriangle = 0;
-		for (uint i = 0; i < nSubjectVars; i++) {
-			for (uint j = 0; j < nSubjectVars; j++) {
-				Real sum = 0;
-				if (j >= i) {
-//					const Real* thisXtX = hXtX + paddedDataChuckSize * termTriangle;
-					const Real* thisXi = hX + paddedDataChuckSize * i;
-					const Real* thisXj = hX + paddedDataChuckSize * j;
-					for (uint index = 0; index < dataChuckSize; index++) {
-//						sum += thisXtX[index] * thisWeight[index];
-						sum += thisXi[index] * thisXj[index] * thisWeight[index];
-					}
-//					termTriangle++;
-				}
-				totalWeightedXXt(offset + i, offset + j) = sum;
-			}
-		}
-
-		// Compute weighted utility
-		const Real* thisUtility = hU + choice * paddedDataChuckSize;
-		for (uint i = 0; i < nSubjectVars; i++) {
-			const Real* thisX = hX + paddedDataChuckSize * i;
-			Real sum = 0;
-			for (uint index = 0; index < dataChuckSize; index++) {
-				sum += thisX[index] * thisUtility[index] * thisWeight[index];
-			}
-			totalWeightedUtility[offset + i] = sum;
-		}
-	}
-#endif
-
-//#define OLD
-
-#ifdef OLD
-	Ptr<MlvsCdSuf_ml> news(suf_.dcast<MlvsCdSuf_ml>());
-	news->clear();
-	news->update(totalWeightedXXt, totalWeightedUtility);
-#else
 	Ptr<MlvsCdSuf_ml> try2 = new MlvsCdSuf_ml(totalWeightedXXt, totalWeightedUtility);
 	suf_->clear();
 	suf_->add(try2);
-#endif
-
-//	printfVector(&totalWeightedUtility[0], dim);
-//	if (stop) {
-//		exit(0);
-//	}
-//	cerr << endl;
-//	cerr << "SUF = " << endl << news->xtwx() << endl;
-//	cerr << "SUF = " << news->xtwu() << endl;
-//	cerr << endl;
-//	exit(0);
 }
 
 void GMDIW::uploadBeta() {
@@ -475,140 +607,56 @@ void GMDIW::uploadBeta() {
 		}
 	}
 
-#ifdef DO_GPU
 	cudaMemcpy(dBeta, hBeta, sizeof(Real) * nSubjectVars * nNonZeroChoices,
 			cudaMemcpyHostToDevice);
-#endif
 }
 
 void GMDIW::generateRngNumbers() {
 
-#ifdef MT_ON_GPU
-	uint seed = 0;
-	while (seed <= 2) {
-		double u = runif_mt(rng) * std::numeric_limits<int>::max();
-		seed = lround(u);
-	}
-	seedMTGPU(seed);
-	gpuRandomMT(dRng, nRandomNumbers);
-#else
-	for (uint index = 0; index < dataChuckSize; index++) {
-		for (uint k = 0; k < (2 * nChoices + 1); k++) { // TODO Need any fewer!
-			hRng[k * paddedDataChuckSize + index] = runif_mt(rng);
+	if (mtOnGpu) {
+		uint seed = 0;
+		while (seed <= 2) {
+			double u = runif_mt(rng) * std::numeric_limits<int>::max();
+			seed = lround(u);
 		}
-	}
-	for (uint index = dataChuckSize; index < paddedDataChuckSize; index++) {
-		for (uint k = 0; k < (2 * nChoices + 1); k++) {
-			hRng[k * paddedDataChuckSize + index] = 0.5; // Just avoid denormalized numbers
+		seedMTGPU(seed);
+		gpuRandomMT(dRng, nRandomNumbers, gpuType == GPUType::BIG);
+	} else {
+
+		for (uint index = 0; index < dataChuckSize; index++) {
+			for (uint k = 0; k < (2 * nChoices + 1); k++) {
+				hRng[k * paddedDataChuckSize + index] = runif_mt(rng);
+			}
 		}
+		for (uint index = dataChuckSize; index < paddedDataChuckSize; index++) {
+			for (uint k = 0; k < (2 * nChoices + 1); k++) {
+				hRng[k * paddedDataChuckSize + index] = 0.5; // Just avoid denormalized numbers
+			}
+		}
+		cudaMemcpy(dRng, hRng, sizeof(Real) * nRandomNumbers,
+				cudaMemcpyHostToDevice);
 	}
-#ifdef DO_GPU
-	cudaMemcpy(dRng, hRng, sizeof(Real) * nRandomNumbers,
-			cudaMemcpyHostToDevice);
-#endif // DO_GPU
-#endif // MT_ON_GPU
 }
 
 void GMDIW::computeEta() {
-#ifdef DO_CPU
-	for (uint index = 0; index < dataChuckSize; index++) {
-		for (uint choice = 0; choice < nNonZeroChoices; choice++) {
-			Real sum = 0;
-			uint rowOffset = paddedDataChuckSize * choice + index;
-			for (uint k = 0; k < nSubjectVars; k++) {
-				sum += hX[index + paddedDataChuckSize * k] *
-						hBeta[nSubjectVars * choice + k];
-			}
-			// TODO Adjust for down sampling
-			hEta[rowOffset] = sum;
-		}
-	}
-#endif
-
-#ifdef DO_GPU
 	assert(nNonZeroChoices * nSubjectVars <= COMPUTE_ETA_DATA_BLOCK_SIZE);
 	gpuComputeEta(dEta, dX, dBeta, paddedDataChuckSize, nNonZeroChoices, nSubjectVars);
-#endif
 }
 
 void GMDIW::reduceEta() {
-#ifdef DO_CPU
-	for (uint index = 0; index < dataChuckSize; index++) {
-		Real sum = 1;
-		for (uint choice = 0; choice < nNonZeroChoices; choice++) {
-			sum += exp(hEta[paddedDataChuckSize * choice + index]);
-		}
-#ifdef UNIFY_RNG
-		hLogZMin[index] = sum;
-#else
-		hLogZMin[index] = log(-log(hRng[index])) - log(sum); // TODO Minimize logs
-#endif
-	}
-#endif
-
-#ifdef DO_GPU
 	gpuReduceEta(dLogZMin, dEta, dRng, paddedDataChuckSize, nNonZeroChoices);
-#endif
 }
 
 void GMDIW::sampleAllU() {
-#ifdef DO_CPU
-	for (uint index = 0; index < dataChuckSize; index++) {
-		uint y = hY[index];
-#ifdef UNIFY_RNG
-#ifdef LOG_TEST
-		Real zmin = -log(hRng[index]) / hLogZMin[index];
-#else
-		Real logzmin = log(-log(hRng[index])) - log(hLogZMin[index]);
-#endif
-#else
-	 	Real logzmin = hLogZMin[index];
-#endif
-		for (uint choice = 0; choice < nNonZeroChoices; choice++) {
-			uint thread = index + paddedDataChuckSize * choice;
-#ifdef LOG_TEST
-			Real z = zmin;
-#else
-			Real logz;
-#endif
-			if ((choice + 1) != y) {
-#ifdef LOG_TEST
-				z += - log(hRng[index + paddedDataChuckSize * (2 * (choice + 1) + 1)])
-				              / exp(hEta[thread]);
-			}
-			Real minusLogZ = -log(z);
-#else
-				Real tmp = log(-log(hRng[index + paddedDataChuckSize * (2 * (choice + 1) + 1)])) // Convoluted indices to match with serial version
-						- hEta[thread];
-				logz = -lse2(logzmin, tmp);
-			} else {
-				logz = -logzmin;
-			}
-			hU[thread] = logz; // No need to store here; store once later
-#endif
-
-			// sample single U
-			Real unif = hRng[index + paddedDataChuckSize * (2 * (choice + 1) + 2)];
-#ifdef LOG_TEST
-			uint K = sampleOneU(minusLogZ - hEta[thread], unif); // No need to store
-			hU[thread] = minusLogZ - hMu[K];
-#else
-			uint K = sampleOneU(hU[thread] - hEta[thread], unif); // No need to store
-			hU[thread] -= hMu[K]; // Just store here once
-#endif
-			hWeight[thread] = hSigmaSqInv[K];
-		}
-	}
-#endif
-
-#ifdef DO_GPU
 	assert(priorMixtureSize < 16);
 	gpuSampleAllU(dU, dWeight, dY, dEta, dLogZMin, dRng,
 			dMu, dSigmaSqInv, dLogPriorWeight,
 			paddedDataChuckSize, nNonZeroChoices, priorMixtureSize);
-//	printfCudaVector(dU, 100);
-//	exit(0);
+
+#ifdef DEBUG_PRINT
+	util::printfCudaVector(dWeight, paddedDataChuckSize * nNonZeroChoices);
 #endif
+
 }
 
 uint GMDIW::sampleOneU(Real x, Real unif) {
@@ -627,47 +675,6 @@ uint GMDIW::sampleOneU(Real x, Real unif) {
 	return K;
 }
 
-//void GMDIW::impute_u(Ptr<ChoiceData> dp, uint index) {
-//
-//	mlm->fill_eta(*dp, eta); // eta+= downsampling_logprob
-//	if (downsampling_)
-//		eta += log_sampling_probs_; //
-//	uint M = mlm->Nchoices();
-//	uint y = dp->value();
-//	assert(y<M);
-//
-//	double loglam = lse(eta);
-//	double logzmin = rlexp_mt(rng, loglam);
-//
-//	u[y] = -logzmin;
-//	for (uint m = 0; m < M; ++m) {
-//		if (m != y) {
-//			double tmp = rlexp_mt(rng, eta[m]);
-//			double logz = lse2(logzmin, tmp);
-//			u[m] = -logz;
-//		} else {
-//#ifndef ORIGINAL_FLOW
-//			double tmp = rlexp_mt(rng, 0.0); // Make access to random numbers regular
-//#endif
-//		}
-//		uint k = unmix(u[m] - eta[m]);
-//		u[m] -= mu_[k];
-//		wgts[m] = sigsq_inv_[k];
-//	}
-//}
-
-//----------------------------------------------------------------------
-
-//uint GMDIW::unmix(double u) {
-//	uint K = post_prob_.size();
-//	for (uint k = 0; k < K; ++k)
-//		post_prob_[k] = logpi_[k] + dnorm(u, mu_[k], sd_[k], true);
-//	post_prob_.normalize_logprob();
-//	return rmulti_mt(rng, post_prob_);
-//}
-
-//----------------------------------------------------------------------
-
 void GMDIW::operator()() {
 	uploadBeta();
 	generateRngNumbers();
@@ -677,7 +684,7 @@ void GMDIW::operator()() {
 	computeWeightedOuterProducts();
 }
 
-int GMDIW::getGPUDeviceCount() {
+int util::getGPUDeviceCount() {
 	int cDevices;
 	CUresult status;
 	status = cuInit(0);
@@ -689,7 +696,7 @@ int GMDIW::getGPUDeviceCount() {
 	return cDevices;
 }
 
-void GMDIW::printGPUInfo(int iDevice) {
+void util::printGPUInfo(int iDevice) {
 
 	fprintf(stderr,"GPU Device Information:");
 
@@ -706,7 +713,7 @@ void GMDIW::printGPUInfo(int iDevice) {
 		fprintf(stderr,"\tClock Speed (Ghz)  : %1.2f\n",clo);
 }
 
-void GMDIW::getGPUInfo(int iDevice, char *oName, int *oMemory, int *oSpeed) {
+void util::getGPUInfo(int iDevice, char *oName, int *oMemory, int *oSpeed) {
 	cudaDeviceProp deviceProp;
 	memset(&deviceProp, 0, sizeof(deviceProp));
 	cudaGetDeviceProperties(&deviceProp, iDevice);
@@ -716,50 +723,67 @@ void GMDIW::getGPUInfo(int iDevice, char *oName, int *oMemory, int *oSpeed) {
 }
 
 void GMDIW::initializeGPU(int device) {
-
 	cout << "Attempting to initialize GPU device(s)..." << endl;
-	int totalNumDevices = getGPUDeviceCount();
+	int totalNumDevices = util::getGPUDeviceCount();
 	if (totalNumDevices == 0) {
 		cerr << "No GPU devices found!" << endl;
-		exit(-1); // TODO Throw exception
+		exit(-1);
 	}
 
 	if (totalNumDevices <= device) {
 		cerr << "Fewer than " << (device + 1) << " devices found!" << endl;
-		exit(-1); // TODO Throw exception
+		exit(-1);
 	}
-	printGPUInfo(device);
+	util::printGPUInfo(device);
 	cudaSetDevice(device);
 	cout << "Device enabled!" << endl;
 }
 
-void* GMDIW::allocateGPUMemory(size_t size) {
+void* util::allocateGPUMemory(size_t size) {
 	void* ptr;
 	SAFE_CUDA(cudaMalloc((void**) &ptr, size), ptr);
 	if (ptr == NULL) {
 		cerr << "Failed to allocate " << size << " bytes of memory on device!" << endl;
-		exit(-1); // TODO Throw exception
+	} else {
+		SAFE_CUDA(cudaMemset(ptr, 0, size), ptr);
 	}
 	return ptr;
 }
 
 template <class RealType>
-void GMDIW::printfVector(RealType *hPtr, uint length) {
-	if (length > 0) {
-		cout << hPtr[0];
-	}
-	for (uint i = 1; i < length; i++) {
-		cout << " " << hPtr[i];
-	}
-	cout << endl;
+void printOne(RealType x) {
+	printf("% 3.2e ", x);
 }
 
 template <class RealType>
-void GMDIW::printfCudaVector(RealType* dPtr, uint length) {
+void util::printfVector(RealType *hPtr, uint length) {
+//	if (length > 0) {
+//		cout << hPtr[0];
+//	}
+//	for (uint i = 1; i < length; i++) {
+//		cout << " " << hPtr[i];
+//		if (hPtr[i] != hPtr[i]) {
+//			cerr << endl << "Nan!" << endl;
+//			exit(-1);
+//		}
+//	}
+//	cout << endl;
+	for (uint i = 0; i < length; ++i) {
+		printOne(hPtr[i]);
+		if (hPtr[i] != hPtr[i]) {
+			cerr << endl << "Nan!" << endl;
+			exit(-1);
+		}
+	}
+	printf("\n");
+}
+
+template <class RealType>
+void util::printfCudaVector(RealType* dPtr, uint length) {
 
 	RealType* hPtr = (RealType *) malloc(sizeof(RealType) * length);
 	SAFE_CUDA(cudaMemcpy(hPtr, dPtr, sizeof(RealType)*length, cudaMemcpyDeviceToHost),dPtr);
-	printfVector(hPtr, length);
+	util::printfVector(hPtr, length);
 	free(hPtr);
 }
 

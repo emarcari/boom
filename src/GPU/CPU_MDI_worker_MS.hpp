@@ -42,43 +42,46 @@ public:
 
 	virtual ~CPU_MDI_worker_parallel();
 
-	void initialize(void);
+	int initialize(void);
 
   virtual void operator()();
 
-protected: // TODO Encapsulate
+protected:
 
     // Parallel structure functions
     void uploadPrior(void);
 
     void generateRngNumbers(void);
-    uint sampleOneU(Real x, Real unif); // TODO Move to just GPU
-    void reduceU(void);
-    void computeCdSf(void);
-    void initializeOutProducts(void);
-    void initializeMixturePrior(void);
+    uint sampleOneU(Real x, Real unif);
 
-    void initializeInternalMemory(void);
+//    void reduceU(void);
+//    void computeCdSf(void);
 
-    // Virtualized for testing
-    virtual uint getEtaSize(void);
-    virtual void initializeData(void);
-    virtual void computeEta(void);
-    virtual void uploadBeta(void);
-    virtual void reduceEta(void);
-    virtual void sampleAllU(void);
-    virtual void computeWeightedOuterProducts(void);
+    // Virtual for testing
+//    virtual uint getEtaSize(void);
+//    virtual void computeEta(void);
+//    virtual void uploadBeta(void);
+//    virtual void reduceEta(void);
+//    virtual void sampleAllU(void);
+//    virtual void computeWeightedOuterProducts(void);
 
-    // temporary host memory
+    // Initialization is mostly likely always virtual
+    virtual int initializeDevice(void);
+    virtual int initializeData(void);
+    virtual int initializeOutProducts(void);
+    virtual int initializeMixturePrior(void);
+    virtual int initializeInternalMemory(bool rng, bool intermediates);
+
     std::vector<uint> hY;
-    Real* hX;
-    Real* hXt;
+    std::vector<Real> hX;
+
+    // TODO Convert all to std::vector<Real>
     Real* hBeta;
     Real* hRng;
     Real* hEta; // TODO To be removed
     Real* hLogZMin; // TODO To be removed
     Real* hU; // TODO To be removed
-    uint* hK; // TODO To be removed
+
     Real* hWeight; // TODO To be removed
     Real* hXtX; // TODO To be removed
     Real* hTmp;
@@ -89,49 +92,20 @@ protected: // TODO Encapsulate
     Real* hPostWeight; // TODO To be removed
     Real* hSigmaSqInv; // TODO To be removed
 
-//     // permanent device memory
-//     uint *dY;
-//     Real *dX;
-//     Real *dXt;
-//     Real *dBeta;
-//     Real *dRng;
-//     Real *dEta;
-//     Real *dLogZMin; // TODO Rename
-//     Real *dU;
-//     Real *dWeight;
-//     Real *dXtX;
-//     Real *dXWU;
-// 
-//     Real *dMu;
-//     Real *dLogPriorWeight;
-//     Real *dSigmaSqInv;
-
     uint dataChuckSize;
     uint paddedDataChuckSize;
     uint betaSize;
     uint paddedBetaSize;
     uint nChoices;
     uint nChoiceVars;
-//    uint nSubjectVars;
     uint nNonZeroChoices;
     uint nSubjectVars;
     uint strideX;
     uint priorMixtureSize;
 
     uint nRandomNumbers;
-
     uint nXtXReducedRows;
     uint nXWUReducedRows;
-
-//     // Basic GPU functions
-//     void initializeGPU(int device);
-//     int getGPUDeviceCount();
-//     void printGPUInfo(int iDevice);
-//     void getGPUInfo(int iDevice, char *oName, int *oMemory, int *oSpeed);
-//     void* allocateGPUMemory(size_t size);
-// 
-//     template <class RealType>
-//     void printfCudaVector(RealType* dPtr, uint length);
 
     template <class RealType>
     void printfVector(RealType *hPtr, uint length) {
@@ -144,6 +118,14 @@ protected: // TODO Encapsulate
     	cout << endl;
     }
 
+private:
+    virtual uint getEtaSize(void);
+    void computeEta(void);
+    void uploadBeta(void);
+    void reduceEta(void);
+    void sampleAllU(void);
+    void computeWeightedOuterProducts(void);
+
 };
 
 class CPU_MDI_worker_new_parallel : public CPU_MDI_worker_parallel {
@@ -153,17 +135,20 @@ public:
 
 	virtual ~CPU_MDI_worker_new_parallel();
 
+  virtual void operator()();
+
 protected:
-  inline uint getIndex(uint row, uint k);
+  // Accessor functions
   inline uint getRow(uint i, uint j);
 
-  virtual uint getEtaSize(void);
-	virtual void initializeData(void);
-	virtual void computeEta(void);
-	virtual void uploadBeta(void);
-	virtual void reduceEta(void);
-	virtual void sampleAllU(void);
-	virtual void computeWeightedOuterProducts(void);
+	virtual int initializeData(void);
+	virtual uint getEtaSize(void);
+
+	void computeEta(void);
+	void uploadBeta(void);
+  void reduceEta(void);
+	void sampleAllU(void);
+	void computeWeightedOuterProducts(void);
 };
 
 }

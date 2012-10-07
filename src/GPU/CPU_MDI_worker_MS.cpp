@@ -5,9 +5,6 @@
  *      Author: msuchard
  */
 
-#define UNIFY_RNG
-#define LOG_TEST
-
 #define ROW_MAJOR
 
 //#define FIX_BETA // TODO Remove
@@ -24,6 +21,8 @@
 #include <cpputil/lse.hpp>
 #include <stats/logit.hpp>
 #include <distributions.hpp>
+
+#include "GPU_MDI_worker.hpp"
 
 using namespace std;
 
@@ -88,7 +87,7 @@ void CMDIWO::operator()() {
 		index++;
 #ifdef DEBUG_PRINT
 		cerr << "wgts: " << wgts << endl;
-		exit(0);
+//		exit(0);
 #endif
 	}
 }
@@ -136,7 +135,7 @@ CMDIWNP::CPU_MDI_worker_new_parallel(MLogitBase *mod, Ptr<MlvsCdSuf> s,
 		uint Thread_id, uint Nthreads, uint device)
 		: CPU_MDI_worker_parallel(mod, s, Thread_id, Nthreads, device)
 		  {
-	std::cerr << "In CPU_MDI_worker_new_parallel ctor" << std::endl;
+//	std::cerr << "In CPU_MDI_worker_new_parallel ctor" << std::endl;
 }
 
 CMDIWNP::~CPU_MDI_worker_new_parallel() { }
@@ -145,49 +144,52 @@ inline uint CMDIWNP::getRow(uint i, uint j) {
 	return i + j * paddedDataChuckSize;
 }
 
-inline uint CMDIWNP::getIndex(uint row, uint k) {
-
-	// Let x_{ij} be the row vector of attributes for subject i and choice j, then
-	// X = ( x_{11}, \ldots, x_{N1}, x_{12}, \ldots, x_{N2}, \ldots, x_{NC} )^t
-#ifdef ROW_MAJOR
-	// Use: row-major storage (X\beta), stride = paddedBetaSize
-	return row * paddedBetaSize + k;
-#else
-	// Use: column-major storage, stride = paddedDataChuckSize * nChoices
-	uint stride = paddedDataChuckSize * nChoices;
-	return row + stride * k;
-#endif
-}
+//inline uint CMDIWNP::getIndex(uint row, uint k) {
+//
+//	// Let x_{ij} be the row vector of attributes for subject i and choice j, then
+//	// X = ( x_{11}, \ldots, x_{N1}, x_{12}, \ldots, x_{N2}, \ldots, x_{NC} )^t
+//#ifdef ROW_MAJOR
+//	// Use: row-major storage (X\beta), stride = paddedBetaSize
+//	return row * paddedBetaSize + k;
+//#else
+//	// Use: column-major storage, stride = paddedDataChuckSize * nChoices
+//	uint stride = paddedDataChuckSize * nChoices;
+//	return row + stride * k;
+//#endif
+//}
 
 void CMDIWNP::computeEta() {
-#ifdef FIX_BETA
-	for (uint i = 0; i < betaSize; ++i) {
-		hBeta[i] = 0.1 * (i + 1);
-	}
-#endif
-
-	for (uint index = 0; index < dataChuckSize; index++) {
-		for (uint choice = 0; choice < nChoices; choice++) {
-			Real sum = 0;
-			uint rowOffset = getRow(index, choice);
-
-#ifdef ROW_MAJOR
-			Real* x = hX + getIndex(rowOffset, 0);
-			for (uint k = 0; k < betaSize; k++) {
-				sum += x[k] * hBeta[k]; // Better caching
-			}
-#else
-			for (uint k = 0; k < betaSize; k++) {
-				sum += hX[getIndex(rowOffset, k)] * hBeta[k];
-			}
-#endif
-
-			// TODO Adjust for down sampling
-			hEta[rowOffset] = sum;
+//	for (uint index = 0; index < dataChuckSize; index++) {
+//		for (uint choice = 0; choice < nChoices; choice++) {
+//			Real sum = 0;
+//			uint rowOffset = getRow(index, choice);
+//
+//#ifdef ROW_MAJOR
+//			Real* x = &hX[0] + getIndex(rowOffset, 0);
+//			for (uint k = 0; k < betaSize; k++) {
+//				sum += x[k] * hBeta[k]; // Better caching
+//			}
+//#else
+//			for (uint k = 0; k < betaSize; k++) {
+//				sum += hX[getIndex(rowOffset, k)] * hBeta[k];
+//			}
+//#endif
+//
+//			// TODO Adjust for down sampling
+//			hEta[rowOffset] = sum;
+//		}
+//	}
+	uint length = paddedDataChuckSize * nChoices;
+	for (uint i = 0; i < length; ++i) {
+		Real sum = 0;
+		for (uint j = 0; j < betaSize; ++j) {
+			sum += hX[i + length * j] * hBeta[j];
 		}
+		hEta[i] = sum;
 	}
+
 #ifdef DEBUG_PRINT
-	std::cerr << "beta: ";
+	std::cerr << "beta: " << betaSize << ": ";
 	for (uint i = 0; i < betaSize; ++i) {
 		std::cerr << hBeta[i] << " ";
 	}
@@ -201,18 +203,15 @@ void CMDIWNP::computeEta() {
 #endif
 }
 
-void CMDIWNP::initializeData() {
+int CMDIWNP::initializeData() {
 
 	// Initialize data
 	nSubjectVars = mlm->subject_nvars();
 	nChoiceVars = mlm->choice_nvars();
 	nChoices = mlm->Nchoices();
-
-	cerr << "nSV: " << nSubjectVars << endl;
-	cerr << "nCV: " << nChoiceVars << endl;
-	cerr << "nC : " << nChoices << endl;
-
 	nNonZeroChoices = nChoices - 1; // For eta, U, etc., only need eta, u, etc., for y > 0
+
+	int padDim = 32; // Should be multiple of 16 and equal to TILE_DIM for weighted syrk
 
 	const std::vector<Ptr<ChoiceData> > & dat(mlm->dat());
 	uint nTotalData = dat.size();
@@ -225,70 +224,42 @@ void CMDIWNP::initializeData() {
 	}
 	dataChuckSize = hY.size();
 	paddedDataChuckSize = dataChuckSize;
-	uint remainder = paddedDataChuckSize % 16;
+	uint remainder = paddedDataChuckSize % padDim;
 	if (remainder != 0) {
-		paddedDataChuckSize += 16 - remainder;
+		paddedDataChuckSize += padDim - remainder;
 		for (uint i = dataChuckSize; i < paddedDataChuckSize; i++) {
 			hY.push_back(0);
 		}
 	}
 	betaSize = nSubjectVars * nNonZeroChoices + nChoiceVars;
-	paddedBetaSize = betaSize; // TODO make multiple of 16 ?
+	paddedBetaSize = betaSize;
+
+	bool padBeta = true; // Should depend on betaSize;
+
+	if (padBeta) {
+		remainder = paddedBetaSize % padDim;
+		if (remainder != 0) {
+			paddedBetaSize += padDim - remainder;
+		}
+	}
 	priorMixtureSize = post_prob_.size();
 
-	cerr << "dataChuckSize = " << dataChuckSize << endl;
-	cerr << "paddedDataChuckSize = " << paddedDataChuckSize << endl;
-	cerr << "nChoices = " << nChoices << endl;
-	cerr << "nSubjectVars = " << nSubjectVars << endl;
-	cerr << "nChoiceVars = " << nChoiceVars << endl;
-	cerr << "nNonZeroChoicces = " << nNonZeroChoices << endl;
-	cerr << "betaSize = " << betaSize << endl;
-	cerr << "paddedBetaSize = " << paddedBetaSize << endl;
-	cerr << "mixture size = " << priorMixtureSize << endl;
-
-	hX = (Real*) calloc(sizeof(Real),
-			paddedDataChuckSize * nChoices * paddedBetaSize); // temporary contiguous host memory to hold design matrix
+	hX.resize(paddedDataChuckSize * nChoices * paddedBetaSize); // lda: paddedDataChuckSize * nChoices
 
 	for (uint index = 0; index < dataChuckSize; index++) {
 		uint datumIndex = thread_id + index * nthreads;
 		Ptr<ChoiceData> dp(dat[datumIndex]);
-//		const Mat &datumX(dp->X());
-//
-//		cerr << "cols = " << datumX.ncol() << endl;
-//		cerr << "rows = " << datumX.nrow() << endl;
-//		cerr << datumX << endl << endl;
-//
 		const Mat& datumNoIntercept(dp->X(false));
-//		cerr << "cols = " << datumNoIntercept.ncol() << endl;
-//		cerr << "rows = " << datumNoIntercept.nrow() << endl;
-//		cerr << datumNoIntercept << endl;
-//		cerr << endl;
-//		exit(-1);
-
 		const double* oldDatum = datumNoIntercept.data(); // Stored in column-major, stride = nChoices
-
-//		for (int m = 0; m < 4; ++m) {
-//			std::cerr << oldDatum[m] << " ";
-//		}
-//		std::cerr << std::endl;
-//		std::cerr << "Entry[1,1] = " << oldDatum[1 + nChoices * 1] << std::endl;
-//		std::cerr << "Entry[1,2] = " << oldDatum[1 + nChoices * 2] << std::endl;
-//		exit(-1);
 
 		for (uint j = 0; j < nChoices; ++j) {
 			uint rowOffset = getRow(index, j);
 			for (uint k = 0; k < betaSize; k++) {
-				hX[getIndex(rowOffset, k)] = (Real) oldDatum[j + nChoices * k];
-//				std::cerr << "Wrote " <<  oldDatum[j + nChoices * k] << " to " << getIndex(rowOffset, k) << std::endl;
+				hX[rowOffset + paddedDataChuckSize * nChoices * k] = (Real) oldDatum[j + nChoices * k];
 			}
 		}
 	}
-	// calloc'd
-//	for (uint index = dataChuckSize; index < paddedBetaSize; index++) {
-//		for (uint k = 0; k < nSubjectVars; k++) { // TODO betaSize
-//			hX[index + paddedDataChuckSize * k] = 0;
-//		}
-//	}
+	return DeviceError::NO_ERROR;
 }
 
 
@@ -296,26 +267,49 @@ typedef CPU_MDI_worker_parallel CMDIWP;
 
 CMDIWP::CPU_MDI_worker_parallel(MLogitBase *mod, Ptr<MlvsCdSuf> s,
 		uint Thread_id, uint Nthreads, uint device) :
-	MDI_worker(mod, s, Thread_id, Nthreads) {
-	std::cerr << "In CPU_MDI_worker_parallel cstor" << std::endl;
-
-
+	MDI_worker(mod, s, Thread_id, Nthreads)
+,
+  hBeta(NULL),
+  hRng(NULL),
+  hEta(NULL),
+  hLogZMin(NULL),
+  hU(NULL),
+  hWeight(NULL),
+  hXtX(NULL),
+  hTmp(NULL)
+{
+//	std::cerr << "In CPU_MDI_worker_parallel cstor" << std::endl;
 }
 
-void CMDIWP::initialize() {
-	initializeData();
-	initializeInternalMemory();
-	initializeMixturePrior();
-	initializeOutProducts();
+int CMDIWP::initialize() {
+	int error = initializeDevice();
+//	cerr << "device: " << error << endl;
+	if (error) return error;
+	error = initializeData();
+//	cerr << "data: " << error << endl;
+	if (error) return error;
+	error = initializeInternalMemory(true, true);
+//	cerr << "mem: " << error << endl;
+	if (error) return error;
+	error = initializeMixturePrior();
+//	cerr << "prior: " << error << endl;
+	if (error) return error;
+	error = initializeOutProducts();
+//	cerr << "products: " << error << endl;
+	if (error) return error;
+	return error;
 }
 
-void CMDIWP::initializeData() {
+int CMDIWP::initializeDevice() {
+	return DeviceError::NO_ERROR;
+}
+
+int CMDIWP::initializeData() {
 
 	// Initialize data
 	nSubjectVars = mlm->subject_nvars();
 	nChoiceVars = mlm->choice_nvars();
 	nChoices = mlm->Nchoices();
-
 	nNonZeroChoices = nChoices - 1; // For eta, U, etc., only need eta, u, etc., for y > 0
 
 	const std::vector<Ptr<ChoiceData> > & dat(mlm->dat());
@@ -337,9 +331,9 @@ void CMDIWP::initializeData() {
 		}
 	}
 	betaSize = nSubjectVars * nNonZeroChoices + nChoiceVars;
-	paddedBetaSize = betaSize; // TODO make multiple of 16 ?
+	paddedBetaSize = betaSize; // No padding in this dimension for X
 	priorMixtureSize = post_prob_.size();
-
+//
 //	cerr << "dataChuckSize = " << dataChuckSize << endl;
 //	cerr << "paddedDataChuckSize = " << paddedDataChuckSize << endl;
 //	cerr << "nChoices = " << nChoices << endl;
@@ -349,38 +343,23 @@ void CMDIWP::initializeData() {
 //	cerr << "paddedBetaSize = " << paddedBetaSize << endl;
 //	cerr << "mixture size = " << priorMixtureSize << endl;
 
-	hX = (Real*) calloc(sizeof(Real), // TODO Make much larger :-)
-			paddedDataChuckSize * nSubjectVars); // temporary contiguous host memory to hold design matrix
+		hX.resize(paddedDataChuckSize * nSubjectVars); // temporary contiguous host memory to hold design matrix
 
 	for (uint index = 0; index < dataChuckSize; index++) {
 		uint datumIndex = thread_id + index * nthreads;
 		Ptr<ChoiceData> dp(dat[datumIndex]);
 		const Mat &datumX(dp->X());
-
-//		cerr << "cols = " << datumX.ncol() << endl;
-//		cerr << "rows = " << datumX.nrow() << endl;
-//		cerr << datumX << endl;
-//
-//		const Mat &datumFalse(dp->X(false));
-//		cerr << datumFalse << endl;
-//		cerr << endl;
-//		exit(-1);
-
 		const double* oldDatum = datumX.data();
-		for (uint k = 0; k < nSubjectVars; k++) { // TODO betaSize
-			// TODO New design:
-			// Let x_{ij} be the row vector of attributes for subject i and choice j, then
-			// X = ( x_{11}, \ldots, x_{N1}, x_{12}, \ldots, x_{N2}, \ldots, x_{NC} )^t
-			// Column-major storage
-			//
+		for (uint k = 0; k < nSubjectVars; k++) {
 			hX[index + paddedDataChuckSize * k] = (Real) oldDatum[nChoices * k];
 		}
 	}
 	for (uint index = dataChuckSize; index < paddedBetaSize; index++) {
-		for (uint k = 0; k < nSubjectVars; k++) { // TODO betaSize
+		for (uint k = 0; k < nSubjectVars; k++) {
 			hX[index + paddedDataChuckSize * k] = 0;
 		}
 	}
+	return DeviceError::NO_ERROR;
 }
 
 uint CMDIWNP::getEtaSize() {
@@ -391,21 +370,26 @@ uint CMDIWP::getEtaSize() {
 	return paddedDataChuckSize * nNonZeroChoices;
 }
 
-void CMDIWP::initializeInternalMemory() {
+int CMDIWP::initializeInternalMemory(bool rng, bool intermediates) {
 
 	nRandomNumbers = paddedDataChuckSize * (2 * nChoices + 1);
-
 	hBeta = (Real*) calloc(sizeof(Real), paddedBetaSize);
-	hEta = (Real*) calloc(sizeof(Real), getEtaSize());
-	hLogZMin = (Real*) calloc(sizeof(Real), paddedDataChuckSize);
-	hRng
-			= (Real*) malloc(sizeof(Real) * paddedDataChuckSize * (2 * nChoices + 1)); // Two draws per datum
-	hU = (Real*) calloc(sizeof(Real), getEtaSize());
-	hK = (uint*) calloc(sizeof(uint), getEtaSize());
-	hWeight	= (Real*) calloc(sizeof(Real), getEtaSize());
+
+	if (rng) {
+		hRng = (Real*) calloc(sizeof(Real), paddedDataChuckSize * (2 * nChoices + 1)); // Two draws per datum
+	}
+
+	if (intermediates) {
+		hEta = (Real*) calloc(sizeof(Real), getEtaSize());
+		hLogZMin = (Real*) calloc(sizeof(Real), paddedDataChuckSize);
+		hU = (Real*) calloc(sizeof(Real), getEtaSize());
+		hWeight	= (Real*) calloc(sizeof(Real), getEtaSize());
+	}
+
+	return DeviceError::NO_ERROR;
 }
 
-void CMDIWP::initializeMixturePrior() {
+int CMDIWP::initializeMixturePrior() {
 
 	// Temporary space for prior mixture information
 	uint priorMemorySize = sizeof(Real) * priorMixtureSize;
@@ -421,12 +405,13 @@ void CMDIWP::initializeMixturePrior() {
 		hLogPriorWeight[k] = (Real) logpi_[k];
 		hSigmaSqInv[k] = (Real) sigsq_inv_[k];
 	}
+	return DeviceError::NO_ERROR;
 }
 
 CMDIWP::~CPU_MDI_worker_parallel() {
-	if (hX) {
-		free(hX);
-	}
+//	if (hX) {
+//		free(hX);
+//	}
 	if (hBeta) {
 		free(hBeta);
 	}
@@ -460,25 +445,11 @@ CMDIWP::~CPU_MDI_worker_parallel() {
 	if (hTmp) {
 		free(hTmp);
 	}
-	// TODO Free all CUDA memory, should be released when context goes out of scope
+	// TODO No need for these if using std::vector
 }
 
-void CMDIWP::initializeOutProducts() {
-
-	// Precompute all cross terms for speed
-	uint nTerms = nSubjectVars * (nSubjectVars + 1) / 2;
-	//	hXtX = (Real*) malloc(sizeof(Real) * paddedDataChuckSize * nTerms);
-	//	for (uint index = 0; index < paddedDataChuckSize; index++) {
-	//		uint term = 0;
-	//		for (uint i = 0; i < nSubjectVars; i++) {
-	//			Real xi = hX[index + paddedDataChuckSize * i];
-	//			for (uint j = i; j < nSubjectVars; j++) {
-	//				Real xj = hX[index + paddedDataChuckSize *j];
-	//				hXtX[index + paddedDataChuckSize * term] = xi * xj;
-	//				term++;
-	//			}
-	//		}
-	//	}
+int CMDIWP::initializeOutProducts() {
+	return DeviceError::NO_ERROR;
 }
 
 void CMDIWNP::computeWeightedOuterProducts() {
@@ -489,11 +460,19 @@ void CMDIWNP::computeWeightedOuterProducts() {
 	std::vector<double> totalWeightedUtility(dim);
 
 	// Form XtWX
+	uint length = paddedDataChuckSize * nChoices;
 	for (uint k1 = 0; k1 < betaSize; ++k1) {
 		for (uint k2 = k1; k2 < betaSize; ++k2) {
+			Real* x1 = &hX[0] + length * k1;
+			Real* x2 = &hX[0] + length * k2;
+			Real* w = &hWeight[0];
 			Real sum = 0;
-			for (uint i = 0; i < paddedDataChuckSize * nChoices; ++i) {
-				sum += hX[getIndex(i, k1)] * hWeight[i] * hX[getIndex(i, k2)]; // TODO Try using Xt for better caching
+			// Manually unroll, length is always a multiple of 4
+ 			for (uint i = 0; i < length; i += 4) {
+ 				sum += *x1++ * *w++ * *x2++;
+ 				sum += *x1++ * *w++ * *x2++;
+ 				sum += *x1++ * *w++ * *x2++;
+ 				sum += *x1++ * *w++ * *x2++;
 			}
 			totalWeightedXXt(k1, k2) = sum;
 		}
@@ -501,17 +480,20 @@ void CMDIWNP::computeWeightedOuterProducts() {
 
 	// Form XtWU
 	for (uint k = 0; k < betaSize; ++k) {
+		Real* x = &hX[0] + length * k;
+		Real* w = &hWeight[0];
+		Real* u = &hU[0];
 		Real sum = 0;
-		for (uint i = 0; i < paddedDataChuckSize * nChoices; ++i) {
-			sum += hX[getIndex(i, k)] *  hWeight[i] * hU[i]; // TODO Try using Xt for better caching
+		for (uint i = 0; i < length; ++i) {
+			sum += *x++ * *w++ * *u++;
 		}
 		totalWeightedUtility[k] = sum;
 	}
 
-	Ptr<MlvsCdSuf_ml> try2 = new MlvsCdSuf_ml(totalWeightedXXt,
-			totalWeightedUtility);
+	Ptr<MlvsCdSuf_ml> try2 = new MlvsCdSuf_ml(totalWeightedXXt, totalWeightedUtility);
 	suf_->clear();
 	suf_->add(try2);
+
 #ifdef DEBUG_PRINT
 	  cerr << "XtWU: ";
 		printfVector(&totalWeightedUtility[0], dim);
@@ -519,7 +501,7 @@ void CMDIWNP::computeWeightedOuterProducts() {
 		cerr << totalWeightedXXt;
 //		cerr << "SUF = " << endl << suf_->xtwx() << endl;
 //		cerr << "SUF = " << suf_->xtwu() << endl;
-		cerr << endl;
+		cerr << "New parallel" << endl;
 //		exit(0);
 #endif
 }
@@ -529,9 +511,6 @@ void CMDIWP::computeWeightedOuterProducts() {
 
 	const uint dim = nSubjectVars * nNonZeroChoices;
 	const uint dim2 = dim * (nSubjectVars + 1) / 2;
-
-//	std::cerr << "dim = " << dim << std::endl;
-//	exit(-1);
 
 	Spd totalWeightedXXt(dim);
 	std::vector<double> totalWeightedUtility(dim);
@@ -547,8 +526,8 @@ void CMDIWP::computeWeightedOuterProducts() {
 				Real sum = 0;
 				if (j >= i) {
 					//					const Real* thisXtX = hXtX + paddedDataChuckSize * termTriangle;
-					const Real* thisXi = hX + paddedDataChuckSize * i;
-					const Real* thisXj = hX + paddedDataChuckSize * j;
+					const Real* thisXi = &hX[0] + paddedDataChuckSize * i;
+					const Real* thisXj = &hX[0] + paddedDataChuckSize * j;
 					for (uint index = 0; index < dataChuckSize; index++) {
 						//						sum += thisXtX[index] * thisWeight[index];
 						sum += thisXi[index] * thisXj[index] * thisWeight[index];
@@ -562,7 +541,7 @@ void CMDIWP::computeWeightedOuterProducts() {
 		// Compute weighted utility
 		const Real* thisUtility = hU + choice * paddedDataChuckSize;
 		for (uint i = 0; i < nSubjectVars; i++) {
-			const Real* thisX = hX + paddedDataChuckSize * i;
+			const Real* thisX = &hX[0] + paddedDataChuckSize * i;
 			Real sum = 0;
 			for (uint index = 0; index < dataChuckSize; index++) {
 				sum += thisX[index] * thisUtility[index] * thisWeight[index];
@@ -594,6 +573,13 @@ void CMDIWNP::uploadBeta() {
 	for (uint k = 0; k < betaSize; ++k) {
 		hBeta[k] = (Real) modelBeta[k];
 	}
+#ifdef FIX_BETA
+
+	//Real t = {1.05723, -0.0483772, 0.0957759, 0.637142, -0.243552, -0.0128604, 0.522964, 0.347092};
+	for (uint i = 0; i < betaSize; ++i) {
+		hBeta[i] = 0.1 * (i + 1);
+	}
+#endif
 }
 
 void CMDIWP::uploadBeta() {
@@ -604,12 +590,17 @@ void CMDIWP::uploadBeta() {
 			hBeta[choice * nSubjectVars + k] = modelBeta[choice * nSubjectVars + k];
 		}
 	}
+#ifdef FIX_BETA
+	for (uint i = 0; i < betaSize; ++i) {
+		hBeta[i] = 0.1 * (i + 1);
+	}
+#endif
 }
 
 void CMDIWP::generateRngNumbers() {
 
 	for (uint index = 0; index < dataChuckSize; index++) {
-		for (uint k = 0; k < (2 * nChoices + 1); k++) { // TODO Need any fewer!
+		for (uint k = 0; k < (2 * nChoices + 1); k++) {
 			hRng[k * paddedDataChuckSize + index] = runif_mt(rng);
 		}
 	}
@@ -621,25 +612,16 @@ void CMDIWP::generateRngNumbers() {
 }
 
 void CMDIWP::computeEta() {
-#ifdef FIX_BETA
-	for (uint i = 0; i < betaSize; ++i) {
-		hBeta[i] = (i + 1) * 0.1;
-	}
-#endif
-
 	for (uint index = 0; index < dataChuckSize; index++) {
 		for (uint choice = 0; choice < nNonZeroChoices; choice++) {
 			Real sum = 0;
 			uint rowOffset = paddedDataChuckSize * choice + index;
 			for (uint k = 0; k < nSubjectVars; k++) {
 				sum += hX[index + paddedDataChuckSize * k] * hBeta[nSubjectVars	* choice + k];
-//				std::cerr << "+= " << hX[index + paddedDataChuckSize * k]  << " * " << hBeta[nSubjectVars	* choice + k] << std::endl;
 			}
-//			std::cerr << std::endl;
 			// TODO Adjust for down sampling
 			hEta[rowOffset] = sum;
 		}
-//		exit(-1);
 	}
 #ifdef DEBUG_PRINT
 	std::cerr << "beta: ";
@@ -662,11 +644,7 @@ void CMDIWNP::reduceEta() {
 		for (uint choice = 0; choice < nChoices; choice++) {
 			sum += exp(hEta[getRow(index, choice)]);
 		}
-#ifdef UNIFY_RNG
 		hLogZMin[index] = sum;
-#else
-		hLogZMin[index] = log(-log(hRng[index])) - log(sum); // TODO Minimize logs
-#endif
 	}
 #ifdef DEBUG_PRINT
 	for (uint i = 0; i < dataChuckSize; ++i) {
@@ -683,11 +661,7 @@ void CMDIWP::reduceEta() {
 		for (uint choice = 0; choice < nNonZeroChoices; choice++) {
 			sum += exp(hEta[paddedDataChuckSize * choice + index]);
 		}
-#ifdef UNIFY_RNG
 		hLogZMin[index] = sum;
-#else
-		hLogZMin[index] = log(-log(hRng[index])) - log(sum); // TODO Minimize logs
-#endif
 	}
 #ifdef DEBUG_PRINT
 	for (uint i = 0; i < dataChuckSize; ++i) {
@@ -829,6 +803,15 @@ uint CMDIWP::sampleOneU(Real x, Real unif) {
 		K++;
 	}
 	return K;
+}
+
+void CMDIWNP::operator()() {
+	uploadBeta();
+	generateRngNumbers();
+	computeEta();
+	reduceEta();
+	sampleAllU();
+	computeWeightedOuterProducts();
 }
 
 void CMDIWP::operator()() {
