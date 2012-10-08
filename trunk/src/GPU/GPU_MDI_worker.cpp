@@ -80,7 +80,7 @@ typedef CPU_MDI_worker_new_parallel CMDIWNP;
 GMDIWNP::GPU_MDI_worker_new_parallel(MLogitBase *mod, Ptr<MlvsCdSuf> s, bool mtOnGpu_, uint Thread_id,
 		uint Nthreads, uint device_) :
 		CPU_MDI_worker_new_parallel(mod, s, Thread_id, Nthreads, device), mtOnGpu(mtOnGpu_), device(device_),
-		gpuType(GPUType::SMALL) {
+		gpuType(GPUType::BIG) {
 //	std::cerr << "In GPU_MDI_worker_new_parallel ctor" << std::endl;
 
 	dY = NULL;
@@ -362,7 +362,7 @@ GMDIW::GPU_MDI_worker(MLogitBase *mod, Ptr<MlvsCdSuf> s,
 		bool mtOnGpu_,
 		uint Thread_id, uint Nthreads, uint device) :
 	MDI_worker(mod, s, Thread_id, Nthreads), mtOnGpu(mtOnGpu_),
-	gpuType(GPUType::SMALL) {
+	gpuType(GPUType::BIG) {
 
 	std::cerr << "In GPU constructor" << std::endl;
 

@@ -30,6 +30,10 @@ namespace BOOM{
     class MDI_base;
     class MDI_worker;
 #ifdef CUDA_ENABLED
+    class CPU_MDI_worker_original;
+    class CPU_MDI_worker_new_flow;
+    class CPU_MDI_worker_parallel;
+    class CPU_MDI_worker_new_parallel;
     class GPU_MDI_worker;
 #endif
   }

@@ -29,10 +29,11 @@
 #include <cmath>
 
 #ifdef CUDA_ENABLED
+#include <GPU/CPU_MDI_worker_MS.hpp>
 #include <GPU/GPU_MDI_worker.hpp>
 #endif
 
-namespace BOOM{
+namespace BOOM{ 
 
   typedef MlvsDataImputer MDI;
   MDI::MlvsDataImputer(MLogitBase *Mod, Ptr<MlvsCdSuf> Suf, uint nthreads, int computeMode){
@@ -59,17 +60,44 @@ namespace BOOM{
 #ifndef CUDA_ENABLED
     	imp = new MDI_worker(mlm, s);
 #else
+        Ptr<CPU_MDI_worker_parallel> initializable;
     	switch (computeMode) {
     		case ComputeMode::GPU :
-    			imp = new GPU_MDI_worker(mlm, s);
+    			imp = new GPU_MDI_worker(mlm, s, true);
+    			break;    		    		    
+    		case ComputeMode::GPU_HOST_MT :
+    		    imp = new GPU_MDI_worker(mlm, s, false);
+    		    break;
+    		case ComputeMode::CPU_ORIGINAL :
+    			imp = new CPU_MDI_worker_original(mlm, s);
     			break;
-    		case ComputeMode::CPU_RNG :
-    			imp = new CPU_MDI_worker(mlm, s);
-    			break;
+    		case ComputeMode::CPU_NEW_FLOW :
+    		    imp = new CPU_MDI_worker_new_flow(mlm, s);
+    		    break;
+    		case ComputeMode::CPU_PARALLEL :
+    		    initializable = new CPU_MDI_worker_parallel(mlm, s);
+    		    initializable->initialize();
+    		    imp = initializable;    		  
+    		    break;
+    		case ComputeMode::CPU_NEW_PARALLEL :    		    
+    		    initializable = new CPU_MDI_worker_new_parallel(mlm, s); 
+    		    initializable->initialize();
+    		    imp = initializable;
+    		    break;    		
+    		case ComputeMode::GPU_NEW :
+    		    initializable = new GPU_MDI_worker_new_parallel(mlm, s, true);
+    		    initializable->initialize();
+    		    imp = initializable;
+    		    break;
+    		case ComputeMode::GPU_NEW_HOST_MT :
+    		    initializable = new GPU_MDI_worker_new_parallel(mlm, s, false);
+    		    initializable->initialize();
+    		    imp = initializable;
+    		    break;    		    
     		default :
     			imp = new MDI_worker(mlm, s);
     			break;
-    	}
+    	}    	    	
 #endif
     }
     void MDI_unthreaded::draw(){ (*imp)(); }
