@@ -21,8 +21,6 @@
 #include <cuda_runtime_api.h>
 #include <cuda.h>
 
-#include "gpu_lapack_internal.h"
-
 #include "GPU_MDI_worker_kernel.h"
 #include "MersenneTwister.h"
 #include "MersenneTwister_kernel.h"
@@ -213,6 +211,7 @@ void GMDIWNP::reduceEta() {
 #ifdef DEBUG_PRINT
 	cerr << endl;
 	util::printfCudaVector(dLogZMin, dataChuckSize);
+//	exit(-1);
 #endif
 }
 
@@ -757,17 +756,20 @@ void printOne(RealType x) {
 
 template <class RealType>
 void util::printfVector(RealType *hPtr, uint length) {
-//	if (length > 0) {
-//		cout << hPtr[0];
-//	}
-//	for (uint i = 1; i < length; i++) {
-//		cout << " " << hPtr[i];
-//		if (hPtr[i] != hPtr[i]) {
-//			cerr << endl << "Nan!" << endl;
-//			exit(-1);
-//		}
-//	}
-//	cout << endl;
+//#define ALIGNED
+#ifndef ALIGNED
+	if (length > 0) {
+		cout << hPtr[0];
+	}
+	for (uint i = 1; i < length; i++) {
+		cout << " " << hPtr[i];
+		if (hPtr[i] != hPtr[i]) {
+			cerr << endl << "Nan!" << endl;
+			exit(-1);
+		}
+	}
+	cout << endl;
+#else
 	for (uint i = 0; i < length; ++i) {
 		printOne(hPtr[i]);
 		if (hPtr[i] != hPtr[i]) {
@@ -776,6 +778,7 @@ void util::printfVector(RealType *hPtr, uint length) {
 		}
 	}
 	printf("\n");
+#endif
 }
 
 template <class RealType>

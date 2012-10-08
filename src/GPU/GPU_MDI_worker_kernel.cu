@@ -5,6 +5,8 @@
  *      Author: msuchard
  */
 
+#include <cstdio>
+
 #include "GPU_MDI_worker_kernel.h"
 
 #define ACCURATE_TIMING
@@ -614,17 +616,18 @@ void kernelReduceXtWX(
 	SDATA_XTWX(pred, ch, tid) = mySum;
 	__syncthreads();
 
-    if (blockSize >= 512) { if (tid < 256) { SDATA_XTWX(pred, ch, tid) = mySum = mySum + SDATA_XTWX(pred, ch, tid + 256); } __syncthreads(); }
-    if (blockSize >= 256) { if (tid < 128) { SDATA_XTWX(pred, ch, tid) = mySum = mySum + SDATA_XTWX(pred, ch, tid + 128); } __syncthreads(); }
-    if (blockSize >= 128) { if (tid <  64) { SDATA_XTWX(pred, ch, tid) = mySum = mySum + SDATA_XTWX(pred, ch, tid +  64); } __syncthreads(); }
+    if (blockSize >= 512) { if (tid < 256) { sdata[tid] = mySum = mySum + sdata[tid + 256]; } __syncthreads(); }
+    if (blockSize >= 256) { if (tid < 128) { sdata[tid] = mySum = mySum + sdata[tid + 128]; } __syncthreads(); }
+    if (blockSize >= 128) { if (tid <  64) { sdata[tid] = mySum = mySum + sdata[tid +  64]; } __syncthreads(); }
 
     if (tid < 32) {
-    	if (blockSize >=  64) { SDATA_XTWX(pred, ch, tid) = mySum = mySum + SDATA_XTWX(pred, ch, tid + 32); }
-    	if (blockSize >=  32) { SDATA_XTWX(pred, ch, tid) = mySum = mySum + SDATA_XTWX(pred, ch, tid + 16); }
-    	if (blockSize >=  16) { SDATA_XTWX(pred, ch, tid) = mySum = mySum + SDATA_XTWX(pred, ch, tid +  8); }
-    	if (blockSize >=   8) { SDATA_XTWX(pred, ch, tid) = mySum = mySum + SDATA_XTWX(pred, ch, tid +  4); }
-    	if (blockSize >=   4) { SDATA_XTWX(pred, ch, tid) = mySum = mySum + SDATA_XTWX(pred, ch, tid +  2); }
-    	if (blockSize >=   2) { SDATA_XTWX(pred, ch, tid) = mySum = mySum + SDATA_XTWX(pred, ch, tid +  1); }
+        volatile REAL* smem = sdata;
+    	if (blockSize >=  64) { smem[tid] = mySum = mySum + smem[tid + 32]; }
+    	if (blockSize >=  32) { smem[tid] = mySum = mySum + smem[tid + 16]; }
+    	if (blockSize >=  16) { smem[tid] = mySum = mySum + smem[tid +  8]; }
+    	if (blockSize >=   8) { smem[tid] = mySum = mySum + smem[tid +  4]; }
+    	if (blockSize >=   4) { smem[tid] = mySum = mySum + smem[tid +  2]; }
+    	if (blockSize >=   2) { smem[tid] = mySum = mySum + smem[tid +  1]; }
     }
 
 	if (tid == 0) {
@@ -782,17 +785,18 @@ void kernelReduceXWU(
 	SDATA_XWU(pred, ch, tid) = mySum;
 	__syncthreads();
 
-    if (blockSize >= 512) { if (tid < 256) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid + 256); } __syncthreads(); }
-    if (blockSize >= 256) { if (tid < 128) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid + 128); } __syncthreads(); }
-    if (blockSize >= 128) { if (tid <  64) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid +  64); } __syncthreads(); }
+	if (blockSize >= 512) { if (tid < 256) { sdata[tid] = mySum = mySum + sdata[tid + 256]; } __syncthreads(); }
+    if (blockSize >= 256) { if (tid < 128) { sdata[tid] = mySum = mySum + sdata[tid + 128]; } __syncthreads(); }
+    if (blockSize >= 128) { if (tid <  64) { sdata[tid] = mySum = mySum + sdata[tid +  64]; } __syncthreads(); }
 
     if (tid < 32) {
-    	if (blockSize >=  64) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid + 32); }
-    	if (blockSize >=  32) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid + 16); }
-    	if (blockSize >=  16) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid +  8); }
-    	if (blockSize >=   8) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid +  4); }
-    	if (blockSize >=   4) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid +  2); }
-    	if (blockSize >=   2) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid +  1); }
+        volatile REAL* smem = sdata;
+    	if (blockSize >=  64) { smem[tid] = mySum = mySum + smem[tid + 32]; }
+    	if (blockSize >=  32) { smem[tid] = mySum = mySum + smem[tid + 16]; }
+    	if (blockSize >=  16) { smem[tid] = mySum = mySum + smem[tid +  8]; }
+    	if (blockSize >=   8) { smem[tid] = mySum = mySum + smem[tid +  4]; }
+    	if (blockSize >=   4) { smem[tid] = mySum = mySum + smem[tid +  2]; }
+    	if (blockSize >=   2) { smem[tid] = mySum = mySum + smem[tid +  1]; }
     }
 
 	if (tid == 0) {
@@ -824,17 +828,18 @@ void kernelReduceXtWU_new(
 	SDATA_XWU(pred, ch, tid) = mySum;
 	__syncthreads();
 
-    if (blockSize >= 512) { if (tid < 256) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid + 256); } __syncthreads(); }
-    if (blockSize >= 256) { if (tid < 128) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid + 128); } __syncthreads(); }
-    if (blockSize >= 128) { if (tid <  64) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid +  64); } __syncthreads(); }
+    if (blockSize >= 512) { if (tid < 256) { sdata[tid] = mySum = mySum + sdata[tid + 256]; } __syncthreads(); }
+    if (blockSize >= 256) { if (tid < 128) { sdata[tid] = mySum = mySum + sdata[tid + 128]; } __syncthreads(); }
+    if (blockSize >= 128) { if (tid <  64) { sdata[tid] = mySum = mySum + sdata[tid +  64]; } __syncthreads(); }
 
     if (tid < 32) {
-    	if (blockSize >=  64) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid + 32); }
-    	if (blockSize >=  32) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid + 16); }
-    	if (blockSize >=  16) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid +  8); }
-    	if (blockSize >=   8) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid +  4); }
-    	if (blockSize >=   4) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid +  2); }
-    	if (blockSize >=   2) { SDATA_XWU(pred, ch, tid) = mySum = mySum + SDATA_XWU(pred, ch, tid +  1); }
+        volatile REAL* smem = sdata;
+    	if (blockSize >=  64) { smem[tid] = mySum = mySum + smem[tid + 32]; }
+    	if (blockSize >=  32) { smem[tid] = mySum = mySum + smem[tid + 16]; }
+    	if (blockSize >=  16) { smem[tid] = mySum = mySum + smem[tid +  8]; }
+    	if (blockSize >=   8) { smem[tid] = mySum = mySum + smem[tid +  4]; }
+    	if (blockSize >=   4) { smem[tid] = mySum = mySum + smem[tid +  2]; }
+    	if (blockSize >=   2) { smem[tid] = mySum = mySum + smem[tid +  1]; }
     }
 
 	if (tid == 0) {
@@ -875,9 +880,9 @@ cudaError_t gpuReduceXtWU_new(
 	dim3 grid(nPredictors);
 	dim3 block(REDUCE_XTWU_NEW_THREADS);
 	kernelReduceXtWU_new<REDUCE_XTWU_NEW_THREADS><<<grid, block, sizeof(REAL) * REDUCE_XTWU_NEW_THREADS>>>(dXWU, dX, dU, dWeight, nChoices * nData);
-	
+
 #ifdef ACCURATE_TIMING
-	cudaThreadSynchronize();
+	cudaDeviceSynchronize();
 #endif	
 
 	return cudaSuccess;
