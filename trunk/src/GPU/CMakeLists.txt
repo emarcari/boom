@@ -5,8 +5,8 @@ if (APPLE)
     set(CMAKE_C_COMPILER "/usr/local/bin/gcc")
     set(CMAKE_CXX_COMPILER "/usr/local/bin/g++")
 else (APPLE)
-     set(CMAKE_C_COMPILER "gcc44")
-     set(CMAKE_CXX_COMPILER "g++44")
+#     set(CMAKE_C_COMPILER "gcc44")
+#     set(CMAKE_CXX_COMPILER "g++44")
 endif (APPLE)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -g -pg")
@@ -68,11 +68,11 @@ set(BOOST_LIBRARIES
 	)
 else (APPLE)
 set(BOOST_LIBRARIES
-	boost_program_options-gcc41-mt
-	boost_filesystem-gcc41-mt
-	boost_thread-gcc41-mt
-	boost_signals-gcc41-mt
-	boost_system-gcc41-mt
+	boost_program_options-mt
+	boost_filesystem-mt
+	boost_thread-mt
+	boost_signals-mt
+	boost_system-mt
 	)
 endif (APPLE)
 	
@@ -106,7 +106,7 @@ if(CUDA_FOUND)
 # 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
 # 		set(CUDA_64_BIT_DEVICE_CODE OFF)
 	else (APPLE)
-	     add_definitions(-DGTX280)	
+#	     add_definitions(-DGTX280)	
  	endif(APPLE)		
  	set(CUDA_NVCC_FLAGS -arch compute_11)
  	cuda_add_executable(mlaux ${SOURCE_FILES})

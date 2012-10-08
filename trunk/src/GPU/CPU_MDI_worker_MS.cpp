@@ -495,7 +495,7 @@ void CMDIWNP::computeWeightedOuterProducts() {
 	suf_->add(try2);
 
 #ifdef DEBUG_PRINT
-	  cerr << "XtWU: ";
+	  cerr << endl << "XtWU: ";
 		printfVector(&totalWeightedUtility[0], dim);
 		cerr << endl;
 		cerr << totalWeightedXXt;
@@ -697,11 +697,13 @@ void CMDIWNP::sampleAllU() {
 		}
 	}
 #ifdef DEBUG_PRINT
-	std::cerr << "u: ";
+	std::cerr << endl << "u: ";
 	for (uint i = 0; i < getEtaSize(); ++i) {
 		std::cerr << hU[i] << " ";
 	}
 	std::cerr << std::endl;
+	std::cerr << endl << "wgts: ";
+	util::printfVector(hWeight, paddedDataChuckSize * nChoices);
 //	exit(0);
 #endif
 }
