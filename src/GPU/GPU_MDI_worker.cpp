@@ -7,6 +7,8 @@
 
 //#define DEBUG_PRINT
 
+//#define TIME_CUBLAS
+
 #include "GPU_MDI_worker.hpp"
 #include "Models/Glm/PosteriorSamplers/MLVS.hpp"
 
@@ -282,19 +284,22 @@ void GMDIWNP::computeWeightedOuterProducts() {
 
 		int k = paddedDataChuckSize * nChoices;
 		int n = paddedBetaSize;
-#if 0
+
+
+#ifdef TIME_CUBLAS
 		// Compare timing to CUBLAS SSYRK
 		std::vector<Real> result(paddedBetaSize * paddedBetaSize);
 		Real* dResult = (Real*) util::allocateGPUMemory(sizeof(Real) * paddedBetaSize * paddedBetaSize);
 
-		p2_t C(dResult, paddedBetaSize);
-		p2_t A(dX, paddedDataChuckSize * nChoices);
-
 		Real alpha = 1;
 		Real beta = 0;
 
-		cublasSsyrk(handle, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, n, k, &alpha, A.A, A.lda, &beta, C.A, C.lda );
+		cublasSsyrk(handle, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, n, k,
+					&alpha, dX, paddedDataChuckSize * nChoices,
+					&beta, dResult,  paddedBetaSize);
 		cudaThreadSynchronize();
+
+		cudaFree(dResult);
 #endif
 
 		ripSsyrk (n, k, dX, paddedDataChuckSize * nChoices, dWeight, dXtX, paddedBetaSize);
