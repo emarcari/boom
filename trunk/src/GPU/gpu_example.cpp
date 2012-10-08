@@ -21,7 +21,8 @@ using std::ifstream;
 
 void ReadChoiceData(const std::string &datafile,
                     std::vector<uint> *choice,
-                    std::vector<Matrix> *choice_characteristics,
+//                     std::vector<Matrix> *choice_characteristics,
+                    std::vector<Matrix>& choice_x,
                     Matrix *subject_characteristics) {
   ifstream in(datafile.c_str());
   std::string line;
@@ -44,7 +45,8 @@ void ReadChoiceData(const std::string &datafile,
   int xdim = 79;
   int choice_set_size = 4;
 
-  std::vector<Matrix> choice_x;
+//   std::vector<Matrix> choice_x;
+  choice_x.clear();
   Mat observation_level_choice_matrix(choice_set_size, xdim);
 
   subject_characteristics->resize(number_of_choice_sets, 1);
@@ -96,7 +98,7 @@ void ReadChoiceData(const std::string &datafile,
     }
   }
 
-  *choice_characteristics = choice_x;
+//   *choice_characteristics = choice_x;
 }
 
 int main(int argc, char **argv) {
@@ -122,7 +124,7 @@ int main(int argc, char **argv) {
   std::cout << "reading data" << endl;
   ReadChoiceData(datafile,
                  &choice,
-                 &choice_characteristics,
+                 choice_characteristics,
                  &subject_characteristics);
   std::cout << "done reading data" << endl;
 
