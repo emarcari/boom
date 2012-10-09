@@ -277,6 +277,7 @@ void GMDIWNP::computeWeightedOuterProducts() {
 	bool smallBeta = false;
 
 	if (smallBeta) {
+		// TODO Needs to return upper triangular, instead of lower.
 		gpuReduceXtWX_new(dXtX,
 				dX, dWeight, nChoices,
 				paddedDataChuckSize, betaSize, paddedBetaSize);
@@ -312,27 +313,14 @@ void GMDIWNP::computeWeightedOuterProducts() {
 	cudaMemcpy(hTmp, dXtX, sizeof(Real) * (paddedBetaSize + 1) * paddedBetaSize,
 				cudaMemcpyDeviceToHost);
 
-#if 1
-	for (uint i = 0; i < betaSize; ++i) {
-		for (uint j = 0; j < betaSize; ++j) {
-			totalWeightedXXt(i,j) = hTmp[i * paddedBetaSize + j];
+	const Real* srcXtWU = hTmp + paddedBetaSize * paddedBetaSize;
+	for (uint j = 0; j < betaSize; ++j) {
+		const Real* srcXtWX = hTmp + j * paddedBetaSize;
+		double* dstXtWX = totalWeightedXXt.data() + j * betaSize;
+		for (uint i = 0; i <= j; ++i) {
+				dstXtWX[i] = srcXtWX[i];
 		}
-	}
-#else
-	uint index = 0;
-	for (uint i = 0; i < betaSize; ++i) {
-		for (uint j = i; j < betaSize; ++j) {
-			totalWeightedXXt(i,j) = hTmp[index];
-			index++;
-		}
-	}
-#endif
-
-
-
-	const Real* tmp = hTmp  + paddedBetaSize * paddedBetaSize;
-	for (uint i = 0; i < betaSize; ++i) {
-		totalWeightedUtility[i] = tmp[i];
+		totalWeightedUtility[j] = srcXtWU[j];
 	}
 
 	Ptr<MlvsCdSuf_ml> try2 = new MlvsCdSuf_ml(totalWeightedXXt, totalWeightedUtility);
