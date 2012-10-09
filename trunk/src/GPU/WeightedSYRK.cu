@@ -236,7 +236,7 @@ void weighted_ssyrk (Params params) {
     i = blockIdx.y * TILE_DIM;
     j = blockIdx.x * TILE_DIM;
 
-    if (j > i) return;
+    if (i > j) return;
     
     __shared__ RealType AA[(TILE_DIM + 1) * TILE_DIM]; // avoid bank conflicts
     __shared__ RealType BB[(TILE_DIM + 1) * TILE_DIM]; // avoid bank conflicts
@@ -349,14 +349,14 @@ void weighted_ssyrk (Params params) {
     if(FullTiles || (ii < params.n) && (jj < params.n)) {
         unsigned int addrC = idxC(ii,jj,params);
 
-        if (ii >= jj) {
+        if (ii <= jj) {
             params.C[addrC] = dp0; // Handle alpha and beta here
         }
 
         jj += COL_INCR;
         if(FullTiles || jj < params.n) {
 
-            if (ii >= jj) {
+            if (ii <= jj) {
                 addrC += COL_INCR * colOfsC(params);
                 params.C[addrC] = dp1; // Handle alpha and beta here
             }
