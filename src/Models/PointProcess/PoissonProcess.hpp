@@ -23,6 +23,11 @@
 #include <Models/PointProcess/PointProcess.hpp>
 
 namespace BOOM{
+
+  struct NullDataGenerator {
+    Data* operator()(){return 0;}
+  };
+
   // A base class for the Poisson process.  The
   // HomogeneousPoissonProcess and variaous flavors of inhomogeneous
   // poisson processes can generalize.
@@ -42,8 +47,14 @@ namespace BOOM{
                                      const DateTime &t1) = 0;
     virtual void add_event(const DateTime &t) = 0;
 
-    virtual PointProcess simulate(const DateTime &t0,
-                                  const DateTime &t1)const = 0;
+    // Simulate a PointProcess between t0 and t1.  If a function-like
+    // object that returns a Data * is passed as the third object then
+    // the process will include marks for those events where the
+    // returned value is non-NULL.
+    virtual PointProcess simulate(
+        const DateTime &t0,
+        const DateTime &t1,
+        std::function<Data*()> mark_generator = NullDataGenerator()) const = 0;
   };
 
 }

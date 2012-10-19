@@ -44,7 +44,7 @@ namespace BOOM{
   }
 
   double ZMMCS::logpri()const{
-    return siginv_prior_->pdf(m_->siginv(), true);
+    return siginv_prior_->logp(m_->siginv());
   }
 
   // posterior mode with respect to Sigma inverse.

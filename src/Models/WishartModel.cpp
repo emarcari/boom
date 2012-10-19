@@ -127,10 +127,9 @@ namespace BOOM{
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
-      dLoglikeModel(rhs)
+      dLoglikeModel(rhs),
+      SpdModel(rhs)
   {}
-
-
 
   WM *WM::clone() const{return new WM(*this);}
 
@@ -148,11 +147,8 @@ namespace BOOM{
     unvectorize_params(theta);
   }
 
-  double WishartModel::pdf(dPtr dp, bool logscale) const {
-    const Spd & S = DAT(dp)->value();
-    return dWish(S, sumsq(), nu(), logscale); }
-  double WishartModel::pdf(const Spd &W, bool logscale) const{
-    return dWish(W, sumsq(), nu(), logscale); }
+  double WishartModel::logp(const Spd &W) const{
+    return dWish(W, sumsq(), nu(), true); }
 
   void WishartModel::initialize_params(){
     Spd mean(suf()->sumW());

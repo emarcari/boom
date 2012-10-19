@@ -20,8 +20,6 @@
 #define BOOM_BINOMIAL_DISTRIBUTION_HPP
 
 #include <distributions/rng.hpp>
-#include <uint.hpp>
-
 namespace BOOM{
 
 class binomial_distribution{

@@ -23,15 +23,22 @@ namespace BOOM{
   typedef StateSpaceModelBase SSMB;
 
   SSPS::StateSpacePosteriorSampler(StateSpaceModelBase *model)
-      : m_(model)
+      : m_(model),
+        latent_data_initialized_(false)
   {}
 
   void SSPS::draw(){
-    m_->impute_state();
+    if (!latent_data_initialized_) {
+      m_->impute_state();
+      latent_data_initialized_ = true;
+    }
     m_->observation_model()->sample_posterior();
     for(int s = 0; s < m_->nstate(); ++s) {
       m_->state_model(s)->sample_posterior();
     }
+    m_->impute_state();
+    // End with a call to impute_state() so that the internal state of
+    // the Kalman filter matches up with the parameter draws.
   }
 
   double SSPS::logpri()const{

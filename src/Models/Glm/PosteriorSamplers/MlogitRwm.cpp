@@ -19,7 +19,6 @@
 #include <Models/Glm/PosteriorSamplers/MlogitRwm.hpp>
 #include <Models/MvnModel.hpp>
 #include <distributions.hpp>
-#include <Bmath/nmath.hpp>
 
 namespace BOOM{
 
@@ -46,7 +45,7 @@ namespace BOOM{
     // random walk metropolis centered on current beta, with inverse
     // variance matrix given by current hessian of log posterior
 
-    const Selector &inc(mlm_->coef()->inc());
+    const Selector &inc(mlm_->coef().inc());
     uint p = inc.nvars();
     H.resize(p);
     g.resize(p);
@@ -80,8 +79,8 @@ namespace BOOM{
 
 
   double MLR::logpri()const{
-    const Selector &inc(mlm_->coef()->inc());
-    const Vec & b(mlm_->coef()->beta());
+    const Selector &inc(mlm_->coef().inc());
+    const Vec & b(mlm_->coef().beta());
     return dmvn(b, inc.select(pri_->mu()),
 		     inc.select(pri_->siginv()), true);
   }

@@ -38,6 +38,8 @@ namespace BOOM{
     void set_prm(Ptr<P> p){prm_ = p; set_t();}
     Ptr<P> prm(){return prm_;}
     const Ptr<P> prm()const{return prm_;}
+    P & prm_ref(){return *prm_;}
+    const P & prm_ref()const{return *prm_;}
 
     virtual void set_param_filename(const string &);
     // over-rides for abstract base Model

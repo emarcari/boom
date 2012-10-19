@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2005 Steven L. Scott
+  Copyright (C) 2005-2012 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,8 +21,8 @@
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Matrix.hpp>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 
-#include <stdexcept>
 #include <cmath>
 #include <string>
 #include <iostream>
@@ -38,53 +38,79 @@ namespace BOOM{
     ostringstream msg;
     msg << "illegal_parameter_value in " << fname << endl
 	<< prm_name << " = " << n << endl;
-    throw_exception<std::runtime_error>(msg.str());
+    report_error(msg.str());
   }
 
   //======================================================================
-  template <class V>
-  bool dirichlet_exception(const V & nu, uint j){
-    ostringstream err;
-    err <<  "element " << j << " was zero in rdirichlet, with nu = "
-        << nu << endl;
-    throw_exception<std::runtime_error>(err.str());
-    return false;
-  }
+  namespace {
+    template <class V>
+        bool dirichlet_error(const V & nu, uint j){
+      ostringstream err;
+      err <<  "element " << j << " was zero in rdirichlet, with nu = "
+          << nu << endl;
+      report_error(err.str());
+      return false;
+    }
 
-  template <class V>
-  Vec rdirichlet_impl(RNG & rng, const V & nu){
-    uint N = nu.size();
-    Vec x(N);
-    if(N==0) return x;
-    if(N==1){
-      x=1.0;
+    template <class V>
+        Vec rdirichlet_impl(RNG & rng, const V & nu){
+      uint N = nu.size();
+      Vec x(N);
+      if(N==0) return x;
+      if(N==1){
+        x=1.0;
+        return x;
+      }
+
+      double sum=0;
+      for(uint j=0; j<N; ++j){
+        double n = nu(j);
+        if(n <=0 ) illegal_parameter_value(nu, "rdirichlet", "nu");
+        x(j)=rgamma_mt(rng, n, 1);
+        assert(x(j)>0 || dirichlet_error(nu, j) );
+        sum+=x(j); }
+      if(!std::isnormal(sum)){
+        ostringstream err;
+        err << "infinite, NaN, or denormalized sum in rdirichlet_impl.  sum = " << sum << endl
+            << "x = " << x << endl
+            << "nu = " << nu << endl;
+        report_error(err.str());
+      }
+      if(sum<=0){
+        ostringstream err;
+        err << "non-positive sum in rdirichlet_impl.  sum = " << sum << endl
+            << "x = " << x << endl
+            << "nu = " << nu << endl;
+        std::runtime_error(err.str());
+      }
+      x/=sum;
       return x;
     }
 
-    double sum=0;
-    for(uint j=0; j<N; ++j){
-      double n = nu(j);
-      if(n <=0 ) illegal_parameter_value(nu, "rdirichlet", "nu");
-      x(j)=rgamma_mt(rng, n, 1);
-      assert(x(j)>0 || dirichlet_exception(nu, j) );
-      sum+=x(j); }
-    if(!std::isnormal(sum)){
-      ostringstream err;
-      err << "infinite, NaN, or denormalized sum in rdirichlet_impl.  sum = " << sum << endl
-          << "x = " << x << endl
-          << "nu = " << nu << endl;
-      throw_exception<std::runtime_error>(err.str());
+    template <class V1, class V2>
+    double ddirichlet_impl(const V1 & x, const V2 &nu, bool logscale){
+      /* x(lo..hi) is a dirichlet RV (non-negative and sums to 1).
+         nu(lo..hi) is the parameter (non-negative).  */
+      double ans(0), sum(0), xsum(0);
+      for(uint i=0; i<x.size(); ++i){
+        double xi= x(i);
+        if(xi>1 || xi<0) return logscale ? BOOM::infinity(-1) : 0;
+        xsum+= xi;
+
+        double nui = nu(i);
+        sum+=nui;
+        ans+= (nui-1.0)*log(xi) - lgamma(nui);
+      }
+      const double eps = 1e-5;  // std::numeric_limits<double>::epsilon()
+      if( fabs(xsum-1.0) >  eps ){
+        return logscale ? BOOM::infinity(-1) : 0;
+      }
+      ans+= lgamma(sum);
+      return logscale? ans: exp(ans);
     }
-    if(sum<=0){
-      ostringstream err;
-      err << "non-positive sum in rdirichlet_impl.  sum = " << sum << endl
-          << "x = " << x << endl
-          << "nu = " << nu << endl;
-      std::runtime_error(err.str());
-    }
-    x/=sum;
-    return x;
-  }
+
+  }  // namespace
+
   Vec rdirichlet_mt(RNG & rng, const Vec & nu){
     return rdirichlet_impl(rng, nu);}
   //======================================================================
@@ -103,29 +129,6 @@ namespace BOOM{
   Vec rdirichlet(const ConstVectorView & nu){
     return rdirichlet_impl(GlobalRng::rng, nu); }
   //======================================================================
-
-  template <class V1, class V2>
-  double ddirichlet_impl(const V1 & x, const V2 &nu, bool logscale){
-    /* x(lo..hi) is a dirichlet RV (non-negative and sums to 1).
-       nu(lo..hi) is the parameter (non-negative).  */
-
-    double ans(0), sum(0), xsum(0);
-    for(uint i=0; i<x.size(); ++i){
-      double xi= x(i);
-      if(xi>1 || xi<0) return logscale ? BOOM::infinity(-1) : 0;
-      xsum+= xi;
-
-      double nui = nu(i);
-      sum+=nui;
-      ans+= (nui-1.0)*log(xi) - lgamma(nui);
-    }
-    const double eps = 1e-5;  // std::numeric_limits<double>::epsilon()
-    if( fabs(xsum-1.0) >  eps ){
-      return logscale ? BOOM::infinity(-1) : 0;
-    }
-    ans+= lgamma(sum);
-    return logscale? ans: exp(ans);
-  }
 
   double ddirichlet(const Vec & x, const Vec & nu, bool logscale){
     return ddirichlet_impl(x,nu,logscale);}
@@ -147,8 +150,6 @@ namespace BOOM{
   double ddirichlet(const VectorView & x, const ConstVectorView & nu, bool logscale){
     return ddirichlet_impl(x,nu,logscale);}
 
-
-
   //======================================================================
   Vec mdirichlet( const Vec &nu){
     /* returns x(lo..hi): mode of the dirichlet distribution with
@@ -167,9 +168,7 @@ namespace BOOM{
 
   double dirichlet_loglike(const Vec &nu, Vec *g, Mat *h,
 			   const Vec & sumlogpi, double nobs){
-
     uint n = nu.size();
-
     double sum=0;
     bool flag=false;
     for(uint i=0; i<n; ++i){  /* check for illegal parameter values */
@@ -198,8 +197,6 @@ namespace BOOM{
  	    (*h)(i,j) =tmp1- (i==j? nobs*trigamma(nu(i)):0); }}}}
 
     return ans;
-
-
   }
 
-}
+}  // namespace BOOM

@@ -95,6 +95,11 @@ namespace BOOM{
       DataPolicy(new MvnSuf(mean.size()))
   {}
 
+  MvnModel::MvnModel(Ptr<VectorParams> mu, Ptr<SpdParams> Sigma)
+    : Base(mu, Sigma),
+      DataPolicy(new MvnSuf(mu->dim()))
+  {}
+
   MvnModel::MvnModel(const std::vector<Vec> &v)       // N(mu.hat, V.hat)
     : Base(v[0].size()),
       DataPolicy(new MvnSuf(v[0].size())),

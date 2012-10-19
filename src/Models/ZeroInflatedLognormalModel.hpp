@@ -61,14 +61,19 @@ namespace BOOM{
                              double normal_standard_deviation_guess,
                              double normal_standard_deviation_weight,
                              double nonzero_proportion_guess,
-                             double nonzero_proportion_weeight);
+                             double nonzero_proportion_weight);
 
     // Mean and standard deviation of log of the positive observations.
     double mu()const;
+    void set_mu(double mu);
+
     double sigma()const;
+    void set_sigma(double sigma);
+    void set_sigsq(double sigsq);
 
     // The probability that an event is greater than zero.
     double positive_probability()const;
+    void set_positive_probability(double prob);
 
     // Moments of the actual observations, including zeros.
     double mean()const;

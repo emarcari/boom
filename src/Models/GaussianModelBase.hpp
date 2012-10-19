@@ -60,9 +60,8 @@ namespace BOOM{
 					    bool minimal=true);
     virtual ostream &print(ostream &out)const;
   };
-
-
-class GaussianModelBase
+  //======================================================================
+  class GaussianModelBase
       : public SufstatDataPolicy<DoubleData, GaussianSuf>,
         public DiffDoubleModel,    // promises  Logp(x,g,h,nd);
         public NumOptModel,        // promises Loglike(g,h,nd), and mle();

@@ -18,6 +18,8 @@
 
 #include <Models/PosteriorSamplers/IndependentMvnConjSampler.hpp>
 #include <distributions.hpp>
+#include <distributions/trun_gamma.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM {
 
@@ -30,26 +32,34 @@ namespace {
       const Vec &mean_guess,
       const Vec & mean_sample_size,
       const Vec &sd_guess,
-      const Vec &sd_sample_size)
+      const Vec &sd_sample_size,
+      const Vec &sigma_upper_limit)
       : model_(model),
         mean_prior_guess_(mean_guess),
         mean_prior_sample_size_(mean_sample_size),
         prior_ss_(sd_guess * sd_guess * sd_sample_size),
-        prior_df_(sd_sample_size)
-  {}
+        prior_df_(sd_sample_size),
+        sigma_upper_limit_(sigma_upper_limit)
+  {
+    check_sizes();
+  }
 
   IndependentMvnConjSampler::IndependentMvnConjSampler(
       IndependentMvnModel *model,
       double mean_guess,
       double mean_sample_size,
       double sd_guess,
-      double sd_sample_size)
+      double sd_sample_size,
+      double sigma_upper_limit)
       : model_(model),
         mean_prior_guess_(model->dim(), mean_guess),
         mean_prior_sample_size_(model->dim(), mean_sample_size),
         prior_ss_(model->dim(), sd_guess * sd_guess * sd_sample_size),
-        prior_df_(model->dim(), sd_sample_size)
-  {}
+        prior_df_(model->dim(), sd_sample_size),
+        sigma_upper_limit_(model->dim(), sigma_upper_limit)
+  {
+    check_sizes();
+  }
 
   double IndependentMvnConjSampler::logpri()const{
     int dim = model_->dim();
@@ -64,6 +74,26 @@ namespace {
                    true);
     }
     return ans;
+  }
+
+  void IndependentMvnConjSampler::check_sizes(){
+    check_vector_size(mean_prior_guess_, "mean_prior_guess_");
+    check_vector_size(mean_prior_sample_size_, "mean_prior_sample_size_");
+    check_vector_size(prior_ss_, "prior_ss_");
+    check_vector_size(prior_df_, "prior_df_");
+    check_vector_size(sigma_upper_limit_, "sigma_upper_limit_");
+  }
+
+  void IndependentMvnConjSampler::check_vector_size(
+      const Vec &v, const char *vector_name) {
+    if (v.size() != model_->dim()) {
+      ostringstream err;
+      err << "One of the elements of IndependentMvnConjSampler does not "
+          << "match the model dimension" << endl
+          << vector_name << endl
+          << v << endl;
+      report_error(err.str());
+    }
   }
 
   void IndependentMvnConjSampler::draw(){
@@ -84,8 +114,12 @@ namespace {
       df += n;
       double mu_hat = (n * ybar + kappa * mu0) / (n + kappa);
       ss += (n-1)*v  +  n * kappa * pow(ybar - mu0, 2) / (n + kappa);
-
-      sigsq[i] = 1.0/rgamma_mt(rng(), df/2, ss/2);
+      if (sigma_upper_limit_[i] == infinity(1)) {
+        sigsq[i] = 1.0/rgamma_mt(rng(), df/2, ss/2);
+      } else {
+        sigsq[i] = 1.0 / rtrun_gamma_mt(rng(), df/2, ss/2,
+                                        1.0/pow(sigma_upper_limit_[i], 2));
+      }
       v = sigsq[i] / (n+kappa);
       mu[i] = rnorm_mt(rng(), mu_hat, sqrt(v));
     }

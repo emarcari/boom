@@ -24,6 +24,10 @@
 #include <LinAlg/Types.hpp>
 
 namespace BOOM{
+
+  // LightKalmanStorage is 'light' because it does not keep a copy of
+  // 'a' (the state forecast/state value) or P (variance of state
+  // forecast/value).
   struct LightKalmanStorage{
     Vec K;
     double F;

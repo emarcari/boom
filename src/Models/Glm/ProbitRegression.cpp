@@ -54,8 +54,10 @@ namespace BOOM{
 
   PRM * PRM::clone()const{return new PRM(*this);}
 
-  Ptr<GlmCoefs> PRM::coef(){return ParamPolicy::prm();}
-  const Ptr<GlmCoefs> PRM::coef()const{return ParamPolicy::prm();}
+  GlmCoefs & PRM::coef(){return ParamPolicy::prm_ref();}
+  const GlmCoefs & PRM::coef()const{return ParamPolicy::prm_ref();}
+  Ptr<GlmCoefs> PRM::coef_prm(){return ParamPolicy::prm();}
+  const Ptr<GlmCoefs> PRM::coef_prm()const{return ParamPolicy::prm();}
 
   double PRM::pdf(dPtr dp, bool logscale)const{ return pdf(DAT(dp), logscale); }
 

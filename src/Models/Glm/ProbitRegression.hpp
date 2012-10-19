@@ -55,8 +55,10 @@ namespace BOOM{
     ProbitRegressionModel(const ProbitRegressionModel &);
     ProbitRegressionModel *clone()const;
 
-    Ptr<GlmCoefs> coef();
-    const Ptr<GlmCoefs> coef()const;
+    virtual GlmCoefs & coef();
+    virtual const GlmCoefs & coef()const;
+    virtual Ptr<GlmCoefs> coef_prm();
+    virtual const Ptr<GlmCoefs> coef_prm()const;
 
     virtual double pdf(dPtr, bool)const;
     virtual double pdf(Ptr<BinaryRegressionData>, bool)const;

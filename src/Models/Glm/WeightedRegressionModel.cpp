@@ -309,23 +309,21 @@ namespace BOOM{
     return dnorm(dp->y(), mu, sqrt(sigsq/w), logscale);
   }
 
+  GlmCoefs & WRM::coef(){return ParamPolicy::prm1_ref();}
+  const GlmCoefs & WRM::coef()const{return ParamPolicy::prm1_ref();}
+  Ptr<GlmCoefs> WRM::coef_prm(){return ParamPolicy::prm1();}
+  const Ptr<GlmCoefs> WRM::coef_prm()const{return ParamPolicy::prm1();}
 
-  Ptr<GlmCoefs> WRM::coef(){return ParamPolicy::prm1();}
-  const Ptr<GlmCoefs> WRM::coef()const{return ParamPolicy::prm1();}
-
-  void WRM::set_sigsq(double s2){ Sigsq_prm()->set(s2);}
-
+  void WRM::set_sigsq(double s2){ ParamPolicy::prm2_ref().set(s2);}
 
   Ptr<UnivParams> WRM::Sigsq_prm(){return ParamPolicy::prm2();}
   const Ptr<UnivParams> WRM::Sigsq_prm()const {return ParamPolicy::prm2();}
-
-  const double & WRM::sigsq()const{return Sigsq_prm()->value();}
+  const double & WRM::sigsq()const{return ParamPolicy::prm2_ref().value();}
   double WRM::sigma()const{return sqrt(sigsq());}
 
-
   void WRM::mle(){
-    Spd xtx(suf()->xtx(coef()->inc()));
-    Vec xty(suf()->xty(coef()->inc()));
+    Spd xtx(suf()->xtx(coef().inc()));
+    Vec xty(suf()->xty(coef().inc()));
     Vec b = xtx.solve(xty);
     set_beta(b);
 
@@ -336,7 +334,7 @@ namespace BOOM{
 
   double WRM::Loglike(Vec &g, Mat &h, uint nd)const{
     const double log2pi = 1.8378770664093453;
-    const Selector & inc(coef()->inc());
+    const Selector & inc(coef().inc());
 
     if(sigsq() <= 0){
       g=0;

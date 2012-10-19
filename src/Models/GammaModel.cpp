@@ -192,6 +192,16 @@ namespace BOOM{
     return BOOM::infinity(-1);
   }
 
+  inline double bad_gamma_loglike(double a, double b, Vec *g, Mat *h){
+    if (g) {
+      (*g)[0] = (a <=0) ? -(a+1) : 0;
+      (*g)[1] = (b <= 0) ? -(b+1) : 0;
+    }
+    if (h) {
+      h->set_diag(-1);
+    }
+    return infinity(-1);
+  }
 
   double GammaModel::Loglike(Vec &g, Mat &h, uint nd) const{
     double n = suf()->n();
@@ -211,6 +221,47 @@ namespace BOOM{
  	h(0,0) = -n*trigamma(a);
  	h(1,0) = h(0,1) = n/b;
  	h(1,1) = -n*a/(b*b);}}
+    return ans;
+  }
+
+  double GammaModel::loglikelihood(double a, double b)const{
+    if(a<=0 || b<=0) return infinity(-1);
+    double n = suf()->n();
+    double sum =suf()->sum();
+    double sumlog = suf()->sumlog();
+    double logb = log(b);
+    return n*(a*logb -lgamma(a))  + (a-1)*sumlog - b*sum;
+  }
+
+  double GammaModel::loglikelihood_full(const Vec &ab, Vec *g, Mat *h)const{
+    if (length(ab) != 2) {
+      report_error("GammaModel::loglikelihood expects an argument of length 2");
+    }
+    double a = ab[0];
+    double b = ab[1];
+    if(a<=0 || b<=0) return bad_gamma_loglike(a, b, g, h);
+
+    double n = suf()->n();
+    double sum =suf()->sum();
+    double sumlog = suf()->sumlog();
+    double logb = log(b);
+    double ans = n*(a*logb -lgamma(a))  + (a-1)*sumlog - b*sum;
+
+    if (g) {
+      if (length(*g) != 2) {
+        report_error("GammaModel::loglikelihood expects a gradient vector "
+                     "of length 2");
+      }
+      (*g)[0] = n*( logb -digamma(a) ) + sumlog;
+      (*g)[1] = n*a/b -sum;
+
+      if (h) {
+        if (nrow(*h) != 2 || ncol(*h) != 2) {
+          report_error("GammaModel::loglikelihood expects a 2 x 2 "
+                       "Hessian matrix");
+        }
+      }
+    }
     return ans;
   }
 

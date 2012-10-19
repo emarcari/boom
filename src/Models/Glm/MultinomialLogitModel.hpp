@@ -76,8 +76,10 @@ namespace BOOM{
     void set_beta_subject(const Vec &b, uint i);
     void set_beta_choice(const Vec &b);
 
-    Ptr<GlmCoefs> coef();
-    const Ptr<GlmCoefs> coef()const;
+    virtual GlmCoefs & coef();
+    virtual const GlmCoefs& coef()const;
+    virtual Ptr<GlmCoefs> coef_prm();
+    virtual const Ptr<GlmCoefs> coef_prm()const;
     Selector inc()const;
 
     virtual double Loglike(Vec &g, Mat &H, uint nd)const;

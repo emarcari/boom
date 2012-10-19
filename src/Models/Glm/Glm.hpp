@@ -118,8 +118,10 @@ namespace BOOM{
     GlmModel(const GlmModel &rhs);
     virtual GlmModel *clone()const=0;
 
-    virtual Ptr<GlmCoefs> coef()=0;
-    virtual const Ptr<GlmCoefs> coef()const=0;
+    virtual GlmCoefs & coef() = 0;
+    virtual const GlmCoefs & coef()const = 0;
+    virtual Ptr<GlmCoefs> coef_prm()=0;
+    virtual const Ptr<GlmCoefs> coef_prm()const=0;
 
     uint xdim()const;
     //---- model selection ----

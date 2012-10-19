@@ -88,10 +88,7 @@ namespace BOOM{
     // All subject and choice predictors stretched out into a single
     // predictor vector
     mutable Matrix bigX_;
-    mutable Matrix not_so_bigX_;
-
     mutable bool big_x_current_;
-    mutable bool not_so_big_x_current_;
 
     bool check_big_x(bool include_zeros)const;
   };

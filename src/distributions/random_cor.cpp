@@ -20,7 +20,6 @@
 #include <TargetFun/TargetFun.hpp>
 #include <cpputil/math_utils.hpp>
 #include <distributions.hpp>
-#include <BOOM.hpp>
 #include <cmath>
 #include <sstream>
 #include <cpputil/report_error.hpp>

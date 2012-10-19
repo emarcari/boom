@@ -32,7 +32,7 @@
 
 #include <numopt/Integral.hpp>
 #include <boost/function.hpp>
-#include <cpputil/ThrowException.hpp>
+#include <cpputil/report_error.hpp>
 #include <stdexcept>
 #include <cfloat>
 #include <limits>
@@ -42,19 +42,22 @@
 class integr_fn{
  public:
   typedef boost::function<double(double)> Fun;
-  integr_fn(const Fun & F)
+  integr_fn(const Fun & F, bool throw_on_error = true)
       : f_(F)
   {}
   void operator()(double *x, int n, void*){
     for (int i = 0; i < n; ++i) {
       x[i] = f_(x[i]);
       if(!finite(x[i])){
-        BOOM::throw_exception<std::runtime_error>("non-finite function value in numerical integration");
+        if(throw_on_error_) {
+          BOOM::report_error("non-finite function value in numerical integration");
+        }
       }
     }
   }
  private:
   Fun f_;
+  bool throw_on_error_;
 };
 
 inline double fmax2(double a, double b){return std::max<double>(a,b);}
@@ -2434,7 +2437,7 @@ namespace BOOM{
       err << "error in Integral::set_work_vector_size.  " << endl
           << "lenw = " << lenw << endl
           << "must be at least " << 4 * iwork_.size() << endl;
-      throw_exception<std::runtime_error>(err.str());
+      report_error(err.str());
     }
   }
 
@@ -2455,7 +2458,7 @@ namespace BOOM{
     int inf = 0;
     error_code_ = 0;
     int work_limit = work_.size();
-    integr_fn target(f_);
+    integr_fn target(f_, throw_on_error_);
     npartitions_ = 0;
     if(lower_inf && upper_inf){
       inf=2;
@@ -2527,7 +2530,7 @@ namespace BOOM{
              work_.data());
     }
     if(error_code_!=0 && throw_on_error_){
-      throw_exception<std::runtime_error>(error_message());
+      report_error(error_message());
     }
     return result_;
   } // Integral::integrate

@@ -1,33 +1,3 @@
 Import('env')
-
-file_list = Split("""
-BetaBinomialSampler.cpp
-CompositeSampler.cpp
-CompositeModelSampler.cpp
-CorrelationSampler.cpp
-DirichletPosteriorSampler.cpp
-PosteriorSampler.cpp
-ExchangeableDirichletSampler.cpp
-ExponentialGammaSampler.cpp
-FixedProbBinomialSampler.cpp
-GaussianConjSampler.cpp
-GaussianMeanSampler.cpp
-GaussianVarSampler.cpp
-ZeroMeanGaussianConjSampler.cpp
-ZeroMeanMvnConjSampler.cpp
-ZeroMeanMvnIndependenceSampler.cpp
-AbsorbingMarkovConjSampler.cpp
-MarkovConjSampler.cpp
-MarkovConjShrinkageSampler.cpp
-MultinomialDirichletSampler.cpp
-MvnConjSampler.cpp
-MvnMeanSampler.cpp
-MvnVarSampler.cpp
-PoissonGammaSampler.cpp
-ProductDirichletPosteriorSampler.cpp
-PostSliceSampler.cpp
-SharedSigsqSampler.cpp
-""")
-
-obj = env.Object(file_list)
+obj = env.Object(Glob('*.cpp'))
 Return('obj')

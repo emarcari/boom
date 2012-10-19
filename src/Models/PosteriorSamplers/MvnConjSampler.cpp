@@ -44,7 +44,7 @@ namespace BOOM{
   }
 
   double MCS::logpri()const{
-    double ans = siginv_->pdf(mod_->siginv(), true);
+    double ans = siginv_->logp(mod_->siginv());
     ans += mu_->logp(mod_->mu());
     return ans;
   }

@@ -18,6 +18,8 @@
 
 #include <Models/PosteriorSamplers/BetaBinomialPosteriorSampler.hpp>
 #include <boost/bind.hpp>
+#include <distributions.hpp>
+#include <stats/logit.hpp>
 
 namespace BOOM{
 
@@ -33,7 +35,8 @@ namespace BOOM{
         probability_sampler_(boost::bind(
             &BetaBinomialPosteriorSampler::logp_prob, this, _1)),
         sample_size_sampler_(boost::bind(
-            &BetaBinomialPosteriorSampler::logp_sample_size, this, _1))
+            &BetaBinomialPosteriorSampler::logp_sample_size, this, _1)),
+        sampling_method_(DATA_AUGMENTATION)
   {
     probability_sampler_.set_limits(0,1);
     sample_size_sampler_.set_lower_limit(0);
@@ -47,6 +50,38 @@ namespace BOOM{
   }
 
   void BBPS::draw(){
+    switch (sampling_method_){
+      case SLICE:
+        draw_slice();
+        return;
+
+      case DATA_AUGMENTATION:
+        draw_data_augmentation();
+        return;
+
+      default:
+        draw_data_augmentation();
+        return;
+    }
+  }
+
+  void BBPS::draw_data_augmentation(){
+    double a = model_->a();
+    double b = model_->b();
+    complete_data_suf_.clear();
+
+    const std::vector<Ptr<BinomialData> > & data(model_->dat());
+    int nobs = data.size();
+    for (int i = 0; i < nobs; ++i) {
+      int y = data[i]->y();
+      int n = data[i]->n();
+      double theta = rbeta_mt(rng(), y + a, n - y + b);
+      complete_data_suf_.update_raw(theta);
+    }
+    draw_slice();
+  }
+
+  void BBPS::draw_slice(){
     double prob = model_->prior_mean();
     prob = probability_sampler_.draw(prob);
     model_->set_prior_mean(prob);
@@ -56,22 +91,26 @@ namespace BOOM{
     model_->set_prior_sample_size(sample_size);
   }
 
-  double BBPS::logp_sample_size(double sample_size)const{
-    double prob = model_->prior_mean();
+  double BBPS::logp(double prob, double sample_size)const{
     double a = prob * sample_size;
     double b = sample_size - a;
-    return  probability_prior_distribution_->logp(prob)
-        + sample_size_prior_distribution_->logp(sample_size)
-        + model_->loglike(a, b);
+    double ans = probability_prior_distribution_->logp(prob)
+        + sample_size_prior_distribution_->logp(sample_size);
+    if (sampling_method_ == DATA_AUGMENTATION) {
+      return ans + beta_log_likelihood(a, b, complete_data_suf_);
+    } else {
+    return ans + model_->loglike(a, b);
+    }
+  }
+
+  double BBPS::logp_sample_size(double sample_size)const{
+    double prob = model_->prior_mean();
+    return logp(prob, sample_size);
   }
 
   double BBPS::logp_prob(double prob)const{
     double sample_size = model_->prior_sample_size();
-    double a = prob * sample_size;
-    double b = sample_size - a;
-    return  probability_prior_distribution_->logp(prob)
-        + sample_size_prior_distribution_->logp(sample_size)
-        + model_->loglike(a, b);
+    return logp(prob, sample_size);
   }
 
-}
+}  // namespace BOOM

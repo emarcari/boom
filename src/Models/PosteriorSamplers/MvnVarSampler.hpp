@@ -22,27 +22,38 @@
 
 namespace BOOM{
   class MvnModel;
-  class MvnConjVarSampler : public PosteriorSampler{
+  class WishartModel;
+
+  class MvnVarSampler : public PosteriorSampler{
+    // assumes y~N(mu, Sigma), with Sigma^-1~W(df, SS).  The prior on
+    // mu may or may not be conjugate.  The sampling step will
+    // condition on mu.  Use MvnConjVarSampler if you want to
+    // integrate out mu.
+  public:
+    MvnVarSampler(MvnModel *, double df, const Spd & SS);
+    MvnVarSampler(MvnModel *, const WishartModel &siginv_prior);
+    MvnVarSampler(MvnModel *);
+    virtual double logpri()const;
+    virtual void draw();
+  private:
+    MvnModel *mvn_;
+    Ptr<UnivParams> pdf_;
+    Ptr<SpdParams> pss_;
+   protected:
+    MvnModel * mvn(){return mvn_;}
+    const SpdParams * pss()const{return pss_.get();}
+    const UnivParams * pdf()const{return pdf_.get();}
+  };
+
+  class MvnConjVarSampler : public MvnVarSampler{
     // assumes y~N(mu, Sigma), with mu|Sigma \norm(mu0, Sigma/kappa)
     // and Sigma^-1~W(df, SS)
   public:
     MvnConjVarSampler(MvnModel *, double df, const Spd & SS);
+    MvnConjVarSampler(MvnModel *, const WishartModel &siginv_prior);
     MvnConjVarSampler(MvnModel *);
-    double logpri()const;
     void draw();
-  private:
-    MvnModel *mvn;
-    Ptr<UnivParams> pdf;
-    Ptr<SpdParams> pss;
   };
 
-//   class MvnVarSampler : public PosteriorSampler{
-//     // assumes y~N(mu, Sigma) with mu~N(mu0, Omega) and Sigma^-1~W(df, SS)
-//   public:
-//     double logpri()const;
-//     void draw();
-//   private:
-//     MvnModel* mvn;
-//   };
 }
 #endif// BOOM_MVN_VAR_SAMPLER_HPP

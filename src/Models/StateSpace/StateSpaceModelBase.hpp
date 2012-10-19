@@ -21,16 +21,14 @@
 #include <Models/StateSpace/Filters/SparseVector.hpp>
 #include <Models/StateSpace/Filters/SparseMatrix.hpp>
 #include <Models/StateSpace/Filters/ScalarKalmanStorage.hpp>
-
 #include <Models/Policies/CompositeParamPolicy.hpp>
-
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Types.hpp>
-
 #include <boost/scoped_ptr.hpp>
 
 namespace BOOM{
+
   class StateSpaceModelBase : public CompositeParamPolicy{
    public:
     StateSpaceModelBase();
@@ -60,8 +58,12 @@ namespace BOOM{
     // regression effects it is y[t] - beta * x[t].  If y[t] is
     // missing then infinity(1) is returned.
     virtual double adjusted_observation(int t)const = 0;
+
+    // Returns true if observation t is missing, and false otherwise.
     virtual bool is_missing_observation(int t)const = 0;
 
+    // Returns a pointer to the model responsible for the observation
+    // variance.
     virtual Model * observation_model() = 0;
     virtual const Model * observation_model()const = 0;
 
@@ -98,7 +100,7 @@ namespace BOOM{
 
     // Returns the vector of one step ahead prediction errors for the
     // training data.
-    virtual Vec one_step_prediction_errors()const;
+    Vec one_step_prediction_errors()const;
 
     // clears sufficient statistics for state models and for
     // the client model describing observed data given state
@@ -118,7 +120,7 @@ namespace BOOM{
     // Durbin and Koopman's Z[t].transpose() built from state models.
     virtual SparseVector observation_matrix(int t)const;
 
-    // Durbin and Koopman's RQR^T.  Built from state models, usually
+    // Durbin and Koopman's RQR^T.  Built from state models, often
     // less than full rank.
     virtual const SparseKalmanMatrix * state_variance_matrix(int t)const;
 
@@ -131,11 +133,17 @@ namespace BOOM{
     virtual void simulate_initial_state(VectorView v)const;
     virtual Vec simulate_initial_state()const;
 
+    // Simulates the value of the state vector for the current time
+    // period, t, given the value of state at the previous time
+    // period, t-1.
+    // Args:
+    //   last:  Value of state at time t-1.
+    //   next:  VectorView to be filled with state at time t.
+    //   t:  The time index of 'next'.
     void simulate_next_state(const ConstVectorView last,
                              VectorView next,
                              int t)const;
     Vec simulate_next_state(const Vec &current_state, int t)const;
-
     virtual Vec simulate_state_error(int t)const;
 
     // Parameters of initial state distribution, specified in the
@@ -147,14 +155,21 @@ namespace BOOM{
     const Ptr<StateModel> state_model(int s)const{return state_models_[s];}
 
     bool kalman_filter_is_current()const{return kalman_filter_is_current_;}
-    void observe(Ptr<Params>);
+    // Sets an observer in 'params' that invalidates the Kalman filter
+    // whenever params changes.
+    void observe(Ptr<Params> params);
 
     ConstVectorView final_state()const;
     ConstVectorView state(int t)const;
     const Mat &state()const;
 
-    // Returns the contributions of each state model to the overall mean of the series.
+    // Returns the contributions of each state model to the overall
+    // mean of the series.  The outer vector is indexed by state
+    // model.  The inner Vec is a time series.
     std::vector<Vec> state_contributions()const;
+
+    // Returns a time series giving the contribution of state model
+    // 'which_model' to the overall mean of the series being modeled.
     Vec state_contribution(int which_model)const;
 
     // Takes the full state vector as input, and returns the component
@@ -163,14 +178,30 @@ namespace BOOM{
     VectorView state_component(VectorView &state, int s)const;
     ConstVectorView state_component(const ConstVectorView &state, int s)const;
 
+    // Returns a matrix giving contributions of state model s.  Each
+    // row is a time series corresponding to one dimension of state
+    // for state model s.
+    Matrix full_time_series_state_component(int s)const;
+
     void be_pedantic(bool tf){pedantic_ = tf;}
 
+    // Sets the behavior of all client state models to 'behavior.'
+    void set_state_model_behavior(StateModel::Behavior behavior);
+
+    // The next two member functions are mainly used for debugging a
+    // simulation.  You can 'permanently_set_state' to the 'true'
+    // state value, then see if the model recovers the parameters.
+    // These functions are unlikely to be useful in an actual data
+    // analysis.
     void permanently_set_state(const Mat &m);
     void observe_fixed_state();
    private:
     void check_kalman_storage(std::vector<LightKalmanStorage> &);
     void initialize_final_kalman_storage()const;
-    void kalman_filter_is_not_current(){ kalman_filter_is_current_ = false; }
+    void kalman_filter_is_not_current(){
+      kalman_filter_is_current_ = false;
+      mcmc_kalman_storage_is_current_ = false;
+    }
 
     // These are the steps needed to implement impute_state().
     void resize_state();
@@ -203,7 +234,10 @@ namespace BOOM{
     Vec a_;
     Spd P_;
     std::vector<LightKalmanStorage> kalman_storage_;
+    // state_is_fixed_ is for use in debugging.  If it is set then the
+    // state will be held constant in the data imputation.
     bool state_is_fixed_;
+    bool mcmc_kalman_storage_is_current_;
 
     // Supplemental storage is for filtering simulated observations
     // for Durbin and Koopman's simulation smoother.
@@ -211,24 +245,27 @@ namespace BOOM{
     Spd supplemental_P_;
     std::vector<LightKalmanStorage> supplemental_kalman_storage_;
 
+    // A flag indicating whether the call to 'impute_state' should be
+    // done in 'pedantic' mode.  This should almost always be 'true'.
     bool pedantic_;
 
-    // Storage for the contribution of each state model to the overall
-    // mean.  Storage is [state_model_number_][mcmc_iteration], and
-    // the value at this location is the time series of contributions
-    // of that state model to the overall mean in that MCMC iteration.
-    //    std::vector<std::vector<Vec> > state_contributions_;
-    //    bool save_state_model_contributions_;
-
     // final_kalman_storage_ holds the output of the Kalman filter.
-    // The kalman_filter_is_current_ flag must be set by the
-    // constructor.  The others will be managed by filter().
+    // It is for situations where we don't need to store the whole
+    // filter, so the name 'final' refers to the fact that it is the
+    // last kalman_storage you end up with after running the kalman
+    // recursions.  The kalman_filter_is_current_ flag keeps track of
+    // whether the parameters have changed since the last time the
+    // filter was run.  It must be set by the constructor.  The others
+    // will be managed by filter().
     mutable ScalarKalmanStorage final_kalman_storage_;
     mutable double loglike_;
     mutable bool kalman_filter_is_current_;
 
-    mutable boost::scoped_ptr<BlockDiagonalMatrix> default_state_transition_matrix_;
-    mutable boost::scoped_ptr<BlockDiagonalMatrix> default_state_variance_matrix_;
+    mutable boost::scoped_ptr<BlockDiagonalMatrix>
+    default_state_transition_matrix_;
+
+    mutable boost::scoped_ptr<BlockDiagonalMatrix>
+    default_state_variance_matrix_;
   };
 }
 

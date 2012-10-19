@@ -70,6 +70,9 @@ namespace BOOM{
   public:
     MultinomialModel(uint Nlevels);
     MultinomialModel(const Vec &probs );
+
+    // The argument is a vector of names to use for factor levels to
+    // be modeled.
     MultinomialModel(const std::vector<string> &);
 
     template <class Fwd> // iterator promotable to uint
@@ -101,7 +104,7 @@ namespace BOOM{
     mutable Vec logp_;
     mutable bool logp_current_;
     void observe_logp();
-    boost::function<void(void)> create_logp_observer();
+    void set_observer();
     void check_logp()const;
   };
 

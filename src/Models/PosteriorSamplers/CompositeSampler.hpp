@@ -32,6 +32,9 @@ namespace BOOM{
     CompositeSampler * cs;
   };
   //----------------------------------------------------------------------
+  // A posterior sampler that is made of one or more other posterior
+  // samplers.  Each iteration one of the component samplers will be
+  // selected at random and run.
   class CompositeSampler: public PosteriorSampler{
   public:
     CompositeSampler();
@@ -53,11 +56,6 @@ namespace BOOM{
     Vec probs_;
     Ptr<PosteriorSampler> choose_sampler()const;
   };
-
-
-
-
 }
-
 
 #endif //BOOM_COMPOSITE_SAMPLER_HPP

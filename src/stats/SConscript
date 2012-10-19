@@ -1,18 +1,3 @@
 Import('env')
-
-file_list = Split("""
-diff.cpp
-moments.cpp
-regression.cpp
-ChiSquareTest.cpp
-Design.cpp
-ECDF.cpp
-FreqDist.cpp
-IQagent.cpp
-NaturalSpline.cpp
-""")
-
-obj = env.Object(file_list)
+obj = env.Object(Glob('*.cpp'))
 Return('obj')
-
-

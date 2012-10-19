@@ -28,9 +28,27 @@ extern "C"{
 #include <cblas.h>
 }
 
-
 namespace BOOM{
   using namespace std;
+
+  namespace{
+    template <class V1, class V2> double dot_impl(
+        const V1 &v1, const V2 &v2) {
+      assert(v1.size() == v2.size());
+      if(v1.stride() > 0 && v2.stride() > 0){
+        return cblas_ddot(v1.size(),
+                          v1.data(), v1.stride(),
+                          v2.data(), v2.stride());
+      }else{
+        double ans = 0;
+        for(int i = 0; i < v1.size(); ++i){
+          ans += v1[i] * v2[i];
+        }
+        return ans;
+      }
+    }
+  }
+
 
   typedef VectorView VV;
 
@@ -52,7 +70,7 @@ namespace BOOM{
     return std::reverse_iterator<const_iterator>(end());}
 
 
-  VV::VectorView(double *first, uint n, uint s)
+  VV::VectorView(double *first, uint n, int s)
       : V(first),
       nelem_(n),
       stride_(s)
@@ -280,15 +298,9 @@ namespace BOOM{
   double VV::prod()const{
     return accumulate(begin(), end(), 1.0, mul);}
 
-  double VV::dot(const Vector &y)const{
-    assert(y.size()==size());
-    return cblas_ddot(size(), data(), stride(), y.data(), y.stride());
-  }
-
-  double VV::dot(const VectorView &y)const{
-    assert(y.size()==size());
-    return cblas_ddot(size(), data(), stride(), y.data(), y.stride());
-  }
+  double VV::dot(const Vector &y)const{return dot_impl(*this, y); }
+  double VV::dot(const VectorView &y)const{return dot_impl(*this, y); }
+  double VV::dot(const ConstVectorView &y)const{return dot_impl(*this, y); }
 
   double VV::affdot(const Vector &y)const{
     uint n = size();
@@ -356,7 +368,7 @@ namespace BOOM{
     return std::reverse_iterator<const_iterator>(end());}
 
 
-  CVV::ConstVectorView(const double *first, uint n, uint s)
+  CVV::ConstVectorView(const double *first, uint n, int s)
       : V(first),
       nelem_(n),
       stride_(s)
@@ -427,6 +439,15 @@ namespace BOOM{
 
   double CVV::prod()const{
     return accumulate(begin(), end(), 1.0, mul);}
+
+  double CVV::dot(const Vector &y)const{return dot_impl(*this, y); }
+  double CVV::dot(const VectorView &y)const{return dot_impl(*this, y); }
+  double CVV::dot(const ConstVectorView &y)const{return dot_impl(*this, y); }
+
+  CVV CVV::reverse()const{
+    const double *start = V + (nelem_ - 1) * stride_;
+    return CVV(start, nelem_, -stride_);
+  }
 
   ostream & operator<<(ostream & out, const CVV & v){
     for(uint i = 0; i<v.size(); ++i) out << v[i] << " ";

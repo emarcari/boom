@@ -35,7 +35,7 @@ namespace BOOM{
           pri_(prior),
           start_(chunk_size * chunk_number)
     {
-      int nvars = m_->coef()->nvars();
+      int nvars = m_->coef().nvars();
       int elements_remaining = nvars - start_;
       chunk_size_ = std::min(chunk_size, elements_remaining);
     }

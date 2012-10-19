@@ -36,6 +36,7 @@ namespace BOOM{
     BetaSuf *clone() const;
     void clear(){n_=sumlog_ = sumlogc_ = 0.0;}
     void Update(const DoubleData &);
+    void update_raw(double theta);
     double n()const{return n_;}
     double sumlog()const{return sumlog_;}
     double sumlogc()const{return sumlogc_;}
@@ -49,8 +50,6 @@ namespace BOOM{
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
-
-
   };
 
   class BetaModel
@@ -82,16 +81,12 @@ namespace BOOM{
     // probability calculations
     double Loglike(Vec &, Mat &, uint) const ;
     double Logp(double x, double &d1, double &d2, uint nd) const ;
-
-    //    double pdf(DoubleData &x, bool logscale) const;
-    //    double pdf(dPtr dp, bool logscale) const;
-
     double sim() const;
-
   private:
     double Logp_degenerate(double x, double &g, double &h, uint nd)const;
   };
-}
 
+  double beta_log_likelihood(double a, double b, const BetaSuf &);
+}
 
 #endif// BOOM_BETA_MODEL_HPP

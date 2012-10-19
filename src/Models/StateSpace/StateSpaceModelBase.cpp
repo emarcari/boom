@@ -22,27 +22,32 @@
 #include <Models/StateSpace/StateSpaceModelBase.hpp>
 #include <Models/StateSpace/Filters/SparseKalmanTools.hpp>
 #include <cpputil/report_error.hpp>
+#include <LinAlg/SubMatrix.hpp>
 
 namespace BOOM{
 
   typedef StateSpaceModelBase SSMB;
 
+  //----------------------------------------------------------------------
   SSMB::StateSpaceModelBase()
       : state_dimension_(0),
         state_positions_(1, 0),
         state_is_fixed_(false),
+        mcmc_kalman_storage_is_current_(false),
         pedantic_(true),
         kalman_filter_is_current_(false),
         default_state_transition_matrix_(new BlockDiagonalMatrix),
         default_state_variance_matrix_(new BlockDiagonalMatrix)
   {}
 
+  //----------------------------------------------------------------------
   SSMB::StateSpaceModelBase(const SSMB &rhs)
       : Model(rhs),
         ParamPolicy(rhs),
         state_dimension_(0),
         state_positions_(1, 0),
         state_is_fixed_(rhs.state_is_fixed_),
+        mcmc_kalman_storage_is_current_(false),
         pedantic_(rhs.pedantic_),
         kalman_filter_is_current_(false),
         default_state_transition_matrix_(new BlockDiagonalMatrix),
@@ -54,7 +59,9 @@ namespace BOOM{
     if(state_is_fixed_) state_ = rhs.state_;
   }
 
+  //----------------------------------------------------------------------
   void SSMB::impute_state(){
+    set_state_model_behavior(StateModel::MIXTURE);
     if(state_is_fixed_){
       observe_fixed_state();
     }else if(pedantic_){
@@ -68,6 +75,7 @@ namespace BOOM{
     }
   }
 
+  //----------------------------------------------------------------------
   void SSMB::impute_state_pedantically(){
     resize_state();
     clear_client_data();
@@ -77,12 +85,16 @@ namespace BOOM{
     propagate_disturbances_pedantically(r0_sim, r0_obs, true);
   }
 
+  //----------------------------------------------------------------------
   // Ensure that state_ is large enough to hold the results of
   // impute_state().
   void SSMB::resize_state(){
     if(nrow(state_) != state_dimension()
        || ncol(state_) != time_dimension()){
       state_.resize(state_dimension(), time_dimension());
+    }
+    for(int s = 0; s < state_models_.size(); ++s){
+      state_models_[s]->observe_time_dimension(time_dimension());
     }
   }
 
@@ -148,8 +160,10 @@ namespace BOOM{
       // The Kalman update sets a_ to a[t+1] and P to P[t+1], so they
       // will be current for the next iteration.
     }
+    mcmc_kalman_storage_is_current_ = true;
   }
 
+  //----------------------------------------------------------------------
   double SSMB::simulate_adjusted_observation(int t) {
     double mu = observation_matrix(t).dot(state_.col(t));
     return rnorm(mu, sqrt(observation_variance(t)));
@@ -263,20 +277,21 @@ namespace BOOM{
     }
   }
 
+  //----------------------------------------------------------------------
   Vec SSMB::one_step_prediction_errors()const{
     loglike_ = 0;
     int n = time_dimension();
     Vec errors(n);
     if(n==0) return errors;
 
+    if (mcmc_kalman_storage_is_current_) {
+      for (int i = 0; i < n; ++i) {
+        errors[i] = kalman_storage_[i].v;
+      }
+      return errors;
+    }
     initialize_final_kalman_storage();
     ScalarKalmanStorage &ks(final_kalman_storage_);
-
-    // double resid = adjusted_observation(0);
-    // double mu = observation_matrix(0).dot(ks.a);
-    // double sigsq = observation_variance(0) + observation_matrix(0).sandwich(ks.P);
-    // loglike_ = dnorm(resid, mu, sqrt(sigsq), true);
-    // errors[0] = resid - mu;
 
     for(int i = 0; i < n; ++i){
       double resid = adjusted_observation(i);
@@ -298,6 +313,7 @@ namespace BOOM{
     return errors;
   }
 
+  //----------------------------------------------------------------------
   void SSMB::clear_client_data(){
     observation_model()->clear_data();
     for(int s = 0; s < nstate(); ++s){
@@ -305,6 +321,7 @@ namespace BOOM{
     }
   }
 
+  //----------------------------------------------------------------------
   void SSMB::add_state(Ptr<StateModel> m){
     ParamPolicy::add_model(m);
     state_models_.push_back(m);
@@ -316,6 +333,7 @@ namespace BOOM{
     for(int i = 0; i < params.size(); ++i) observe(params[i]);
   }
 
+  //----------------------------------------------------------------------
   SparseVector SSMB::observation_matrix(int t)const{
     SparseVector ans;
     for(int s = 0; s < nstate(); ++s){
@@ -324,6 +342,7 @@ namespace BOOM{
     return ans;
   }
 
+  //----------------------------------------------------------------------
   // TODO(stevescott): This and other code involving model matrices is
   // an optimization opportunity.  Test it out to see if
   // precomputation makes sense.
@@ -348,6 +367,7 @@ namespace BOOM{
     return default_state_transition_matrix_.get();
   }
 
+  //----------------------------------------------------------------------
   const SparseKalmanMatrix * SSMB::state_variance_matrix(int t)const{
     default_state_variance_matrix_->clear();
     for(int s = 0; s < state_models_.size(); ++s){
@@ -357,13 +377,16 @@ namespace BOOM{
     return default_state_variance_matrix_.get();
   }
 
+  //----------------------------------------------------------------------
   int SSMB::state_dimension()const{return state_dimension_;}
 
+  //----------------------------------------------------------------------
   double SSMB::loglike()const{
     filter();
     return loglike_;
   }
 
+  //----------------------------------------------------------------------
   const ScalarKalmanStorage & SSMB::filter()const{
     if(kalman_filter_is_current_) return final_kalman_storage_;
     loglike_ = 0;
@@ -391,12 +414,14 @@ namespace BOOM{
     return final_kalman_storage_;
   }
 
+  //----------------------------------------------------------------------
   Vec SSMB::simulate_initial_state()const{
     Vec ans(state_dimension_);
     simulate_initial_state(VectorView(ans));
     return ans;
   }
 
+  //----------------------------------------------------------------------
   // TODO(stevescott):  test
   void SSMB::simulate_initial_state(VectorView state0)const{
     for(int s = 0; s < state_models_.size(); ++s){
@@ -404,19 +429,26 @@ namespace BOOM{
     }
   }
 
+  //----------------------------------------------------------------------
   // Simulates state for time period t
   void SSMB::simulate_next_state(ConstVectorView last,
-                                 VectorView next, int t)const{
+                                 VectorView next,
+                                 int t)const{
     next= (*state_transition_matrix(t-1)) * last;
     next += simulate_state_error(t-1);
   }
 
-  Vec SSMB::simulate_next_state(const Vec &state, int t)const{
+  //----------------------------------------------------------------------
+  Vec SSMB::simulate_next_state(const Vec &state,
+                                int t)const{
     Vec ans(state);
-    simulate_next_state(ConstVectorView(state), VectorView(ans), t);
+    simulate_next_state(ConstVectorView(state),
+                        VectorView(ans),
+                        t);
     return ans;
   }
 
+  //----------------------------------------------------------------------
   Vec SSMB::simulate_state_error(int t)const{
     // simulate N(0, RQR)
     Vec ans(state_dimension_, 0);
@@ -426,7 +458,7 @@ namespace BOOM{
     }
     return ans;
   }
-
+  //----------------------------------------------------------------------
   Vec SSMB::initial_state_mean()const{
     Vec ans;
     for(int s = 0; s < state_models_.size(); ++s){
@@ -435,6 +467,7 @@ namespace BOOM{
     return ans;
   }
 
+  //----------------------------------------------------------------------
   Spd SSMB::initial_state_variance()const{
     Spd ans(state_dimension_);
     int lo = 0;
@@ -448,20 +481,24 @@ namespace BOOM{
     return ans;
   }
 
+  //----------------------------------------------------------------------
   void SSMB::observe(Ptr<Params> p){
     boost::function<void(void)>f =
         boost::bind(&SSMB::kalman_filter_is_not_current, this);
     p->add_observer(f);
   }
 
+  //----------------------------------------------------------------------
   ConstVectorView SSMB::final_state()const{
     return state_.last_col();
   }
 
+  //----------------------------------------------------------------------
   ConstVectorView SSMB::state(int t)const{
     return state_.col(t);
   }
 
+  //----------------------------------------------------------------------
   const Mat &SSMB::state()const{return state_;}
 
   //----------------------------------------------------------------------
@@ -503,18 +540,30 @@ namespace BOOM{
     return VectorView(v, start, size);
   }
 
+  //----------------------------------------------------------------------
   VectorView SSMB::state_component(VectorView &v, int s)const{
     int start = state_positions_[s];
     int size = state_model(s)->state_dimension();
     return VectorView(v, start, size);
   }
 
+  //----------------------------------------------------------------------
   ConstVectorView SSMB::state_component(const ConstVectorView &v, int s)const{
     int start = state_positions_[s];
     int size = state_model(s)->state_dimension();
     return ConstVectorView(v, start, size);
   }
 
+  //----------------------------------------------------------------------
+  Matrix SSMB::full_time_series_state_component(int s) const {
+    int start = state_positions_[s];
+    int size = state_model(s)->state_dimension();
+    ConstSubMatrix contribution(
+        state_, start, start + size - 1, 0, time_dimension() - 1);
+    return contribution.to_matrix();
+  }
+
+  //----------------------------------------------------------------------
   void SSMB::permanently_set_state(const Mat &state){
     if((ncol(state) != time_dimension()) ||
        (nrow(state) != state_dimension())){
@@ -530,11 +579,19 @@ namespace BOOM{
     state_ = state;
   }
 
+  //----------------------------------------------------------------------
   void SSMB::observe_fixed_state(){
     clear_client_data();
     for(int t = 0; t < time_dimension(); ++t){
       observe_state(t);
       observe_data_given_state(t);
+    }
+  }
+
+  //----------------------------------------------------------------------
+  void SSMB::set_state_model_behavior(StateModel::Behavior behavior){
+    for(int s = 0; s < nstate(); ++s){
+      state_model(s)->set_behavior(behavior);
     }
   }
 
@@ -561,6 +618,7 @@ namespace BOOM{
     }
   }
 
+  //----------------------------------------------------------------------
   void SSMB::initialize_final_kalman_storage()const{
     ScalarKalmanStorage &ks(final_kalman_storage_);
     ks.a = initial_state_mean();

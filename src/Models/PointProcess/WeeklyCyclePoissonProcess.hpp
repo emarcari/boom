@@ -107,7 +107,9 @@ namespace BOOM{
     void set_weekend_hourly_pattern(const Vec &pattern);
 
     virtual PointProcess simulate(
-        const DateTime &t0, const DateTime &t1)const;
+        const DateTime &t0,
+        const DateTime &t1,
+        std::function<Data*()> mark_generator = NullDataGenerator())const;
 
     Ptr<UnivParams> average_daily_event_rate_prm();
     const Ptr<UnivParams> average_daily_event_rate_prm()const;

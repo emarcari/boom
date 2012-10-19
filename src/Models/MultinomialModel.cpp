@@ -93,7 +93,9 @@ namespace BOOM{
       DataPolicy(new MS(p)),
       ConjPriorPolicy(),
       logp_current_(false)
-  {}
+  {
+    set_observer();
+  }
 
   uint  count_levels(const StringVec &sv){
     std::set<string> s;
@@ -106,7 +108,9 @@ namespace BOOM{
       DataPolicy(new MS(probs.size())),
       ConjPriorPolicy(),
       logp_current_(false)
-  {}
+  {
+    set_observer();
+  }
 
   MM::MultinomialModel(const StringVec &names)
     : ParamPolicy(new VectorParams(1)),
@@ -123,6 +127,7 @@ namespace BOOM{
 
     set_data(dvec);
     mle();
+    set_observer();
   }
 
   MM::MultinomialModel(const MM &rhs)
@@ -134,7 +139,9 @@ namespace BOOM{
       LoglikeModel(rhs),
       EmMixtureComponent(rhs),
       logp_current_(false)
-  {}
+  {
+    set_observer();
+  }
 
   MM * MM::clone()const{return new MM(*this);}
 
@@ -142,6 +149,10 @@ namespace BOOM{
     return ParamPolicy::prm();}
   const Ptr<VectorParams> MM::Pi_prm()const{
     return ParamPolicy::prm();}
+
+  void MM::set_observer(){
+    Pi_prm()->add_observer(boost::bind(&MM::observe_logp, this));
+  }
 
   uint MM::nlevels()const{return pi().size();}
   const double & MM::pi(int s) const{ return pi()[s];}
@@ -215,10 +226,6 @@ namespace BOOM{
 
   void MM::observe_logp(){
     logp_current_ = false;
-  }
-
-  boost::function<void(void)> MM::create_logp_observer(){
-    return boost::bind(&MM::observe_logp, this);
   }
 
   void MM::check_logp()const{

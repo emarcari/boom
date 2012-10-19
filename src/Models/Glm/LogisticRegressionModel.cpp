@@ -218,7 +218,7 @@ namespace BOOM{
 	h=0;
 	hp = &h;}}
 
-    const Selector & inc(coef()->inc());
+    const Selector & inc(coef().inc());
     Vec b(this->beta());
 
     double ans=0;

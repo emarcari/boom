@@ -28,12 +28,12 @@ namespace BOOM{
 
   typedef StateSpaceRegressionModel SSRM;
 
-void SSRM::setup() {
-    observe(regression_->coef());
+  void SSRM::setup() {
+    observe(regression_->coef_prm());
     observe(regression_->Sigsq_prm());
     regression_->only_keep_sufstats(true);
     ParamPolicy::add_model(regression_);
-}
+  }
 
   SSRM::StateSpaceRegressionModel(int xdim)
       : regression_(new RegressionModel(xdim))
@@ -137,7 +137,8 @@ void SSRM::setup() {
   }
 
   // TODO(stevescott):  test simulate_forecast
-  Vec SSRM::simulate_forecast(const Mat &newX, const Vec &final_state)const{
+  Vec SSRM::simulate_forecast(const Mat &newX, const Vec &final_state){
+    StateSpaceModelBase::set_state_model_behavior(StateModel::MARGINAL);
     Vec ans(nrow(newX));
     const std::vector<Ptr<RegressionData> > &data(dat());
     int t0 = data.size();
@@ -183,7 +184,8 @@ void SSRM::setup() {
     return ans;
   }
 
-  Vec SSRM::simulate_forecast(const Mat &newX)const{
+  Vec SSRM::simulate_forecast(const Mat &newX){
+    StateSpaceModelBase::set_state_model_behavior(StateModel::MARGINAL);
     Vec ans(nrow(newX));
     const std::vector<Ptr<RegressionData> > &data(dat());
     int t0 = data.size();
@@ -210,4 +212,4 @@ void SSRM::setup() {
     return ans;
   }
 
-}
+}  // namespace BOOM

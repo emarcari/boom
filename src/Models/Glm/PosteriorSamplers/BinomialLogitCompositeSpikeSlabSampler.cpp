@@ -36,7 +36,7 @@ namespace BOOM{
     nonzero_beta_chunk = beta_chunk;
 
     const std::vector<Ptr<BinomialRegressionData> > &data(m_->dat());
-    const Selector &inc(m_->coef()->inc());
+    const Selector &inc(m_->coef().inc());
     const Spd siginv(inc.select(pri_->siginv()));
     const Vec mu(inc.select(pri_->mu()));
 
@@ -124,7 +124,7 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   void BLCSSS::rwm_draw(){
-    if(m_->coef()->nvars() == 0) return;
+    if(m_->coef().nvars() == 0) return;
     int total_number_of_chunks = compute_number_of_chunks();
     for(int chunk = 0; chunk < total_number_of_chunks; ++chunk) {
       rwm_draw_chunk(chunk);
@@ -133,7 +133,7 @@ namespace BOOM{
   //----------------------------------------------------------------------
   void BLCSSS::rwm_draw_chunk(int chunk){
     clock_t start = clock();
-    const Selector &inc(m_->coef()->inc());
+    const Selector &inc(m_->coef().inc());
     int nvars = inc.nvars();
     Vec full_nonzero_beta = m_->beta();   // only nonzero components
     // Compute information matrix for proposal distribution.  For
@@ -193,7 +193,7 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   void BLCSSS::tim_draw(){
-    int nvars = m_->coef()->nvars();
+    int nvars = m_->coef().nvars();
     if(nvars == 0) return;
     int chunk_size = compute_chunk_size();
     int number_of_chunks = compute_number_of_chunks();
@@ -240,7 +240,7 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   int BLCSSS::compute_chunk_size()const{
-    int nvars = m_->coef()->nvars();
+    int nvars = m_->coef().nvars();
     if(max_chunk_size_ <= 0) return nvars;
     int number_of_full_chunks = nvars / max_chunk_size_;
     bool has_partial_chunk = number_of_full_chunks * max_chunk_size_ < nvars;
@@ -251,7 +251,7 @@ namespace BOOM{
   //----------------------------------------------------------------------
   int BLCSSS::compute_number_of_chunks()const{
     if(max_chunk_size_ <= 0) return 1;
-    int nvars = m_->coef()->nvars();
+    int nvars = m_->coef().nvars();
     int number_of_full_chunks = nvars / max_chunk_size_;
     bool has_partial_chunk = number_of_full_chunks * max_chunk_size_ < nvars;
     return number_of_full_chunks + has_partial_chunk;

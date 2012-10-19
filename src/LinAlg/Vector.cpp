@@ -178,10 +178,12 @@ namespace BOOM{
       check_range(n, size());
       return (*this)[n];}
 
-
     //------------- input/output -----------------------
     ostream & Vector::write(ostream &out, bool nl)const{
-      for(uint i=0; i<size(); ++i) out<< operator[](i) << " ";
+      if(!empty()){
+        out << operator[](0);
+      }
+      for(uint i=1; i<size(); ++i) out<< " " << operator[](i);
       if(nl) out << endl;
       return out; }
 
@@ -375,10 +377,11 @@ namespace BOOM{
       return *this;
     }
 
+    namespace {
     template <class V>
     double dot_impl(const Vector &x, const V & y){
       const int n(x.size());
-      if(y.size()!=static_cast<uint>(n)){
+      if(y.size() != static_cast<uint>(n)){
         ostringstream err;
         err << "Attempted a dot product between two vectors of different sizes:"
             << endl
@@ -386,9 +389,16 @@ namespace BOOM{
             << "y = " << y << endl;
         throw_exception<std::runtime_error>(err.str());
       }
-      return cblas_ddot(n, x.data(), x.stride(), y.data(), y.stride());
+      if(y.stride() > 0)
+        return cblas_ddot(n, x.data(), x.stride(), y.data(), y.stride());
+      double ans = 0;
+      for(int i = 0; i < n; ++i){
+        ans += x[i] * y[i];
+      }
+      return ans;
     }
 
+    }
     double Vector::dot(const Vector &y)const{ return dot_impl(*this, y);}
     double Vector::dot(const VectorView &y)const{ return dot_impl(*this,y);}
     double Vector::dot(const ConstVectorView &y)const{ return dot_impl(*this,y);}
@@ -510,8 +520,7 @@ namespace BOOM{
     }
 
     ostream & operator<<(ostream & out, const Vector &v){
-      for(uint i = 0; i<v.size(); ++i) out << v[i] << " ";
-      return out; }
+      return v.write(out, false);}
 
     istream & operator>>(istream &in, Vector & v){
       string s;

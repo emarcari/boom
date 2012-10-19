@@ -50,16 +50,16 @@ namespace BOOM{
     // Forecast the next nrow(newX) time steps given the current data,
     // using the Kalman filter.  The first column of Mat is the mean
     // of the forecast.  The second column is the standard errors.
-    Mat forecast(int n)const;
+    Mat forecast(int n);
 
     // Simulate the next n time periods, given current parameters and
     // state.
-    Vec simulate_forecast(int n, const Vec &final_state)const;
+    Vec simulate_forecast(int n, const Vec &final_state);
 
     // Simulate the next n time periods given current parameters and a
     // specified set of observed data.  Uses infinity(-1) as a signal
     // for missing data.
-    Vec simulate_forecast_given_observed_data(int n, const Vec &observed_data)const;
+    Vec simulate_forecast_given_observed_data(int n, const Vec &observed_data);
 
     // Run the Kalman filter over the set of observed data, using
     // infinity(-1) as a signal for missing data.  The .a and .P

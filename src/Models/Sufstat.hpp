@@ -24,7 +24,6 @@
 #include <uint.hpp>
 #include <cpputil/RefCounted.hpp>
 #include <string>
-#include <BOOM.hpp>
 
 namespace BOOM{
   class Data;

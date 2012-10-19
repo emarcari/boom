@@ -114,6 +114,7 @@ namespace BOOM{
     return out << n_ << " " << sum_ << " " << sumsq_;
   }
 
+  //======================================================================
   GaussianModelBase::GaussianModelBase()
     : DataPolicy(new GaussianSuf())
   {}

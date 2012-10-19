@@ -277,6 +277,14 @@ namespace BOOM{
     return ans;
   }
   //------------------------------------------------------------
+  Matrix CSM::to_matrix()const{
+    Matrix ans(nrow(), ncol());
+    for(int i = 0; i < ncol(); ++i){
+      ans.col(i) = this->col(i);
+    }
+    return ans;
+  }
+  //------------------------------------------------------------
 
   namespace {
     template <class M1, class M2>

@@ -60,7 +60,7 @@ namespace BOOM{
     Vector(const std::string &s, const std::string &sep);
 
     // A vector can be build using a stream of numbers, e.g. from a file.
-    explicit Vector(std::istream &in);
+    explicit Vector(istream &in);
 
     // Conversion from std::vector<double> is covered under the
     // template container structure, but the specialization for
@@ -265,5 +265,14 @@ namespace BOOM{
   Vector sort(const Vector &v);
   Vector sort(const VectorView &v);
   Vector sort(const ConstVectorView &v);
+
+  template <class V1, class V2>
+  Vector linear_combination(double a, const V1 &x,
+                            double b, const V2 &y) {
+    Vector ans(x);
+    ans *= a;
+    ans.axpy(y, b);
+    return ans;
+  }
 }
 #endif //BOOM_LINALG_VECTOR_HPP

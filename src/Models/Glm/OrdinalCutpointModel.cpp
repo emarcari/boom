@@ -159,8 +159,10 @@ namespace BOOM{
     return ans;
   }
 
-  Ptr<GlmCoefs> OCM::coef(){return ParamPolicy::prm1();}
-  const Ptr<GlmCoefs> OCM::coef()const{return ParamPolicy::prm1();}
+  GlmCoefs & OCM::coef(){return ParamPolicy::prm1_ref();}
+  const GlmCoefs & OCM::coef()const{return ParamPolicy::prm1_ref();}
+  Ptr<GlmCoefs> OCM::coef_prm(){return ParamPolicy::prm1();}
+  const Ptr<GlmCoefs> OCM::coef_prm()const{return ParamPolicy::prm1();}
 
   Ptr<VectorParams> OCM::Delta_prm(){return ParamPolicy::prm2();}
   const Ptr<VectorParams> OCM::Delta_prm()const{return ParamPolicy::prm2();}
@@ -264,7 +266,7 @@ namespace BOOM{
     for(uint i = 0; i<v.size(); ++i){
       const uint  & y( v[i]->y());
 
-      Vec x = coef()->inc().select(v[i]->x());
+      Vec x = coef().inc().select(v[i]->x());
 
       // the current model params are used to select the variables in
       // x() which are to be included.  The selection assures that x

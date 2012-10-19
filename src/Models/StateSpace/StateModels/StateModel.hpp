@@ -25,6 +25,7 @@
 #include <uint.hpp>
 
 namespace BOOM{
+
   // A StateModel describes the propogation rules for one component of
   // state in a StateSpaceModel.  A StateModel has a transition matrix
   // T, which can be time dependent, an error variance Q, which may be
@@ -34,9 +35,26 @@ namespace BOOM{
   class StateModel
       : virtual public Model
   {
-  public:
+   public:
+    // Traditional state models are Gaussian, but Bayesian modeling
+    // lets you work with conditionally Gaussian models just as
+    // easily.  For conditionally Gaussian state models this enum can
+    // be used as an argument to determine whether they should be
+    // viewed as normal mixtures, or as plain old non-normal marginal
+    // models.
+    enum Behavior{
+      MARGINAL, // e.g. treat the t-distribution like the t-distribution.
+      MIXTURE   // e.g. treat the t-distribution like a normal mixture.
+    };
+
     virtual ~StateModel(){}
     virtual StateModel * clone()const=0;
+
+    // Some state models need to know the maximum value of t so they
+    // can set up space for latent variables, etc.  Many state models
+    // do not need this capability, so the default implementation is a
+    // no-op.
+    virtual void observe_time_dimension(int max_time) {}
 
     // Add the relevant information from the state vector to the
     // complete data sufficient statistics for this model.  This is
@@ -66,9 +84,21 @@ namespace BOOM{
 
     virtual Vec initial_state_mean()const = 0;
     virtual Spd initial_state_variance()const = 0;
+
+    // Some state models can behave differently in different contexts.
+    // E.g. they can be viewed as conditionally normal when fitting,
+    // but as T or normal mixtures when forecasting.  These virtual
+    // functions control how the state models swtich between roles.
+    // The default behavior at construction should be
+    // 'set_conditional_behavior', where a state model will behave as
+    // conditionally Gaussian given an appropriate set of latent
+    // variables.
+    //
+    // Because the traditional state models are actually Gaussian
+    // (instead of simply conditionally Gaussian), the default
+    // behavior for these member functions is a no-op.
+    virtual void set_behavior(Behavior) {}
   };
 }
-
-
 
 #endif// BOOM_STATE_SPACE_STATE_MODEL_HPP

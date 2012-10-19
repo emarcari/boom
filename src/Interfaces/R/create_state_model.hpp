@@ -21,6 +21,7 @@
 
 #include <Interfaces/R/list_io.hpp>
 #include <Models/StateSpace/StateSpaceModelBase.hpp>
+#include <list>
 
 //======================================================================
 // Note that the functions listed here throw exceptions.  Code that
@@ -33,34 +34,104 @@
 //======================================================================
 
 namespace BOOM{
-  namespace RInterface{
-    // Factory method for creating a StateModel based on inputs
-    // supplied to R.  Returns a smart pointer to the StateModel that
-    // gets created.
-    // Args:
-    //   list_arg: The portion of the state.specification list (that was
-    //     supplied to R by the user), corresponding to the state model
-    //     that needs to be created
-    //   io_manager: A pointer to the object manaaging the R list that
-    //     will record (or has already recorded) the MCMC output
-    // Returns:
-    //   A Ptr to a StateModel that can be added as a component of
-    //   state to a state space model.
-    Ptr<StateModel> CreateStateModel(SEXP list_arg, RListIoManager *io_manager,
-                                     const string &prefix = "");
 
-    // A callback class for recording the final state that the
-    // StateSpaceModelBase sampled in an MCMC iteration.
-    class FinalStateCallback : public VectorIoCallback {
+  class LocalLevelStateModel;
+  class LocalLinearTrendStateModel;
+  class SeasonalStateModel;
+  class LocalLinearTrendMeanRevertingSlopeStateModel;
+  class RandomWalkHolidayStateModel;
+  class DynamicRegressionStateModel;
+  class ArStateModel;
+  class StudentLocalLinearTrendStateModel;
+
+  namespace RInterface{
+
+    // A factory for creating state components for use with state
+    // space models.
+    class StateModelFactory {
      public:
-      explicit FinalStateCallback(StateSpaceModelBase *model)
-          : model_(model) {}
-      virtual int dim()const {return model_->state_dimension();}
-      virtual Vec get_vector()const { return model_->final_state();}
+      // Args:
+      //   io_manager: A pointer to the object manaaging the R list that
+      //     will record (or has already recorded) the MCMC output.
+      //   model:  The model that will receive the state to be added.
+      StateModelFactory(RListIoManager * io_manager,
+                        StateSpaceModelBase * model);
+
+      // Adds all the state components listed in
+      // r_state_specification_list to the model.
+      // Args:
+      //   r_state_specification_list: An R list of state components
+      //     to be added to the model.  This function intended to
+      //     handle the state.specification argument in bsts.
+      //   prefix: An optional prefix added to the name of each state
+      //     component.
+      void AddState(SEXP r_state_specification_list,
+                    const string &prefix = "");
+
+      // Save the final state (i.e. at time T) of the model for use
+      // with prediction.  Do not call this function until after all
+      // components of state have been added.
+      // Args:
+      //   final_state: A pointer to a Vector to hold the state.  This
+      //     can be NULL if the state is only going to be recorded.
+      //     If state is going to be read, then final_state must be
+      //     non-NULL.  A non-NULL vector will be re-sized if it is
+      //     the wrong size.
+      //   list_element_name: The name of the final state vector in
+      //     the R list holding the MCMC output.
+      void SaveFinalState(BOOM::Vector *final_state = NULL,
+                          const string & list_element_name = "final.state");
+
      private:
+      typedef std::function<void(StateSpaceModelBase *)> ConstructionCallback;
+      typedef std::vector<ConstructionCallback> CallbackVector;
+      // Factory method for creating a StateModel based on inputs
+      // supplied to R.  Returns a smart pointer to the StateModel that
+      // gets created.
+      // Args:
+      //   list_arg: The portion of the state.specification list (that was
+      //     supplied to R by the user), corresponding to the state model
+      //     that needs to be created.
+      //   prefix: A prefix to be added to the name field of the
+      //     list_arg in the io_manager.
+      //   callbacks: A pointer to a vector of ConstructionCallbacks
+      //     that are to be called once all state has been added.
+      // Returns:
+      //   A Ptr to a StateModel that can be added as a component of
+      //   state to a state space model.
+      Ptr<StateModel> CreateStateModel(
+          SEXP list_arg,
+          const string &prefix,
+          CallbackVector * callbacks);
+
+      // Concrete implementations of CreateStateModel.
+      LocalLevelStateModel * CreateLocalLevel(
+          SEXP r_state_component, const string &prefix);
+      LocalLinearTrendStateModel * CreateLocalLinearTrend(
+          SEXP r_state_component, const string &prefix);
+      SeasonalStateModel * CreateSeasonal(
+          SEXP r_state_component, const string &prefix);
+      LocalLinearTrendMeanRevertingSlopeStateModel *
+      CreateGeneralizedLocalLinearTrend(
+          SEXP r_state_component, const string &prefix);
+      RandomWalkHolidayStateModel * CreateRandomWalkHolidayStateModel(
+          SEXP r_state_component, const string &prefix);
+      DynamicRegressionStateModel * CreateDynamicRegressionStateModel(
+          SEXP r_state_component, const string &prefix,
+          CallbackVector * callbacks);
+      ArStateModel * CreateArStateModel(
+          SEXP r_state_component, const string &prefix);
+      StudentLocalLinearTrendStateModel * CreateStudentLocalLinearTrend(
+          SEXP r_state_component, const string &prefix);
+
+      // A pointer to the object manaaging the R list that will record
+      // (or has already recorded) the MCMC output.
+      RListIoManager * io_manager_;
+
+      // The model that needs state added.
       StateSpaceModelBase * model_;
     };
 
-  }  // namespace RInterface
+    }  // namespace RInterface
 }  // namespace BOOM
 #endif  // BOOM_R_INTERFACE_CREATE_STATE_MODEL_HPP_

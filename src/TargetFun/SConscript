@@ -1,11 +1,4 @@
 Import('env')
 
-file_list=Split("""
-Loglike.cpp
-LoglikeSubset.cpp
-LogPost.cpp
-ScalarLogpostTF.cpp
-""")
-
-obj = env.Object(file_list)
+obj = env.Object(Glob('*.cpp'))
 Return('obj')

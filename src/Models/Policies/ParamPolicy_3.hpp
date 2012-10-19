@@ -36,10 +36,18 @@ namespace BOOM{
 
     Ptr<P1> prm1(){return prm1_;}
     const Ptr<P1> prm1()const{return prm1_;}
+    P1 & prm1_ref(){return *prm1_;}
+    const P1 & prm1_ref()const{return *prm1_;}
+
     Ptr<P2> prm2(){return prm2_;}
     const Ptr<P2> prm2()const{return prm2_;}
+    P2 & prm2_ref(){return *prm2_;}
+    const P2 & prm2_ref()const{return *prm2_;}
+
     Ptr<P3> prm3(){return prm3_;}
     const Ptr<P3> prm3()const{return prm3_;}
+    P3 & prm3_ref(){return *prm3_;}
+    const P3 & prm3_ref()const{return *prm3_;}
 
     void set_params(Ptr<P1> p1, Ptr<P2> p2, Ptr<P3> p3){
       prm1_ = p1; prm2_ = p2, prm3_ = p3; set_t(); }

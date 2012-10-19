@@ -29,6 +29,7 @@ namespace BOOM{
     virtual double logpri()const;
    private:
     StateSpaceModelBase *m_;
+    bool latent_data_initialized_;
   };
 }
 #endif //BOOM_STATE_SPACE_POSTERIOR_SAMPLER_HPP_

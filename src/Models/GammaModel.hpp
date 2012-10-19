@@ -109,7 +109,9 @@ namespace BOOM{
     void set_params(double a, double b);
 
     // probability calculations
-    double Loglike(Vec &g, Mat &h, uint lev) const ;
+    double Loglike(Vec &g, Mat &h, uint lev) const;
+    double loglikelihood(double a, double b) const;
+    double loglikelihood_full(const Vec &ab, Vec *g, Mat *h)const;
     void mle();
   };
 

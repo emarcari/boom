@@ -231,7 +231,7 @@ namespace BOOM{
   class VectorListElement : public RListIoElement {
    public:
     VectorListElement(Ptr<VectorParams> m,
-                        const string &param_name);
+                      const string &param_name);
     // Allocate a matrix
     virtual SEXP prepare_to_write(int niter);
     virtual void prepare_to_stream(SEXP object);
@@ -243,6 +243,18 @@ namespace BOOM{
     SubMatrix matrix_view_;
   };
 
+  //----------------------------------------------------------------------
+  // For vectors with named components, such as factor levels or
+  // variable names.
+  class NamedVectorListElement : public VectorListElement {
+   public:
+    NamedVectorListElement(Ptr<VectorParams> m,
+                           const string &param_name,
+                           const std::vector<string> &element_names);
+    virtual SEXP prepare_to_write(int niter);
+   private:
+    const std::vector<string> element_names_;
+  };
   //----------------------------------------------------------------------
   // For reporting a vector of standard deviations when the model
   // stores a vector of variances.
@@ -261,8 +273,30 @@ namespace BOOM{
   };
 
   //----------------------------------------------------------------------
+  // A mix-in class for handling row and column names for list
+  // elements that store MCMC draws of matrices.
+  class MatrixListElementBase : public RListIoElement {
+   public:
+    MatrixListElementBase(const string &param_name)
+        : RListIoElement(param_name) {}
+    virtual int nrow() const = 0;
+    virtual int ncol() const = 0;
+    const std::vector<std::string> & row_names()const;
+    const std::vector<std::string> & col_names()const;
+    void set_row_names(const std::vector<std::string> &row_names);
+    void set_col_names(const std::vector<std::string> &row_names);
+   protected:
+    // Children of this class should call set_buffer_dimnames(buffer)
+    // when they prepare_to_write().
+    void set_buffer_dimnames(SEXP buffer);
+   private:
+    std::vector<std::string> row_names_;
+    std::vector<std::string> col_names_;
+  };
+
+  //----------------------------------------------------------------------
   // For managing MatrixParams, stored in an R 3-way array.
-  class MatrixListElement : public RListIoElement {
+  class MatrixListElement : public MatrixListElementBase {
    public:
     MatrixListElement(Ptr<MatrixParams> m,
                       const string &param_name);
@@ -272,6 +306,9 @@ namespace BOOM{
     virtual void prepare_to_stream(SEXP object);
     virtual void write();
     virtual void stream();
+
+    virtual int nrow()const;
+    virtual int ncol()const;
    private:
     void CheckSize();
     Ptr<MatrixParams> prm_;
@@ -280,7 +317,7 @@ namespace BOOM{
 
   //----------------------------------------------------------------------
   // For managing SpdParams, stored in an R 3-way array.
-  class SpdListElement : public RListIoElement {
+  class SpdListElement : public MatrixListElementBase {
    public:
     SpdListElement(Ptr<SpdParams> m,
                       const string &param_name);
@@ -290,6 +327,9 @@ namespace BOOM{
     virtual void prepare_to_stream(SEXP object);
     virtual void write();
     virtual void stream();
+
+    virtual int nrow()const;
+    virtual int ncol()const;
    private:
     void CheckSize();
     Ptr<SpdParams> prm_;
@@ -297,12 +337,12 @@ namespace BOOM{
   };
 
   //----------------------------------------------------------------------
-  // A VectorIoCallback is a class for managing native BOOM Vec's that
-  // are not part of VectorParams.  To use it, define a local class
-  // that inherits from VectorIoCallback.  The class should store a
-  // pointer to the object you really care about, and which can supply
-  // the two necessary member functions.  Then put the callback into a
-  // NativeVectorListElement, described below.
+  // A VectorIoCallback is a base class for managing native BOOM Vec
+  // objects that are not part of VectorParams.  To use it, define a
+  // local class that inherits from VectorIoCallback.  The class
+  // should store a pointer to the object you really care about, and
+  // which can supply the two necessary member functions.  Then put
+  // the callback into a NativeVectorListElement, described below.
   class VectorIoCallback{
    public:
     virtual ~VectorIoCallback(){}
@@ -311,15 +351,18 @@ namespace BOOM{
   };
 
   // A NativeVectorListElement manages a native BOOM Vec that is not
-  // stored in a VectorParams.  The 'callback' supplies the vectors
-  // for recording, in which case 'streaming_buffer' can be NULL.  For
-  // streaming, the user must hold 'streaming_buffer' in scope outside
-  // this object (in which case 'callback' can be NULL).  Calling
-  // stream() will fill 'streaming_buffer' with the values from the R
-  // list.  If 'callback' is non-NULL this class will take ownership
-  // and delete it when ~NativeVectorListElement() is called.
+  // stored in a VectorParams.
   class NativeVectorListElement : public RListIoElement{
    public:
+    // Args:
+    //   callback: supplied access to the vectors that need to be
+    //     recorded.  This can be NULL if the object is being created
+    //     for streaming.  If it is non-NULL then this class takes
+    //     ownership and deletes the callback on destruction.
+    //   name:  the name of the entry in the R list.
+    //   streaming_buffer: A pointer to a BOOM Vector/Vec that will
+    //     receive the contents of the R list when streaming.  This
+    //     can be NULL if streaming is not desired.
     NativeVectorListElement(VectorIoCallback *callback,
                          const string &name,
                          Vec *streaming_buffer);
@@ -334,6 +377,7 @@ namespace BOOM{
   };
 
   //----------------------------------------------------------------------
+  // Please see the comments to VectorIoCallback, above.
   class MatrixIoCallback{
    public:
     virtual ~MatrixIoCallback(){}
@@ -342,8 +386,22 @@ namespace BOOM{
     virtual Mat get_matrix()const=0;
   };
 
-  class NativeMatrixListElement : public RListIoElement{
+  // A NativeMatrixListElement manages a BOOM Mat/Matrix that is not
+  // stored in a MatrixParams.
+  class NativeMatrixListElement : public MatrixListElementBase{
    public:
+    // Args:
+    //   callback: supplies access to the matrices that need
+    //     recording.  This can be NULL if the object is being created
+    //     simply for streaming.  If it is non-NULL, this class takes
+    //     ownership and deletes the callback on destruction.
+    //   name: the name of the component in the list.
+    //   streaming_buffer: A pointer to a BOOM matrix that will
+    //     receive the contents of the R list when streaming.  This
+    //     can be NULL if streaming is not desired.
+    //
+    // Note that it is pointless to create this object if both
+    // callback and streaming_buffer are NULL.
     NativeMatrixListElement(MatrixIoCallback *callback,
                             const string &name,
                             Mat *streaming_buffer);
@@ -351,6 +409,9 @@ namespace BOOM{
     virtual void prepare_to_stream(SEXP object);
     virtual void write();
     virtual void stream();
+
+    virtual int nrow()const;
+    virtual int ncol()const;
    private:
     boost::shared_ptr<MatrixIoCallback> callback_;
     Mat *streaming_buffer_;
