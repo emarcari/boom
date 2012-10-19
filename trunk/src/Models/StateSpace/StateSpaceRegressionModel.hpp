@@ -84,8 +84,8 @@ namespace BOOM{
 
     // Simulate the next nrow(newX) time periods, given current
     // parameters and state.
-    Vec simulate_forecast(const Mat &newX, const Vec &final_state)const;
-    Vec simulate_forecast(const Mat &newX)const;
+    Vec simulate_forecast(const Mat &newX, const Vec &final_state);
+    Vec simulate_forecast(const Mat &newX);
 
     // Contribution of the regression model to the overall mean of y
     // at each time point.

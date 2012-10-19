@@ -89,9 +89,12 @@ namespace BOOM{
     }
   }
 
-// TODO(stevescott): should observation_matrix and
-// observation_variance be called with t + t0 + 1?
-  Mat SSM::forecast(int n)const{
+  // TODO(stevescott): should observation_matrix and
+  // observation_variance be called with t + t0 + 1?
+  Mat SSM::forecast(int n){
+    // TODO(stevescott): This method only works with truly Gaussian
+    // state models.  We should put in a check to make sure that none
+    // of the state models are T, normal mixture, etc.
     ScalarKalmanStorage ks(filter());
     Mat ans(n, 2);
     int t0 = time_dimension();
@@ -113,27 +116,32 @@ namespace BOOM{
     return ans;
   }
 
-  Vec SSM::simulate_forecast(int n, const Vec &final_state)const{
+  Vec SSM::simulate_forecast(int n, const Vec &final_state){
+    StateSpaceModelBase::set_state_model_behavior(StateModel::MARGINAL);
     Vec ans(n);
     int t0 = time_dimension();
     Vec state = final_state;
     for(int t = 0; t < n; ++t) {
       state = simulate_next_state(state, t + t0);
-      ans[t] = rnorm(observation_matrix(t+t0).dot(state), sqrt(observation_variance(t+t0)));
+      ans[t] = rnorm(observation_matrix(t+t0).dot(state),
+                     sqrt(observation_variance(t+t0)));
     }
     return ans;
   }
 
   Vec SSM::simulate_forecast_given_observed_data(
-      int n, const Vec &observed_data)const{
+      int n, const Vec &observed_data){
+    StateSpaceModelBase::set_state_model_behavior(StateModel::MARGINAL);
     Vec ans(n);
     int t0 = observed_data.size();
     ScalarKalmanStorage ks(filter_observed_data(observed_data));
     Vec state(rmvn(ks.a, ks.P));  //  this is state[t0], one after the final state
     for(int t = 0; t < n; ++t){
-      ans[t] = rnorm(observation_matrix(t+t0).dot(state), sqrt(observation_variance(t+t0)));
+      ans[t] = rnorm(observation_matrix(t+t0).dot(state),
+                     sqrt(observation_variance(t+t0)));
       state = simulate_next_state(state, t + t0 + 1);
     }
+    StateSpaceModelBase::set_state_model_behavior(StateModel::MIXTURE);
     return ans;
   }
 

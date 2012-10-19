@@ -76,4 +76,68 @@ namespace BOOM{
     return prior_->logp(siginv);
   }
 
-}
+  //======================================================================
+  typedef ZeroMeanMvnCompositeIndependenceSampler ZMMCIS;
+  ZMMCIS::ZeroMeanMvnCompositeIndependenceSampler(
+      ZeroMeanMvnModel *model,
+      const std::vector<Ptr<GammaModelBase> > & siginv_priors,
+      const Vec & sigma_upper_truncation_points)
+      : model_(model),
+        priors_(siginv_priors),
+        sigma_upper_truncation_point_(sigma_upper_truncation_points)
+  {
+    if (model_->dim() != priors_.size()) {
+      report_error("'model' and 'siginv_priors' arguments are not compatible "
+                   "in "
+                   "ZeroMeanMvnCompositeIndependenceSampler constructor.");
+    }
+
+    if (model_->dim() != sigma_upper_truncation_points.size()) {
+      report_error("'model' and 'sigma_upper_truncation_points' arguments "
+                   "are not compatible in "
+                   "ZeroMeanMvnCompositeIndependenceSampler constructor.");
+    }
+
+    for (int i = 0; i < sigma_upper_truncation_points.size(); ++i) {
+      if (sigma_upper_truncation_points[i] < 0) {
+        ostringstream err;
+        err << "Element " << i << " (counting from 0) of "
+            << "sigma_upper_truncation_points is negative in "
+            << "ZeroMeanMvnCompositeIndependenceSampler constructor."
+            << endl
+            << sigma_upper_truncation_points << endl;
+        report_error(err.str());
+      }
+    }
+  }
+
+  void ZMMCIS::draw() {
+    Spd Sigma = model_->Sigma();
+    Spd sumsq = model_->suf()->center_sumsq(model_->mu());
+    for (int i = 0; i < model_->dim(); ++i) {
+      double df = 2 * priors_[i]->alpha() + model_->suf()->n();
+      double ss = 2 * priors_[i]->beta() + sumsq(i,i);
+      if (sigma_upper_truncation_point_[i] == 0) {
+        Sigma(i, i) = 0.0;
+      } if(sigma_upper_truncation_point_[i] == infinity(1)){
+        Sigma(i, i) = 1.0 / rgamma_mt(rng(), df/2, ss/2);
+      } else {
+        double cutpoint = 1.0/pow(sigma_upper_truncation_point_[i], 2);
+        Sigma(i, i) = 1.0 / rtrun_gamma_mt(rng(), df/2, ss/2, cutpoint);
+      }
+    }
+    model_->set_Sigma(Sigma);
+  }
+
+  double ZMMCIS::logpri()const {
+    const Spd & Sigma(model_->Sigma());
+    double ans = 0;
+    for (int i = 0; i < Sigma.nrow(); ++i) {
+      if (sigma_upper_truncation_point_[i] > 0) {
+        ans += priors_[i]->logp(1.0/Sigma(i, i));
+      }
+    }
+    return ans;
+  }
+
+}  // namespace BOOM

@@ -194,14 +194,14 @@ namespace BOOM{
   void BVS::draw(){
     if(max_nflips_>0) draw_model_indicators();
     if(draw_beta_ || draw_sigma_){
-      set_reg_post_params(m_->coef()->inc(),false);
+      set_reg_post_params(m_->coef().inc(),false);
     }
     if(draw_sigma_) draw_sigma();
     if(draw_beta_) draw_beta();
   }
   //----------------------------------------------------------------------
   bool BVS::model_is_empty()const{
-    return m_->coef()->inc().nvars()==0;
+    return m_->coef().inc().nvars()==0;
   }
   //----------------------------------------------------------------------
   void BVS::draw_sigma(){
@@ -224,7 +224,7 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   void BVS::draw_model_indicators(){
-    Selector g = m_->coef()->inc();
+    Selector g = m_->coef().inc();
     std::random_shuffle(indx.begin(), indx.end());
     double logp = log_model_prob(g);
 
@@ -240,11 +240,11 @@ namespace BOOM{
     for(uint i=0; i<n; ++i){
       logp = mcmc_one_flip(g, indx[i], logp);
     }
-    m_->coef()->set_inc(g);
+    m_->coef().set_inc(g);
   }
   //----------------------------------------------------------------------
   double BVS::logpri()const{
-    const Selector &g(m_->coef()->inc());
+    const Selector &g(m_->coef().inc());
     double ans = vpri_->logp(g);  // p(gamma)
     if(ans <= BOOM::infinity(-1)) return ans;
 

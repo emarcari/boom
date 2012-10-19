@@ -156,10 +156,20 @@ namespace BOOM{
 
   double ZeroInflatedLognormalModel::mu()const{
     return gaussian_->mu();}
+  void ZeroInflatedLognormalModel::set_mu(double mu){
+    gaussian_->set_mu(mu);}
+
   double ZeroInflatedLognormalModel::sigma()const{
     return gaussian_->sigma();}
+  void ZeroInflatedLognormalModel::set_sigma(double sigma){
+    gaussian_->set_sigsq(sigma * sigma);}
+  void ZeroInflatedLognormalModel::set_sigsq(double sigsq){
+    gaussian_->set_sigsq(sigsq);}
+
   double ZeroInflatedLognormalModel::positive_probability()const{
     return binomial_->prob();}
+  void ZeroInflatedLognormalModel::set_positive_probability(double prob){
+    return binomial_->set_prob(prob);}
 
   double ZeroInflatedLognormalModel::mean()const{
     return positive_probability() * exp(mu() + .5 * gaussian_->sigsq());

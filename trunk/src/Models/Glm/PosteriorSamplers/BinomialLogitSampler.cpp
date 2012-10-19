@@ -52,7 +52,7 @@ namespace BOOM{
                             Ptr<MvnBase> pri,
                             int clt_threshold)
       : m_(m),
-        beta_(m->coef().dumb_ptr()),
+        beta_(m->coef_prm().get()),
         pri_(pri),
         xtwx_(m_->xdim()),
         xtwu_(m_->xdim()),
@@ -282,7 +282,7 @@ namespace BOOM{
   void BLS::impute_latent_data_distributed(){
     boost::thread_group tg;
     for(uint i = 0; i < workers_.size(); ++i){
-      BinomialLogitDataImputer worker(workers_[i].dumb_ptr(), i,
+      BinomialLogitDataImputer worker(workers_[i].get(), i,
                                       workers_.size());
       tg.add_thread(new boost::thread(worker));
     }

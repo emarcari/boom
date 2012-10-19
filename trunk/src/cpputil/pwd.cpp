@@ -24,6 +24,6 @@ namespace BOOM{
   std::string pwd(){
     path wd(".");
     path full_wd(complete(wd));
-    return full_wd.native();
+    return full_wd.native_file_string();
   }
 }

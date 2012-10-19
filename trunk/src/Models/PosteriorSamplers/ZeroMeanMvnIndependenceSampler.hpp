@@ -25,8 +25,11 @@
 
 namespace BOOM{
 
-  //  A prior that asserts the components of the ZeroMeanMvnModel are
-  //  independent, with conjugate Gamma marginal priors.
+  // A prior that asserts the components of the ZeroMeanMvnModel are
+  // independent, with conjugate Gamma marginal priors.
+  //
+  // This class models a single diagonal element in the variance
+  // matrix of the ZeroMeanMvnModel.
   class ZeroMeanMvnIndependenceSampler
       : public PosteriorSampler {
    public:
@@ -46,6 +49,24 @@ namespace BOOM{
     int which_variable_;
     double upper_truncation_point_;
   };
+
+  // This class is a single sampler for all the diagonal elements of
+  // Sigma.
+  class ZeroMeanMvnCompositeIndependenceSampler
+      : public PosteriorSampler {
+   public:
+    ZeroMeanMvnCompositeIndependenceSampler(
+        ZeroMeanMvnModel *model,
+        const std::vector<Ptr<GammaModelBase> > & siginv_priors,
+        const Vec & sigma_upper_truncation_points);
+    virtual void draw();
+    virtual double logpri()const;
+   private:
+    ZeroMeanMvnModel *model_;
+    std::vector<Ptr<GammaModelBase> > priors_;
+    Vec sigma_upper_truncation_point_;
+  };
+
 
 }
 

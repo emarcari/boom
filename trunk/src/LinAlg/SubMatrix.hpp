@@ -109,6 +109,8 @@ namespace BOOM{
       ConstVectorView superdiag(int i)const;
 
       double sum()const;
+
+      Matrix to_matrix()const;
     private:
       const double *start_;
       uint nr_, nc_;

@@ -36,6 +36,14 @@ namespace BOOM{
 //   typedef boost::function<double(double, double &) > dScalarTarget;
 //   typedef boost::function<double(double, double &, double &)> d2ScalarTarget;
 
+  class ScalarNegation {
+   public:
+    ScalarNegation(ScalarTarget f)
+        : original_function_(f) {}
+    double operator()(double x)const{ return -1 * original_function_(x); }
+   private:
+    ScalarTarget original_function_;
+  };
 
   enum conj_grad_method{ FletcherReeves, PolakRibiere, BealeSorenson};
 
@@ -189,45 +197,6 @@ namespace BOOM{
   private:
     d2Target d2f;
   };
-
-
-//   class bad_initial_value : public std::runtime_error{
-//    public:
-//     bad_initial_value(const string &alg, const Vec &X)
-//         : std::runtime_error(write_error_message(alg,X))
-//     {}
-//     ~bad_initial_value() throw() {}
-//     const char * write_error_message(const string &alg, const Vec &X){
-//     }
-//   };
-
-
-//   class newton_raphson_failure : public std::exception{
-//   public:
-//     string msg;
-
-//     newton_raphson_failure(const Vec &x, double ans, const Vec &g, const Mat &h,
-//  	    int nd, const std::string &Msg){
-//       ostringstream out;
-//       out << "Newton-Raphson failure " << Msg << endl
-// 	  << "function value: " << ans << endl
-// 	  << "x=    " << x << endl;
-
-//       if(nd>0) out << "g= " << g << std::endl;
-//       if(nd>1){
-//  	out << "h= " << endl;
-//  	out << h << endl;
-//  	out << "eigenvalues of h (should all be positive):" << endl;
-//  	out << h.real_evals() << std::endl;
-//       }
-//       msg = out.str();
-//     }
-
-//     const char *what()const throw(){return msg.c_str();}
-//     ~newton_raphson_failure() throw() {}
-//   };
-
-
 
 }
 #endif // BOOM_NUMOPT_HPP

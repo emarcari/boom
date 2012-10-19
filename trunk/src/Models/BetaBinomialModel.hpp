@@ -58,10 +58,23 @@ namespace BOOM{
     : public ParamPolicy_2<UnivParams, UnivParams>,
       public IID_DataPolicy<BinomialData>,
       public PriorPolicy,
-      public LoglikeModel
+      public NumOptModel
   {
    public:
     BetaBinomialModel(double a, double b);
+
+    // Using this constructor will initialize the model with one of
+    // three sets of parameters.
+    // a) If a call to mle() succeeds then the parameters will be set
+    //    using maximum likelihood estimates.
+    // b) If the call to mle() fails then the parameters will be set
+    //    using a call to method_of_moments().
+    // c) If the call to method_of_moments() fails then a and b will
+    //    both be set to 1.0.
+    // Args:
+    //   trials:  The number of trials observed, per group.
+    //   successes: The number of successes observed per group (must
+    //     be <= the number of trials.)
     BetaBinomialModel(const std::vector<int> &trials,
                       const std::vector<int> &successes);
     BetaBinomialModel(const BetaBinomialModel &rhs);
@@ -71,6 +84,7 @@ namespace BOOM{
     // int Pr(y_i | theta_i, n_i) p(theta_i) dtheta_i
     virtual double loglike()const;
     double loglike(double a, double b)const;
+    virtual double Loglike(Vec &g, Mat &H, uint nd)const;
     double logp(int n, int y, double a, double b)const;
 
     Ptr<UnivParams> SuccessPrm();
@@ -88,11 +102,15 @@ namespace BOOM{
     double prior_sample_size()const;      // a+b
     void set_prior_sample_size(double sample_size);
 
+    // Set a/(a+b) and a+b using a very rough method of moments
+    // estimator.  The estimator can fail if either the sample mean or
+    // the sample variance is zero, in which case this function will
+    // exit without changing the model.
+    void method_of_moments();
    private:
     void check_positive(double arg, const char *function_name)const;
     void check_probability(double arg, const char *function_name)const;
   };
-
 
 }
 

@@ -20,6 +20,7 @@
 #include <distributions.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 #include <Models/SufstatAbstractCombineImpl.hpp>
 
 namespace BOOM{
@@ -30,6 +31,9 @@ namespace BOOM{
   BS * BS::clone()const{return new BS(*this);}
   void BS::Update(const DoubleData &d){
     double p = d.value();
+    update_raw(p);
+  }
+  void BetaSuf::update_raw(double p){
     ++n_;
     sumlog_ += log(p);
     sumlogc_ += log(1-p);
@@ -136,9 +140,7 @@ namespace BOOM{
     return ans;
   }
 
-
   double BM::Logp(double x, double &d1, double &d2, uint nd) const{
-
     if(x<0 || x>1) return BOOM::infinity(-1);
     double inf = BOOM::infinity(1);
     double a = this->a();
@@ -162,8 +164,9 @@ namespace BOOM{
     double inf = BOOM::infinity(1);
     double a_inf = a()==inf;
     double b_inf = b()==inf;
-    if(a_inf && b_inf)
-      throw_exception<std::runtime_error>("both a and b are finite in BetaModel::Logp");
+    if(a_inf && b_inf) {
+      report_error("both a and b are finite in BetaModel::Logp");
+    }
     if(nd>0){
       d1=0;
       if(nd>1) d2=0;}
@@ -171,12 +174,15 @@ namespace BOOM{
     return x==1.0 ?  0.0 : BOOM::infinity(-1);
   }
 
-
-//   double BM::pdf(DoubleData &x, bool logscale) const {
-//     return dbeta(x.value(), a(), b(), logscale); }
-//   double BM::pdf(dPtr dp, bool logscale) const {
-//     return dbeta(DAT(dp)->value(), a(), b(), logscale); }
-
   double BM::sim() const { return rbeta(a(),b());}
 
+  double beta_log_likelihood(double a, double b, const BetaSuf &suf){
+    double n = suf.n();
+    double sumlog = suf.sumlog();
+    double sumlogc = suf.sumlogc();
+
+    double ans = n*(lgamma(a + b) - lgamma(a)-lgamma(b));
+    ans += (a-1)*sumlog + (b-1)*sumlogc;
+    return ans;
+  }
 }

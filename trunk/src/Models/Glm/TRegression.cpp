@@ -94,8 +94,10 @@ namespace BOOM{
 
   TRM * TRM::clone()const{ return new TRM(*this);}
 
-  Ptr<GlmCoefs> TRM::coef(){return wreg_->coef();}
-  const Ptr<GlmCoefs> TRM::coef()const{return wreg_->coef();}
+  GlmCoefs & TRM::coef(){return wreg_->coef();}
+  const GlmCoefs & TRM::coef()const{return wreg_->coef();}
+  Ptr<GlmCoefs> TRM::coef_prm(){return wreg_->coef_prm();}
+  const Ptr<GlmCoefs> TRM::coef_prm()const{return wreg_->coef_prm();}
   Ptr<UnivParams> TRM::Sigsq_prm(){return wreg_->Sigsq_prm();}
   const Ptr<UnivParams> TRM::Sigsq_prm()const{return wreg_->Sigsq_prm();}
   Ptr<UnivParams> TRM::Nu_prm(){return wgt_->Nu_prm();}
@@ -113,7 +115,7 @@ namespace BOOM{
     }
 
     for(uint i=0; i<dat().size(); ++i){
-      const Vec X = coef()->inc().select((dat())[i]->x());
+      const Vec X = coef().inc().select((dat())[i]->x());
       const double yhat = predict(X);
       const double y = (dat())[i]->y();
       ans+= dstudent(y, yhat, sigsq, nu, true);

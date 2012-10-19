@@ -1,14 +1,3 @@
 Import('env')
-
-## ConditionalMarkovModel.cpp
-
-file_list = Split("""
-HomogeneousStateModel.cpp
-LocalLinearTrend.cpp
-ScalarHomogeneousStateSpaceModel.cpp
-""")
-
-## SeasonalStateModel.cpp
-
-obj =env.Object(file_list)
+obj = env.Object(Glob('*.cpp'))
 Return('obj')

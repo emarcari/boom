@@ -41,36 +41,36 @@ namespace BOOM{
      : Model(rhs)
    {}
 
-  uint GlmModel::xdim()const{ return coef()->nvars_possible();}
-  void GlmModel::add(uint p){ coef()->add(p);}
+  uint GlmModel::xdim()const{ return coef().nvars_possible();}
+  void GlmModel::add(uint p){ coef().add(p);}
   void GlmModel::add_all(){ for(int i = 0; i < xdim(); ++i) add(i);}
-  void GlmModel::drop(uint p){ coef()->drop(p);}
+  void GlmModel::drop(uint p){ coef().drop(p);}
   void GlmModel::drop_all(){for(int i = 0; i < xdim(); ++i) drop(i);}
   void GlmModel::drop_all_but_intercept(){drop_all();  add(0);}
-  void GlmModel::flip(uint p){coef()->flip(p);}
-  const Selector & GlmModel::inc()const{return coef()->inc();}
-  bool GlmModel::inc(uint p)const{return coef()->inc(p);}
+  void GlmModel::flip(uint p){coef().flip(p);}
+  const Selector & GlmModel::inc()const{return coef().inc();}
+  bool GlmModel::inc(uint p)const{return coef().inc(p);}
 
   void GlmModel::set_vnames(const StringVec &vn){
-    coef()->set_vnames(vn);}
+    coef().set_vnames(vn);}
 
   double GlmModel::predict(const Vec &x)const{
-    return coef()->predict(x);}
+    return coef().predict(x);}
   double GlmModel::predict(const VectorView &x)const{
-    return coef()->predict(x);}
+    return coef().predict(x);}
   double GlmModel::predict(const ConstVectorView &x)const{
-    return coef()->predict(x);}
+    return coef().predict(x);}
 
-  Vec GlmModel::beta()const{return coef()->beta();}
-  void GlmModel::set_beta(const Vec &b){coef()->set_beta(b);}
+  Vec GlmModel::beta()const{return coef().beta();}
+  void GlmModel::set_beta(const Vec &b){coef().set_beta(b);}
   const double& GlmModel::beta(int i)const{return beta()[i];}
 
   // reports 0 for excluded positions
-  const Vec & GlmModel::Beta()const{return coef()->Beta();}
+  const Vec & GlmModel::Beta()const{return coef().Beta();}
   void GlmModel::set_Beta(const Vec &B, bool reset_inc){
-    coef()->set_Beta(B, reset_inc);}
-  double GlmModel::Beta(uint I)const{return coef()->Beta(I);}
-  string GlmModel::Vnames(uint i)const{return coef()->Vnames(i);}
-  StringVec GlmModel::Vnames()const{return coef()->Vnames();}
+    coef().set_Beta(B, reset_inc);}
+  double GlmModel::Beta(uint I)const{return coef().Beta(I);}
+  string GlmModel::Vnames(uint i)const{return coef().Vnames(i);}
+  StringVec GlmModel::Vnames()const{return coef().Vnames();}
 
 }// closes namespace BOOM;

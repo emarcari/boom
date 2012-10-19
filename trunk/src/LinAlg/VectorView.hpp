@@ -39,7 +39,7 @@ namespace BOOM{
   class VectorView{
     double *V;
     uint nelem_;
-    uint stride_;
+    int stride_;
 
     bool inrange(uint n)const{return n < nelem_;}
    public:
@@ -49,7 +49,7 @@ namespace BOOM{
     typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
     //--------- constructors, destructor, assigment, operator== ----------
-    VectorView(double *first_elem, uint Nelem, uint Stride);
+    VectorView(double *first_elem, uint Nelem, int Stride);
     explicit VectorView(Vector &v, uint first = 0);
     VectorView(Vector &v, uint first, uint len);
 
@@ -77,23 +77,23 @@ namespace BOOM{
 
     double *data(){return V;}
     const double *data()const{return V;}
-    uint stride()const{return stride_;}
+    int stride()const{return stride_;}
 
     uint size()const{return nelem_;}   // returns number of elements
     uint length()const{return nelem_;}; // same as size()
 
     //------------------ subscripting -----------------------
-    const double & operator[](uint n)const{
-      assert(n< nelem_);
+    const double & operator[](int n)const{
+      assert(n>=0 && n< nelem_);
       return *(V+n*stride_);}
-    double & operator[](uint n){
-      assert(n< nelem_);
+    double & operator[](int n){
+      assert(n>=0 && n< nelem_);
       return *(V+n*stride_);}
-    const double & operator()(uint n)const{
-      assert(n< nelem_);
+    const double & operator()(int n)const{
+      assert(n>=0 && n< nelem_);
       return *(V+n*stride_);}
-    double & operator()(uint n){
-      assert(n< nelem_);
+    double & operator()(int n){
+      assert(n>=0 && n< nelem_);
       return *(V+n*stride_);}
     double & front(){return *V;}
     const double & front() const{return *V;}
@@ -139,8 +139,10 @@ namespace BOOM{
     double prod() const;
     double abs_norm() const;
 
-    double dot(const Vector &y)const; // dot product ignores lower bounds
-    double dot(const VectorView &y)const; // dot product ignores lower bounds
+    double dot(const Vector &y)const;
+    double dot(const VectorView &y)const;
+    double dot(const ConstVectorView &y)const;
+
     double affdot(const Vector &y)const;
     double affdot(const VectorView &y)const;
     // affine dot product:  dim(y) == dim(x)-1. ignores lower bounds
@@ -169,7 +171,7 @@ namespace BOOM{
   class ConstVectorView{
     const double *V;
     uint nelem_;
-    uint stride_;
+    int stride_;
 
     bool inrange(uint n)const{return n < nelem_;}
    public:
@@ -179,15 +181,16 @@ namespace BOOM{
     typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
     //--------- constructors, destructor, assigment, operator== ----------
-    ConstVectorView(const double *first_elem, uint Nelem, uint Stride);
+
+    // View an aribtrary chunk of memory
+    ConstVectorView(const double *first_elem, uint Nelem, int Stride);
 
     // View from first_element to the end
     explicit ConstVectorView(const Vector &v, uint first_element = 0);
+
     // View from first_element to first_lement + length - 1
     ConstVectorView(const Vector &v, uint first_element, uint length);
-
     ConstVectorView(const VectorView &v, uint first_element, uint length);
-
     ConstVectorView(const ConstVectorView &v, uint first_element);
     ConstVectorView(const ConstVectorView &v, uint first_element, uint length);
 
@@ -208,17 +211,17 @@ namespace BOOM{
     const_reverse_iterator rend()const;
 
     const double *data()const{return V;}
-    uint stride()const{return stride_;}
+    int stride()const{return stride_;}
 
     uint size()const{return nelem_;}   // returns number of elements
-    uint length()const{return nelem_;}; // same as size()
+    uint length()const{return nelem_;} // same as size()
 
     //------------------ subscripting -----------------------
-    const double & operator[](uint n)const{
-      assert(n< nelem_);
+    const double & operator[](int n)const{
+      assert(n>= 0 && n< nelem_);
       return *(V+n*stride_);}
-    const double & operator()(uint n)const{
-      assert(n< nelem_);
+    const double & operator()(int n)const{
+      assert(n >= 0 && n< nelem_);
       return *(V+n*stride_);}
     const double & front() const{return *V;}
     const double & back() const{return *(V+(nelem_-1)*stride_);}
@@ -236,15 +239,19 @@ namespace BOOM{
     double abs_norm() const;
     double prod() const;
 
-    template<class VEC>
-    double dot(const VEC &y)const{
-      assert(y.size()==size());
-      return cblas_ddot(size(), data(), stride(), y.data(), y.stride()); }
+    double dot(const Vector &y)const;
+    double dot(const VectorView &y)const;
+    double dot(const ConstVectorView &y)const;
 
     template<class VEC>
     double affdot(const VEC &y)const;
     // affine dot product:  dim(y) == dim(x)-1. ignores lower bounds
 
+    // Returns a ConstVectorView that points to the same elements as
+    // *this, but in reverse order.  This is done by pointing to the
+    // last element in the CVV, keeping the same length, and using a
+    // negative stride.
+    ConstVectorView reverse()const;
   };
 
   // IO
@@ -261,7 +268,6 @@ namespace BOOM{
     uint size = 1+stop-start;
     return ConstVectorView(v.data()+ start, size, v.stride());
   }
-
 
   template <class VEC>
       double ConstVectorView::affdot(const VEC &y)const{

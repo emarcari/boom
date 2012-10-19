@@ -295,10 +295,12 @@ namespace BOOM{
   }
 
   double * Matrix::data(){
-    return & (V[0]);}
+    return V.data();
+  }
 
   const double * Matrix::data()const{
-    return & (V[0]);}
+    return V.data();
+  }
 
   double & Matrix::operator()(uint i, uint j){
     assert(inrange(i,j));

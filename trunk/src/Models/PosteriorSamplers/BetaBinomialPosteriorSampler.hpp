@@ -30,6 +30,7 @@ namespace BOOM{
   class BetaBinomialPosteriorSampler
       : public PosteriorSampler {
    public:
+    enum SamplingMethod { SLICE, DATA_AUGMENTATION };
     BetaBinomialPosteriorSampler(
         BetaBinomialModel *model,
         Ptr<BetaModel> probability_prior_distribution,
@@ -38,10 +39,18 @@ namespace BOOM{
     virtual void draw();
     virtual double logpri()const;
 
+    void draw_slice();
+    void draw_data_augmentation();
+
     // Full conditional distributions of the probability and sample
     // size parameters.
+    double logp(double prob, double sample_size)const;
     double logp_prob(double prob)const;
     double logp_sample_size(double sample_size)const;
+
+    void set_sampling_method(SamplingMethod method){
+      sampling_method_ = method;
+    }
    private:
     BetaBinomialModel *model_;
     Ptr<BetaModel> probability_prior_distribution_;
@@ -49,7 +58,9 @@ namespace BOOM{
 
     ScalarSliceSampler probability_sampler_;
     ScalarSliceSampler sample_size_sampler_;
-  };
 
+    SamplingMethod sampling_method_;
+    BetaSuf complete_data_suf_;
+  };
 
 }

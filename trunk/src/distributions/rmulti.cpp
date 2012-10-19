@@ -21,7 +21,6 @@
 #include <LinAlg/Types.hpp>
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/VectorView.hpp>
-#include <Bmath/nmath.hpp>
 
 #include <cpputil/report_error.hpp>
 #include <sstream>

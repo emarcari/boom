@@ -57,8 +57,10 @@ namespace BOOM{
     LogisticRegressionModel(const LogisticRegressionModel &);
     LogisticRegressionModel *clone()const;
 
-    Ptr<GlmCoefs> coef(){return ParamPolicy::prm();}
-    const Ptr<GlmCoefs> coef()const{return ParamPolicy::prm();}
+    virtual GlmCoefs &coef(){return ParamPolicy::prm_ref();}
+    virtual const GlmCoefs &coef()const{return ParamPolicy::prm_ref();}
+    virtual Ptr<GlmCoefs> coef_prm(){return ParamPolicy::prm();}
+    virtual const Ptr<GlmCoefs> coef_prm()const{return ParamPolicy::prm();}
 
     virtual double pdf(dPtr dp, bool logscale)const;
     virtual double pdf(const Data * dp, bool logscale)const;

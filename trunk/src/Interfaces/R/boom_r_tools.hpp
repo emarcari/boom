@@ -60,6 +60,14 @@ namespace BOOM{
   // Returns 'list' with the new and improved set of 'list_names'.
   SEXP setListNames(SEXP list, const std::vector<std::string> &list_names);
 
+  // Converts an R character vector into a c++ vector of strings.  If
+  // the object is NULL an empty string vector is returned.  Otherwise
+  // if the object is not a character vector an exception is thrown.
+  std::vector<std::string> StringVector(SEXP r_character_vector);
+
+  // Converts a C++ vector of strings into an R character vector.
+  SEXP CharacterVector(const std::vector<std::string> &string_vector);
+
   // Creates a new list with the contents of the original 'list' with
   // new_element added.  The names of the original list are copied,
   // and 'name' is appended.  The original 'list' is not modified, so

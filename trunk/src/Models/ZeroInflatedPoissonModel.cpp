@@ -118,6 +118,18 @@ namespace BOOM {
     return sum_of_positives_ * 1.0 / number_of_positives_;
   }
 
+  void ZeroInflatedPoissonSuf::set_values(double nzero, double npos, double sum){
+    number_of_zeros_ = nzero;
+    number_of_positives_ = npos;
+    sum_of_positives_ = sum;
+  }
+
+  void ZeroInflatedPoissonSuf::add_values(double nzero, double npos, double sum){
+    number_of_zeros_ += nzero;
+    number_of_positives_ += npos;
+    sum_of_positives_ += sum;
+  }
+
   //======================================================================
 
   ZeroInflatedPoissonModel::ZeroInflatedPoissonModel(double lambda, double zero_prob)
@@ -180,6 +192,12 @@ namespace BOOM {
 
   void ZeroInflatedPoissonModel::set_zero_probability(double zp){
     ZeroProbability_prm()->set(zp);
+  }
+
+  void ZeroInflatedPoissonModel::set_sufficient_statistics(
+      const ZeroInflatedPoissonSuf &s){
+    clear_data();
+    suf()->combine(s);
   }
 
   double ZeroInflatedPoissonModel::pdf(Ptr<Data> dp, bool logscale)const{

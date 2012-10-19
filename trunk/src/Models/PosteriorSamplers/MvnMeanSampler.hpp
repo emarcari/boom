@@ -19,6 +19,8 @@
 #define BOOM_MVN_MEAN_SAMPLER_HPP
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <Models/ParamTypes.hpp>
+#include <Models/MvnBase.hpp>
+
 namespace BOOM{
   class MvnModel;
   class VectorParams;
@@ -55,7 +57,7 @@ namespace BOOM{
 		   Ptr<SpdParams> Omega);
 
     MvnMeanSampler(MvnModel *Mod,
-		   Ptr<MvnModel> Pri);
+		   Ptr<MvnBase> Pri);
 
     MvnMeanSampler(MvnModel *Mod,
 		   const Vec & Mu0,
@@ -64,8 +66,7 @@ namespace BOOM{
     void draw();
   private:
     MvnModel *mvn;
-    Ptr<VectorParams> mu0;
-    Ptr<SpdParams> omega;
+    Ptr<MvnBase> mu_prior_;
   };
   //____________________________________________________________
 }

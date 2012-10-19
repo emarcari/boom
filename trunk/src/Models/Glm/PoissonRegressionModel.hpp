@@ -17,7 +17,61 @@
  */
 
 #ifndef POISSON_REGRESSION_MODEL_HPP
- #define POISSON_REGRESSION_MODEL_HPP
+#define POISSON_REGRESSION_MODEL_HPP
+
+#include <Models/Glm/Glm.hpp>
+#include <Models/Policies/ParamPolicy_1.hpp>
+#include <Models/Policies/IID_DataPolicy.hpp>
+#include <Models/Policies/PriorPolicy.hpp>
+#include <Models/ModelTypes.hpp>
+
+namespace BOOM {
+
+  class PoissonRegressionData : public GlmData<IntData> {
+   public:
+    PoissonRegressionData(int y, const Vec &x);
+    PoissonRegressionData(int y, const Vec &x, double exposure);
+    virtual PoissonRegressionData * clone()const;
+    virtual ostream & display(ostream &out)const;
+    double exposure()const;
+    double log_exposure()const;
+   private:
+    double exposure_;
+    double log_exposure_;
+    // saving both exposure and log_exposure keeps us from computing
+    // the log of the same thing over and over again in the sampler.
+  };
+
+  // A PoissonRegressionModel describes a non-negative integer
+  // response y ~ Poisson(E exp(beta*x)), where E is an exposure.
+  class PoissonRegressionModel
+      : public GlmModel,
+        public NumOptModel,
+        public MixtureComponent,
+        public ParamPolicy_1<GlmCoefs>,
+        public IID_DataPolicy<PoissonRegressionData>,
+        public PriorPolicy
+  {
+   public:
+    PoissonRegressionModel(int xdim);
+    PoissonRegressionModel(const Vec& beta);
+    virtual  PoissonRegressionModel * clone()const;
+
+    virtual GlmCoefs & coef();
+    virtual const GlmCoefs & coef()const;
+    virtual Ptr<GlmCoefs> coef_prm();
+    virtual const Ptr<GlmCoefs> coef_prm()const;
+
+    virtual double Loglike(Vec &g, Mat &h, uint nd)const;
+    double log_likelihood(const Vec &beta, Vec *g = NULL, Mat *h = NULL)const;
 
 
- #endif// POISSON_REGRESSION_MODEL_HPP
+    virtual double pdf(const Data *, bool logscale)const;
+    double logp(const PoissonRegressionData &data)const;
+  };
+
+
+} // namespace BOOM
+
+
+#endif // POISSON_REGRESSION_MODEL_HPP

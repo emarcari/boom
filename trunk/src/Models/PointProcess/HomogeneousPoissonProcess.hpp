@@ -93,7 +93,10 @@ namespace BOOM{
 
     virtual double loglike()const;
     virtual void mle();
-    virtual PointProcess simulate(const DateTime &t0, const DateTime &t1)const;
+    virtual PointProcess simulate(
+        const DateTime &t0,
+        const DateTime &t1,
+        std::function<Data*()> mark_generator = NullDataGenerator())const;
   };
 
 }

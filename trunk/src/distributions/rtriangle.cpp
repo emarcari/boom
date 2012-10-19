@@ -20,7 +20,6 @@
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
 #include <sstream>
-#include <BOOM.hpp>
 
  /* functions for the triangular distribution over the interval (x0,
     x1) with breakpoint xm */

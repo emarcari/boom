@@ -86,14 +86,14 @@ namespace BOOM{
   //------------------------------------------------------------
   MLM * MLM::clone()const{return new MLM(*this);}
   //------------------------------------------------------------
-  const Vec & MLM::beta()const{ return coef()->Beta();}
+  const Vec & MLM::beta()const{ return coef().Beta();}
   //------------------------------------------------------------
   const Vec & MLM::beta_with_zeros()const{
     if(!beta_with_zeros_current_) fill_extended_beta();
     return beta_with_zeros_;}
   //------------------------------------------------------------
   void MLM::set_beta(const Vec &b, bool reset_inc){
-    coef()->set_Beta(b, reset_inc);}
+    coef().set_Beta(b, reset_inc);}
 
   //------------------------------------------------------------
   Vec MLM::beta_subject(uint choice)const{
@@ -129,13 +129,14 @@ namespace BOOM{
     set_beta(beta);
   }
   //------------------------------------------------------------
-
-  Ptr<GlmCoefs> MLM::coef(){return ParamPolicy::prm();}
+  GlmCoefs & MLM::coef(){return ParamPolicy::prm_ref();}
+  const GlmCoefs & MLM::coef()const{return ParamPolicy::prm_ref();}
+  Ptr<GlmCoefs> MLM::coef_prm(){return ParamPolicy::prm();}
   //------------------------------------------------------------
-  const Ptr<GlmCoefs> MLM::coef()const{return ParamPolicy::prm();}
+  const Ptr<GlmCoefs> MLM::coef_prm()const{return ParamPolicy::prm();}
 
   //------------------------------------------------------------
-  Selector MLM::inc()const{ return coef()->inc();}
+  Selector MLM::inc()const{ return coef().inc();}
 
   //------------------------------------------------------------
 
@@ -178,17 +179,17 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   void MLM::add_all_slopes(){
-    coef()->add_all();
+    coef().add_all();
   }
   //----------------------------------------------------------------------
   void MLM::drop_all_slopes(bool keep_int){
-    coef()->drop_all();
+    coef().drop_all();
     if(keep_int){
       uint psub = subject_nvars();
       uint nch = Nchoices();
       for(uint m = 1; m<nch; ++m){
 	uint pos = (m-1)*psub;
-	coef()->add(pos);
+	coef().add(pos);
       }
     }
   }
@@ -226,9 +227,9 @@ namespace BOOM{
 
   //------------------------------------------------------------
   void MLM::setup_observers(){
-    Ptr<GlmCoefs> b(coef());
+    GlmCoefs & b(coef());
     try{
-      b->add_observer(boost::bind(&MLM::watch_beta, this));
+      b.add_observer(boost::bind(&MLM::watch_beta, this));
     } catch(const std::exception &e){
       throw_exception<std::runtime_error>(e.what());
     }catch(...){

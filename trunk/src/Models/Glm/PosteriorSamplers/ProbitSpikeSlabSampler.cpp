@@ -39,7 +39,7 @@ namespace BOOM{
 	ostringstream err;
 	err << "ProbitSpikeSampler initialized with an a priori illegal value" << endl
 	    << "the initial Selector vector was: " << endl
-	    << m_->coef()->inc() << endl
+	    << m_->coef().inc() << endl
 	    << *gamma_prior_ << endl;
 
 	throw_exception<std::runtime_error>(err.str());
@@ -48,7 +48,7 @@ namespace BOOM{
   }
 
   double PSSS::logpri()const{
-    const Selector & g(m_->coef()->inc());
+    const Selector & g(m_->coef().inc());
     double ans = gamma_prior_->logp(g);
     if(!finite(ans)) return ans;
     if(g.nvars() > 0){
@@ -67,7 +67,7 @@ namespace BOOM{
   }
 
   void PSSS::draw_beta(){
-    const Selector & g(m_->coef()->inc());
+    const Selector & g(m_->coef().inc());
     Ominv_ = g.select(beta_prior_->siginv());
     wsp_ = Ominv_ * g.select(beta_prior_->mu()) + g.select(xtz());
     Ominv_ += g.select(xtx());
@@ -91,7 +91,7 @@ namespace BOOM{
   }
 
   void PSSS::draw_gamma(){
-    Selector inc = m_->coef()->inc();
+    Selector inc = m_->coef().inc();
     uint nv = inc.nvars_possible();
     double logp = log_model_prob(inc);
     if(!finite(logp)){
@@ -115,7 +115,7 @@ namespace BOOM{
       if( keep_flip(logp, logp_new)) logp = logp_new;
       else inc.flip(I);  // reject the flip, so flip back
     }
-    m_->coef()->set_inc(inc);
+    m_->coef().set_inc(inc);
 
   }
 

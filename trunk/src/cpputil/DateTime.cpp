@@ -181,7 +181,11 @@ namespace BOOM{
     double frac = t_ - (hr/24 + min/24/60 + sec/24/60/60);
     frac*=seconds_in_day_;
     sec += frac;
-    out << d_ << " " <<hr <<":" <<min<<":" <<sec;
+    // Writing to a string before writing to 'out' is a quick hack to
+    // make sure we respect the setw() manipulator.
+    ostringstream formatted_output;
+    formatted_output  << d_ << " " <<hr <<":" <<min<<":" <<sec;
+    out << formatted_output.str();
     return out;
   }
 
@@ -202,4 +206,4 @@ namespace BOOM{
   double DateTime::milliseconds_to_days(double t){return t/milliseconds_in_day_;}
   double DateTime::microseconds_to_days(double t){return t/microseconds_in_day_;}
 
-}
+}  // namespace BOOM

@@ -41,7 +41,7 @@ namespace BOOM{
   }
 
   void BLSSS::draw_beta(){
-    Selector g = m_->coef()->inc();
+    Selector g = m_->coef().inc();
     if(g.nvars() == 0){
       Vec b(g.nvars_possible(), 0.0);
       m_->set_Beta(b, allow_model_selection_);
@@ -61,7 +61,7 @@ namespace BOOM{
   }
 
   double BLSSS::logpri()const{
-    const Selector & g(m_->coef()->inc());
+    const Selector & g(m_->coef().inc());
     double ans = vpri_->logp(g);  // p(gamma)
     if(ans == BOOM::infinity(-1)) return ans;
     if(g.nvars() > 0){
@@ -113,7 +113,7 @@ namespace BOOM{
   }
 
   void BLSSS::draw_model_indicators(){
-    Selector g = m_->coef()->inc();
+    Selector g = m_->coef().inc();
     std::vector<int> indx = seq<int>(0, g.nvars_possible()-1);
     std::random_shuffle(indx.begin(), indx.end());
     double logp = log_model_prob(g);
@@ -135,7 +135,7 @@ namespace BOOM{
     for(uint i=0; i<n; ++i){
       logp = mcmc_one_flip(g, indx[i], logp);
     }
-    m_->coef()->set_inc(g);
+    m_->coef().set_inc(g);
   }
 
   double BLSSS::mcmc_one_flip(Selector &mod, uint which_var, double logp_old){

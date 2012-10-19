@@ -21,6 +21,7 @@
 
 #include "ModelTypes.hpp"
 #include <Models/SpdParams.hpp>
+#include <Models/SpdModel.hpp>
 #include "Sufstat.hpp"
 #include "Policies/SufstatDataPolicy.hpp"
 #include "Policies/PriorPolicy.hpp"
@@ -57,7 +58,8 @@ namespace BOOM{
     public ParamPolicy_2<UnivParams, SpdParams>,
     public SufstatDataPolicy<SpdData, WishartSuf>,
     public PriorPolicy,
-    public dLoglikeModel
+    public dLoglikeModel,
+    public SpdModel
   {
   public:
     WishartModel(uint dim);
@@ -84,8 +86,7 @@ namespace BOOM{
     void mle0();
     void mle1();
 
-    double pdf(dPtr dp, bool logscale) const;
-    double pdf(const Spd &W, bool logscale) const;
+    virtual double logp(const Spd &W) const;
     double loglike() const;
     double dloglike(Vec &g)const;
     double Loglike(Vec &g, uint  nd)const;

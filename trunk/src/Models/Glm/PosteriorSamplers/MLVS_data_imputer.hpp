@@ -29,19 +29,11 @@ namespace BOOM{
   namespace mlvs_impute{
     class MDI_base;
     class MDI_worker;
-#ifdef CUDA_ENABLED
-    class CPU_MDI_worker_original;
-    class CPU_MDI_worker_new_flow;
-    class CPU_MDI_worker_parallel;
-    class CPU_MDI_worker_new_parallel;
-    class GPU_MDI_worker;
-#endif
   }
 
   class MlvsDataImputer : private RefCounted{
   public:
-    MlvsDataImputer(MLogitBase *Mod, Ptr<MlvsCdSuf> Suf, uint nthreads,
-    		int computeMode=0);
+    MlvsDataImputer(MLogitBase *Mod, Ptr<MlvsCdSuf> Suf, uint nthreads);
     void draw();
 
     friend void intrusive_ptr_add_ref(MlvsDataImputer *d){
@@ -71,17 +63,10 @@ namespace BOOM{
       void impute_u(Ptr<ChoiceData> dp);
       uint unmix(double u);
       const Ptr<MlvsCdSuf> suf()const;
-#ifdef CUDA_ENABLED
-      virtual void operator()();
-#else
       void operator()();
-#endif      
       void seed(unsigned long);
-#ifdef CUDA_ENABLED
-    protected:
-#else
+
     private:
-#endif    
       MLogitBase *mlm;
       Ptr<MlvsCdSuf> suf_;
 
@@ -116,12 +101,12 @@ namespace BOOM{
     //======================================================================
     class MDI_unthreaded : public MDI_base {
     public:
-      MDI_unthreaded(MLogitBase *m, Ptr<MlvsCdSuf> s, int computeMode=0);
+      MDI_unthreaded(MLogitBase *m, Ptr<MlvsCdSuf> s);
       virtual void draw();
     private:
       MLogitBase *mlm;
       Ptr<MlvsCdSuf> suf;
-      Ptr<MDI_worker> imp;
+      MDI_worker imp;
     };
 
     //======================================================================

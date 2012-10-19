@@ -45,6 +45,7 @@ namespace BOOM{
     MvnModel(uint p, double mu=0.0, double sig=1.0);   // N(mu.1, diag(sig^2))
     MvnModel(const Vec &mean, const Spd &V,      // N(mu,V)... if(ivar) then V
 	     bool ivar=false);                   // is the inverse variance.
+    MvnModel(Ptr<VectorParams> mu, Ptr<SpdParams> Sigma);
     MvnModel(const std::vector<Vec> &v);       // N(mu.hat, V.hat)
     MvnModel(const MvnModel &m);
     MvnModel *clone() const;

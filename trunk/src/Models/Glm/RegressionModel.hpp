@@ -77,6 +77,7 @@ namespace BOOM{
     anova_table anova()const;
 
     virtual void add_mixture_data(double y, const Vec &x, double prob)=0;
+    virtual void add_mixture_data(double y, const ConstVectorView &x, double prob)=0;
     virtual void combine(Ptr<RegSuf>)=0;
 
     virtual ostream &print(ostream &out)const;
@@ -101,6 +102,7 @@ namespace BOOM{
     virtual void clear();
     virtual void Update(const DataType &);
     virtual void add_mixture_data(double y, const Vec &x, double prob);
+    virtual void add_mixture_data(double y, const ConstVectorView &x, double prob);
     virtual uint size()const;  // dimension of beta
     virtual double yty()const;
     virtual Vec xty()const;
@@ -144,6 +146,8 @@ namespace BOOM{
     NeRegSuf *clone()const;
     void fix_xtx(bool tf = true);
     virtual void add_mixture_data(double y, const Vec &x, double prob);
+    virtual void add_mixture_data(double y, const ConstVectorView &x, double prob);
+
     virtual void clear();
     virtual void Update(const RegressionData & rdp);
     virtual uint size()const;  // dimension of beta
@@ -245,8 +249,10 @@ namespace BOOM{
     uint nvars_possible()const;  // number of potential variables, inc. intercept
 
     //---- parameters ----
-    Ptr<GlmCoefs> coef();
-    const Ptr<GlmCoefs> coef()const;
+    GlmCoefs & coef();
+    const GlmCoefs & coef()const;
+    Ptr<GlmCoefs> coef_prm();
+    const Ptr<GlmCoefs> coef_prm()const;
     Ptr<UnivParams> Sigsq_prm();
     const Ptr<UnivParams> Sigsq_prm()const;
 
@@ -254,7 +260,7 @@ namespace BOOM{
     //    void set_beta(const Vec &b);
     void set_sigsq(double s2);
 
-    const double & sigsq()const;
+    double sigsq()const;
     double sigma()const;
 
     //---- simulate regression data  ---

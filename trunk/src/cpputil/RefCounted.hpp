@@ -18,17 +18,32 @@
 
 #ifndef BOOM_REF_COUNTED_HPP
 #define BOOM_REF_COUNTED_HPP
+
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/locks.hpp>
+
 namespace BOOM{
 
   class RefCounted{
     unsigned int cnt_;
-
+    boost::mutex ref_count_mutex_;
   public:
     RefCounted(): cnt_(0){}
-    RefCounted(const RefCounted &): cnt_(0){}
+    RefCounted(const RefCounted &): cnt_(0), ref_count_mutex_() {}
+
+    // If this object is assigned a new value, nothing is done to the
+    // reference count, so assignment is a no-op.
+    RefCounted & operator=(const RefCounted &rhs) { return *this; }
+
     virtual ~RefCounted(){}
-    void up_count(){++cnt_;}
-    void down_count(){--cnt_;}
+    void up_count(){
+      boost::lock_guard<boost::mutex> lock(ref_count_mutex_);
+      ++cnt_;
+    }
+    void down_count(){
+      boost::lock_guard<boost::mutex> lock(ref_count_mutex_);
+      --cnt_;
+    }
     unsigned int ref_count()const{return cnt_;}
   };
 

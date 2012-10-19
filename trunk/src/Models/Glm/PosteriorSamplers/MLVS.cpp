@@ -39,21 +39,20 @@ namespace BOOM{
 
   MLVS::MLVS(MLM *Mod, Ptr<MvnBase> Pri,
 	     Ptr<VariableSelectionPrior> Vpri,
-	     uint nthreads, bool check_initial_condition,
-	     int mode)
+	     uint nthreads, bool check_initial_condition)
     : MLVS_base(Mod),
       mod_(Mod),
       pri(Pri),
       vpri(Vpri),
       suf(new MLVSS(Mod->beta_size(false))),
-      imp(new MlvsDataImputer(mod_, suf, nthreads, mode))
+      imp(new MlvsDataImputer(mod_, suf, nthreads))
   {
     if(check_initial_condition){
       if(!BOOM::finite(this->logpri())){
 	ostringstream err;
 	err << "MLVS initialized with an a priori illegal value" << endl
 	    << "the initial Selector vector was: " << endl
-	    << mod_->coef()->inc() << endl
+	    << mod_->coef().inc() << endl
 	    << *vpri << endl;
 
 	throw_exception<std::runtime_error>(err.str());
@@ -69,7 +68,7 @@ namespace BOOM{
   void MLVS::impute_latent_data(){imp->draw();}
 
   double MLVS::logpri()const{
-    const Selector &g = mod_->coef()->inc();
+    const Selector &g = mod_->coef().inc();
     double ans = vpri->logp(g);
     if(ans==BOOM::infinity(-1)) return ans;
     if(g.nvars() > 0){
@@ -90,11 +89,6 @@ namespace BOOM{
       sym_(false)
   {}
 
-  MLVSS::MlvsCdSuf_ml(const Spd & inMatrix, const Vec & inVector)
-	  : xtwx_(inMatrix), xtwu_(inVector), sym_(false) {
-	  // Do nothing
-  }
-
   MLVSS * MLVSS::clone()const{ return new MLVSS(*this);}
 
   void MLVSS::clear(){
@@ -108,12 +102,6 @@ namespace BOOM{
     xtwx_.add_inner(X, wgts,false);   // corresponding to subject X's at
     xtwu_ += X.Tmult(wgts*u);         // choice level 0.
     sym_ = false;
-  }
-
-  void MlvsCdSuf_ml::update(const Spd & mat, const Vec & weightedU) {
-	  xtwx_ += mat;
-	  xtwu_ += weightedU;
-	  sym_ = false;
   }
 
   void MLVSS::add(Ptr<MlvsCdSuf> s){
@@ -144,7 +132,7 @@ namespace BOOM{
   //======================================================================
 
   void MLVS::draw_beta(){
-    const Selector  &inc(mod_->coef()->inc());
+    const Selector  &inc(mod_->coef().inc());
     Spd Ominv = inc.select(pri->siginv());
     Spd ivar = Ominv + inc.select(suf->xtwx());
     Vec b = inc.select(suf->xtwu()) + Ominv *inc.select(pri->mu());
@@ -168,7 +156,7 @@ namespace BOOM{
   }
 
   void MLVS::draw_inclusion_vector(){
-    Selector inc = mod_->coef()->inc();
+    Selector inc = mod_->coef().inc();
     uint nv = inc.nvars_possible();
     double logp = log_model_prob(inc);
     if(!finite(logp)){
@@ -190,7 +178,7 @@ namespace BOOM{
       if( keep_flip(logp, logp_new)) logp = logp_new;
       else inc.flip(I);  // reject the flip, so flip back
     }
-    mod_->coef()->set_inc(inc);
+    mod_->coef().set_inc(inc);
   }
 
   //______________________________________________________________________

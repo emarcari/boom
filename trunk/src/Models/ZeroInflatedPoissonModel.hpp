@@ -52,6 +52,9 @@ namespace BOOM {
     double number_of_positives()const;
     double sum_of_positives()const;
     double mean_of_positives()const;
+
+    void set_values(double nzero, double npos, double sum_of_positives);
+    void add_values(double nzero, double npos, double sum_of_positives);
    private:
     // These can be fractional if this model is used as a mixture
     // component in an EM algorith that assigns fractional
@@ -81,6 +84,8 @@ namespace BOOM {
     const UnivParams * ZeroProbability_prm()const;
     double zero_probability()const;
     void set_zero_probability(double zp);
+
+    void set_sufficient_statistics(const ZeroInflatedPoissonSuf &suf);
 
     virtual double pdf(Ptr<Data> dp, bool logscale)const;
     virtual double pdf(const Data * dp, bool logscale)const;

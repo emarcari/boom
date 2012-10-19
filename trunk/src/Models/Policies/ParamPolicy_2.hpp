@@ -36,18 +36,19 @@ namespace BOOM{
     void set_params(Ptr<P1> p1, Ptr<P2> p2);  // to be used during construction
     Ptr<P1> prm1(){return prm1_;}
     const Ptr<P1> prm1()const{return prm1_;}
+    P1 & prm1_ref(){return *prm1_;}
     const P1 & prm1_ref()const{return *prm1_;}
 
     Ptr<P2> prm2(){return prm2_;}
     const Ptr<P2> prm2()const{return prm2_;}
+    P2 & prm2_ref(){return *prm2_;}
     const P2 & prm2_ref()const{return *prm2_;}
 
     // over-rides for abstract base Model
     ParamVec t(){return t_;}
     const ParamVec t()const{return t_;}
 
-    virtual void set_param_filenames(const string &fn1,
-				     const string &fn2);
+    virtual void set_param_filenames(const string &fn1, const string &fn2);
 
   private:
     Ptr<P1> prm1_;

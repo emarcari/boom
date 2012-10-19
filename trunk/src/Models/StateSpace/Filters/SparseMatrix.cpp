@@ -69,7 +69,6 @@ namespace BOOM{
     }
   }
 
-
   Mat SparseMatrixBlock::dense()const{
     Mat ans(nrow(), ncol());
     ans.set_diag(1.0);
@@ -211,6 +210,80 @@ namespace BOOM{
     ans.subdiag(1) = 1.0;
     return ans;
   }
+  //======================================================================
+  AutoRegressionTransitionMatrix::AutoRegressionTransitionMatrix(
+      Ptr<VectorParams> rho)
+      : autoregression_params_(rho)
+  {}
+
+  AutoRegressionTransitionMatrix::AutoRegressionTransitionMatrix(
+      const AutoRegressionTransitionMatrix &rhs)
+      : SparseMatrixBlock(rhs),
+        autoregression_params_(new VectorParams(
+            rhs.autoregression_params_->value()))
+  {}
+
+  AutoRegressionTransitionMatrix * AutoRegressionTransitionMatrix::clone()const{
+    return new AutoRegressionTransitionMatrix(*this);}
+
+  int AutoRegressionTransitionMatrix::nrow()const{
+    return autoregression_params_->size();}
+
+  int AutoRegressionTransitionMatrix::ncol()const{
+    return autoregression_params_->size();}
+
+  void AutoRegressionTransitionMatrix::multiply(
+      VectorView lhs, const ConstVectorView &rhs)const{
+    conforms_to_rows(lhs.size());
+    conforms_to_cols(rhs.size());
+    lhs[0] = 0;
+    int p = nrow();
+    const Vec &rho(autoregression_params_->value());
+    for(int i = 0; i < p; ++i){
+      lhs[0] += rho[i] * rhs[i];
+      if(i > 0) lhs[i] = rhs[i-1];
+    }
+  }
+
+  void AutoRegressionTransitionMatrix::Tmult(
+    VectorView lhs, const ConstVectorView &rhs)const{
+    conforms_to_rows(rhs.size());
+    conforms_to_cols(lhs.size());
+    int p = ncol();
+    const Vec &rho(autoregression_params_->value());
+    for (int i = 0; i < p; ++i) {
+      lhs[i] = rho[i]*rhs[0] + (i+1 < p ? rhs[i+1] : 0);
+    }
+  }
+
+  void AutoRegressionTransitionMatrix::multiply_inplace(VectorView x)const{
+    conforms_to_cols(x.size());
+    int stride = x.stride();
+    int p = x.size();
+    double first_entry = 0;
+    const Vec &rho(autoregression_params_->value());
+    for(int i = p-1; i >= 0; --i){
+      first_entry += rho[i] * x[i];
+      if(i > 0) x[i] = x[i-1];
+      else x[i] = first_entry;
+    }
+  }
+
+  void AutoRegressionTransitionMatrix::add_to(SubMatrix block)const{
+    check_can_add(block);
+    block.row(0) += autoregression_params_->value();
+    VectorView d(block.subdiag(1));
+    d += 1;
+  }
+
+  Mat AutoRegressionTransitionMatrix::dense()const{
+    int p = nrow();
+    Mat ans(p, p, 0.0);
+    ans.row(0) = autoregression_params_->value();
+    ans.subdiag(1) = 1.0;
+    return ans;
+  }
+
   //======================================================================
   void SparseKalmanMatrix::sandwich_inplace(Spd &P)const{
     for(int i = 0; i < P.ncol(); ++i){

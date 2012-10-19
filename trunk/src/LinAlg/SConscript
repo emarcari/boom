@@ -1,28 +1,3 @@
 Import('env')
-
-file_list = Split("""
-Array3.cpp
-Array.cpp
-ArrayIterator.cpp
-Cholesky.cpp
-CorrelationMatrix.cpp
-DiagonalMatrix.cpp
-LinAlgExceptions.cpp
-Givens.cpp
-Kronecker.cpp
-LU.cpp
-Matrix.cpp
-MatrixPartition.cpp
-QR.cpp
-Selector.cpp
-SpdMatrix.cpp
-SVD.cpp
-SWEEP.cpp
-SubMatrix.cpp
-Vector.cpp
-VectorView.cpp
-stack_columns.cpp
-""")
-
-obj =env.Object(file_list)
+obj = env.Object(Glob('*.cpp'))
 Return('obj')

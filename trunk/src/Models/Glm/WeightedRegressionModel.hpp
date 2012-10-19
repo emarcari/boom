@@ -107,8 +107,10 @@ namespace BOOM{
     WeightedRegressionModel(const DatasetType &d, bool all=true);
     WeightedRegressionModel * clone()const;
 
-    Ptr<GlmCoefs> coef();
-    const Ptr<GlmCoefs> coef()const;
+    virtual GlmCoefs & coef();
+    virtual const GlmCoefs & coef()const;
+    virtual Ptr<GlmCoefs> coef_prm();
+    virtual const Ptr<GlmCoefs> coef_prm()const;
     Ptr<UnivParams> Sigsq_prm();
     const Ptr<UnivParams> Sigsq_prm()const;
 

@@ -95,7 +95,7 @@ namespace BOOM{
       if( keep_flip(logp, logp_new)) logp = logp_new;
       else inc.flip(I);  // reject the flip, so flip back
     }
-    mod_->coef()->set_inc(inc);
+    mod_->coef().set_inc(inc);
   }
   //----------------------------------------------------------------------
   double LSB::log_model_prob(const Selector &g)const{

@@ -19,8 +19,13 @@
 #include <Models/BetaBinomialModel.hpp>
 #include <cpputil/report_error.hpp>
 #include <cpputil/math_utils.hpp>
+#include <Bmath/Bmath.hpp>
+#include <stats/moments.hpp>
 
 namespace BOOM {
+  using Rmath::trigamma;
+  using Rmath::digamma;
+
   BinomialData::BinomialData(int n, int y)
       : trials_(n), successes_(y)
   {
@@ -115,7 +120,13 @@ namespace BOOM {
       NEW(BinomialData, dp)(trials[i], successes[i]);
       add_data(dp);
     }
-    if(trials.size() > 1) mle();
+    if(trials.size() > 1) {
+      try {
+        mle();
+      } catch(...) {
+        method_of_moments();
+      }
+    }
   }
 
   BetaBinomialModel::BetaBinomialModel(const BetaBinomialModel &rhs)
@@ -130,6 +141,43 @@ namespace BOOM {
 
   double BetaBinomialModel::loglike()const{
     return loglike(a(), b());
+  }
+
+  double BetaBinomialModel::Loglike(Vec &g, Mat &h, uint nd)const{
+    double a = this->a();
+    double b = this->b();
+    if(a <= 0 || b <= 0) return BOOM::infinity(-1);
+    const std::vector<Ptr<BinomialData> > &data(dat());
+    int nobs = data.size();
+    double ans = 0;
+    if (nd > 0) {
+      g[0] = nobs * (digamma(a+b) - digamma(a));
+      g[1] = nobs * (digamma(a+b) - digamma(b));
+      if (nd > 1) {
+        h(0, 0) = nobs * (trigamma(a+b) - trigamma(a));
+        h(1, 1) = nobs * (trigamma(a+b) - trigamma(b));
+        h(0, 1) = h(1, 0) = nobs * trigamma(a+b);
+      }
+    }
+
+    for(int i = 0; i < nobs; ++i){
+      int y = data[i]->y();
+      int n = data[i]->n();
+      ans += logp(n, y, a, b);
+      if (nd > 0) {
+        double psin = digamma(a + b + n);
+        g[0] += digamma(a + y) - psin;
+        g[1] += digamma(b + n - y) - psin;
+        if (nd > 1) {
+          double trigamma_n = trigamma(a + b + n);
+          h(0, 0) += trigamma(a + y) - trigamma_n;
+          h(1, 1) += trigamma(b + n - y) - trigamma_n;
+          h(0, 1) -= trigamma_n;
+          h(1, 0) -= trigamma_n;
+        }
+      }
+    }
+    return ans;
   }
 
   double BetaBinomialModel::logp(int n, int y, double a, double b)const{
@@ -151,6 +199,34 @@ namespace BOOM {
       ans += logp(n, y, a, b);
     }
     return ans;
+  }
+
+  // Set a/(a+b) and a+b using a very rough method of moments
+  // estimator.  The estimator can fail if either the sample mean or
+  // the sample variance is zero, in which case this function will
+  // exit without changing the model.
+  void BetaBinomialModel::method_of_moments(){
+    const std::vector<Ptr<BinomialData> > &data(dat());
+    Vec p_hat;
+    p_hat.reserve(data.size());
+    for (int i = 0; i < data.size(); ++i) {
+      int trials = data[i]->trials();
+      if (trials > 0) {
+        double successes = data[i]->successes();
+        p_hat.push_back(successes / trials);
+      }
+    }
+
+    double sample_mean = mean(p_hat);
+    double sample_variance = var(p_hat);
+    if(sample_variance == 0.0 ||
+       sample_mean == 0.0 ||
+       sample_mean == 1.0) return;
+    set_prior_mean(sample_mean);
+    // v = (mean) * (1-mean) / (a+b+1)
+    // =>
+    // a+b+1 = mean * (1-mean) / v
+    set_prior_sample_size(sample_mean * (1-sample_mean) / sample_variance);
   }
 
   Ptr<UnivParams> BetaBinomialModel::SuccessPrm(){

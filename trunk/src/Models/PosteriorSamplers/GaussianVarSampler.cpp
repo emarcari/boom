@@ -43,7 +43,8 @@ namespace BOOM{
   void GVS::set_sigma_upper_limit(double max_sigma){
     if(max_sigma <= 0) {
       ostringstream err;
-      err << "GaussianVarSampler::set_sigma_upper_limit expects a positive argument, given " << max_sigma;
+      err << "GaussianVarSampler::set_sigma_upper_limit expects a positive argument, given "
+          << max_sigma;
       report_error(err.str());
     }
     upper_truncation_point_ = max_sigma;

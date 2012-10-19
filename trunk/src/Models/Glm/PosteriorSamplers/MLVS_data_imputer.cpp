@@ -28,17 +28,12 @@
 #include <distributions.hpp>
 #include <cmath>
 
-#ifdef CUDA_ENABLED
-#include <GPU/CPU_MDI_worker_MS.hpp>
-#include <GPU/GPU_MDI_worker.hpp>
-#endif
-
-namespace BOOM{ 
+namespace BOOM{
 
   typedef MlvsDataImputer MDI;
-  MDI::MlvsDataImputer(MLogitBase *Mod, Ptr<MlvsCdSuf> Suf, uint nthreads, int computeMode){
+  MDI::MlvsDataImputer(MLogitBase *Mod, Ptr<MlvsCdSuf> Suf, uint nthreads){
     if(nthreads<=1){
-      imp = new mlvs_impute::MDI_unthreaded(Mod, Suf, computeMode);
+      imp = new mlvs_impute::MDI_unthreaded(Mod, Suf);
     }else{
       imp = new mlvs_impute::MDI_threaded(Mod, Suf, nthreads);
     }
@@ -53,54 +48,12 @@ namespace BOOM{
     using boost::thread;
     typedef MDI_worker MDIW;
 
-  MDI_unthreaded::MDI_unthreaded(MLogitBase *m, Ptr<MlvsCdSuf> s, int computeMode)
+  MDI_unthreaded::MDI_unthreaded(MLogitBase *m, Ptr<MlvsCdSuf> s)
       : mlm(m),
-	suf(s)
-    {
-#ifndef CUDA_ENABLED
-    	imp = new MDI_worker(mlm, s);
-#else
-        Ptr<CPU_MDI_worker_parallel> initializable;
-    	switch (computeMode) {
-    		case ComputeMode::GPU :
-    			imp = new GPU_MDI_worker(mlm, s, true);
-    			break;    		    		    
-    		case ComputeMode::GPU_HOST_MT :
-    		    imp = new GPU_MDI_worker(mlm, s, false);
-    		    break;
-    		case ComputeMode::CPU_ORIGINAL :
-    			imp = new CPU_MDI_worker_original(mlm, s);
-    			break;
-    		case ComputeMode::CPU_NEW_FLOW :
-    		    imp = new CPU_MDI_worker_new_flow(mlm, s);
-    		    break;
-    		case ComputeMode::CPU_PARALLEL :
-    		    initializable = new CPU_MDI_worker_parallel(mlm, s);
-    		    initializable->initialize();
-    		    imp = initializable;    		  
-    		    break;
-    		case ComputeMode::CPU_NEW_PARALLEL :    		    
-    		    initializable = new CPU_MDI_worker_new_parallel(mlm, s); 
-    		    initializable->initialize();
-    		    imp = initializable;
-    		    break;    		
-    		case ComputeMode::GPU_NEW :
-    		    initializable = new GPU_MDI_worker_new_parallel(mlm, s, true);
-    		    initializable->initialize();
-    		    imp = initializable;
-    		    break;
-    		case ComputeMode::GPU_NEW_HOST_MT :
-    		    initializable = new GPU_MDI_worker_new_parallel(mlm, s, false);
-    		    initializable->initialize();
-    		    imp = initializable;
-    		    break;    		    
-    		default :
-    			imp = new MDI_worker(mlm, s);
-    			break;
-    	}    	    	
-#endif
-    }
-    void MDI_unthreaded::draw(){ (*imp)(); }
+	suf(s),
+	imp(mlm, s)
+    {}
+    void MDI_unthreaded::draw(){ imp(); }
     //======================================================================
 
     MDI_threaded::MDI_threaded(MLogitBase *m,  Ptr<MlvsCdSuf> s,
@@ -133,7 +86,7 @@ namespace BOOM{
        double u = runif() * std::numeric_limits<unsigned long>::max();
        // convert from double to long long (using llround), and then
        // from long long to unsigned long.
-       unsigned long ans(round(u)); // TODO Why is std::llround() not available?
+       unsigned long ans(llround(u));
        return ans;
      }
     //======================================================================

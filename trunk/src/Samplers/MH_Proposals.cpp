@@ -18,7 +18,6 @@
 #include <Samplers/MH_Proposals.hpp>
 #include <LinAlg/Cholesky.hpp>
 #include <distributions.hpp>
-#include <Bmath/nmath.hpp>
 namespace BOOM{
 
 

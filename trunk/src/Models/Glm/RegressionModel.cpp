@@ -191,12 +191,12 @@ namespace BOOM{
   }  // QR not built for updating
 
   void QrRegSuf::add_mixture_data(double , const Vec &, double){
-    ostringstream err;
-    err << "use NeRegSuf for regression model mixture components."
-	<< endl;
-    throw_exception<std::runtime_error>(err.str());
+    report_error("use NeRegSuf for regression model mixture components.");
   }
 
+  void QrRegSuf::add_mixture_data(double , const ConstVectorView &, double){
+    report_error("use NeRegSuf for regression model mixture components.");
+  }
 
   void QrRegSuf::refresh_qr(const std::vector<Ptr<RegressionData> > &raw_data) const {
     if(current) return;
@@ -325,6 +325,17 @@ namespace BOOM{
     return new NeRegSuf(*this);}
 
   void NeRegSuf::add_mixture_data(double y, const Vec &x, double prob){
+    if(!xtx_is_fixed_) {
+      xtx_.add_outer(x, prob, false);
+      needs_to_reflect_ = true;
+    }
+    xty_.axpy(x, y * prob);
+    sumsqy+= y * y * prob;
+    n_ += prob;
+    sumy_ += y * prob;
+  }
+
+  void NeRegSuf::add_mixture_data(double y, const ConstVectorView &x, double prob){
     if(!xtx_is_fixed_) {
       xtx_.add_outer(x, prob, false);
       needs_to_reflect_ = true;
@@ -535,14 +546,14 @@ namespace BOOM{
 
   RM * RM::clone()const{return new RegressionModel(*this); }
 
-  uint RM::nvars()const{ return coef()->nvars(); }
-  uint RM::nvars_possible()const{ return coef()->nvars_possible(); }
+  uint RM::nvars()const{ return coef().nvars(); }
+  uint RM::nvars_possible()const{ return coef().nvars_possible(); }
 
   Spd RM::xtx(const Selector &inc)const{ return suf()->xtx(inc);}
   Vec RM::xty(const Selector &inc)const{ return suf()->xty(inc);}
 
-  Spd RM::xtx()const{ return xtx( coef()->inc() ) ;}
-  Vec RM::xty()const{ return xty( coef()->inc() ) ;}
+  Spd RM::xtx()const{ return xtx( coef().inc() ) ;}
+  Vec RM::xty()const{ return xty( coef().inc() ) ;}
   double RM::yty()const{ return suf()->yty();  }
 
   Vec RM::simulate_fake_x()const{
@@ -566,15 +577,16 @@ namespace BOOM{
   }
 
   //======================================================================
-
-  Ptr<GlmCoefs> RM::coef(){return ParamPolicy::prm1();}
-  const Ptr<GlmCoefs> RM::coef()const{return ParamPolicy::prm1();}
-  void RM::set_sigsq(double s2){ Sigsq_prm()->set(s2);}
+  GlmCoefs & RM::coef(){return ParamPolicy::prm1_ref();}
+  const GlmCoefs & RM::coef()const{return ParamPolicy::prm1_ref();}
+  Ptr<GlmCoefs> RM::coef_prm(){return ParamPolicy::prm1();}
+  const Ptr<GlmCoefs> RM::coef_prm()const{return ParamPolicy::prm1();}
+  void RM::set_sigsq(double s2){ParamPolicy::prm2_ref().set(s2);}
 
   Ptr<UnivParams> RM::Sigsq_prm(){return ParamPolicy::prm2();}
   const Ptr<UnivParams> RM::Sigsq_prm()const {return ParamPolicy::prm2();}
 
-  const double & RM::sigsq()const{return Sigsq_prm()->value();}
+  double RM::sigsq()const{return ParamPolicy::prm2_ref().value();}
   double RM::sigma()const{return sqrt(sigsq());}
 
   void RM::make_X_y(Mat &X, Vec &Y)const{

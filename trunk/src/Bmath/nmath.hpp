@@ -81,7 +81,6 @@ typedef bool Rboolean;
     return true;
   }
   inline bool R_FINITE(double x){return R_finite(x);}
-  inline bool finite(double x){ return R_finite(x);} 
 
 #ifdef IEEE_754
 #define ML_ERROR(x)	/* nothing */

@@ -71,34 +71,30 @@ namespace BOOM{
 
   MMS::MvnMeanSampler(MvnModel *m, Ptr<VectorParams> Mu0, Ptr<SpdParams> Omega)
     : mvn(m),
-      mu0(Mu0),
-      omega(Omega)
+      mu_prior_(new MvnModel(Mu0, Omega))
   {}
 
-  MMS::MvnMeanSampler(MvnModel *m, Ptr<MvnModel> Pri)
+  MMS::MvnMeanSampler(MvnModel *m, Ptr<MvnBase> Pri)
     : mvn(m),
-      mu0(Pri->Mu_prm()),
-      omega(Pri->Sigma_prm())
+      mu_prior_(Pri)
   {}
 
   MMS::MvnMeanSampler(MvnModel *m, const Vec &Mu0, const Spd &Omega)
     : mvn(m),
-      mu0(new VectorParams(Mu0)),
-      omega(new SpdParams(Omega))
+      mu_prior_(new MvnModel(Mu0, Omega))
   {}
 
   double MMS::logpri()const{
-    return dmvn(mvn->mu(), mu0->value(), omega->ivar(),
-		omega->ldsi(), true);
+    return mu_prior_->logp(mvn->mu());
   }
 
   void MMS::draw(){
     Ptr<MvnSuf> s = mvn->suf();
     double n = s->n();
     const Spd &siginv(mvn->siginv());
-    const Spd &ominv(omega->ivar());
-    Spd Ivar = n*siginv + omega->ivar();
-    Vec mu = Ivar.solve(n*(siginv*s->ybar()) + ominv*mu0->value());
+    const Spd &ominv(mu_prior_->siginv());
+    Spd Ivar = n*siginv + ominv;
+    Vec mu = Ivar.solve(n*(siginv*s->ybar()) + ominv*mu_prior_->mu());
     mu = rmvn_ivar(mu, Ivar);
     mvn->set_mu(mu);
   }

@@ -21,7 +21,7 @@ namespace BOOM{
 
   namespace {
     inline void check_positive(double value, const char *name) {
-      if(!value > 0) {
+      if(!(value > 0)) {
         ostringstream err;
         err << name << " was " << value << " (must be postive) " << endl;
         report_error(err.str());

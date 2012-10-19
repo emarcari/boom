@@ -81,8 +81,11 @@ namespace BOOM{
     virtual double link_inv(double)const=0;  // logit or probit
     virtual double dlink_inv(double)const=0; // derivative of link_inv
 
-    Ptr<GlmCoefs> coef();
-    const Ptr<GlmCoefs> coef()const;
+    virtual GlmCoefs & coef();
+    virtual const GlmCoefs & coef()const;
+    virtual Ptr<GlmCoefs> coef_prm();
+    virtual const Ptr<GlmCoefs> coef_prm()const;
+
     Ptr<VectorParams> Delta_prm();
     const Ptr<VectorParams> Delta_prm()const;
 

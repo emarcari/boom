@@ -77,7 +77,7 @@ class ProgramOptions{
     if(vm.count(name)==0){
       ostringstream err;
       err << "Error!!  Required option " << name << " was not supplied." << endl;
-      throw std::runtime_error(err.str());
+      error(err.str());
     }
     return vm[name].as<T>();
   }
@@ -91,7 +91,7 @@ class ProgramOptions{
   std::vector<string> option_family_names_;
   bool processed_;
 
-
+  void error(const string &msg)const;
 };
 
 ostream & operator<<(ostream & out, const ProgramOptions &op);

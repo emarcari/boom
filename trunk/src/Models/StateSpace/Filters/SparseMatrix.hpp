@@ -44,7 +44,7 @@ namespace BOOM{
   // functionality required by the DiagonalMatrix implementation.
   class SparseMatrixBlock : private RefCounted {
    public:
-    virtual ~SparseMatrixBlock() {}
+    virtual ~SparseMatrixBlock(){}
     virtual SparseMatrixBlock *clone()const=0;
 
     virtual int nrow()const=0;
@@ -99,9 +99,12 @@ namespace BOOM{
     virtual Mat dense()const;
   };
 
+  //======================================================================
+  // A SparseMatrixBlock filled with a DenseMatrix.  I.e. a dense
+  // sub-block of a sparse matrix.
   class DenseMatrix : public SparseMatrixBlock {
    public:
-    DenseMatrix(const Mat &m) : m_(m) {}
+    DenseMatrix(const Mat &m) : m_(m){}
     DenseMatrix(const DenseMatrix &rhs)
         : SparseMatrixBlock(rhs),
           m_(rhs.m_)
@@ -120,10 +123,12 @@ namespace BOOM{
     Mat m_;
   };
 
+  //======================================================================
+  // A SparseMatrixBlock filled with a dense SpdMatrix.
   class DenseSpd : public SparseMatrixBlock {
    public:
-    DenseSpd(const Spd &m) : m_(m) {}
-    DenseSpd(const DenseSpd &rhs) : SparseMatrixBlock(rhs), m_(rhs.m_) {}
+    DenseSpd(const Spd &m) : m_(m){}
+    DenseSpd(const DenseSpd &rhs) : SparseMatrixBlock(rhs), m_(rhs.m_){}
     virtual DenseSpd * clone()const{return new DenseSpd(*this);}
     void set_matrix(const Spd &m){m_ = m;}
     int nrow()const{return m_.nrow();}
@@ -136,6 +141,57 @@ namespace BOOM{
     void add_to(SubMatrix block)const{ block += m_; }
    private:
     Spd m_;
+  };
+
+  //======================================================================
+  // A component that is is a diagonal matrix (a square matrix with
+  // zero off-diagonal components).  The diagonal elements can be
+  // changed to arbitrary values after construction.  This class is
+  // conceptutally similar to UpperLeftDiagonalMatrix, but it allows
+  // different behavior with respect to setting its elements to
+  // arbitrary values.
+  class DiagonalMatrixBlock : public SparseMatrixBlock {
+   public:
+    DiagonalMatrixBlock(int size)
+        : diagonal_elements_(size)
+    {}
+    DiagonalMatrixBlock(const Vec &diagonal_elements)
+        : diagonal_elements_(diagonal_elements)
+    {}
+    DiagonalMatrixBlock * clone()const{return new DiagonalMatrixBlock(*this);}
+    void set_elements(const Vec &v){diagonal_elements_ = v;}
+    void set_elements(const VectorView &v){diagonal_elements_ = v;}
+    void set_elements(const ConstVectorView &v){diagonal_elements_ = v;}
+    double operator[](int i)const{return diagonal_elements_[i];}
+    double & operator[](int i){return diagonal_elements_[i];}
+    virtual int nrow()const{return diagonal_elements_.size();}
+    virtual int ncol()const{return diagonal_elements_.size();}
+    virtual void multiply(VectorView lhs, const ConstVectorView &rhs)const{
+      lhs = diagonal_elements_;
+      lhs *= rhs;
+    }
+    virtual void Tmult(VectorView lhs, const ConstVectorView &rhs)const{
+      multiply(lhs, rhs);
+    }
+    virtual void multiply_inplace(VectorView x)const{x *= diagonal_elements_;}
+    virtual void matrix_multiply_inplace(SubMatrix m)const{
+      for(int i = 0; i < m.ncol(); ++i){
+        m.col(i) *= diagonal_elements_;
+      }
+    }
+
+    virtual void matrix_transpose_premultiply_inplace(SubMatrix m)const{
+      for(int i = 0; i < m.nrow(); ++i){
+        m.row(i) *= diagonal_elements_;
+      }
+    }
+
+    void add_to(SubMatrix block)const{
+      block.diag() += diagonal_elements_;
+    }
+
+   private:
+    Vec diagonal_elements_;
   };
 
   //======================================================================
@@ -170,10 +226,36 @@ namespace BOOM{
   };
 
   //======================================================================
+  // An AutoRegressionTransitionMatrix is a [p X p] matrix with top
+  // row containing a vector of autoregression parameters.  The lower
+  // left block is a [p-1 X p-1] identity matrix (i.e. a shift-down
+  // operator), and the lower right block is a [p-1 X 1] vector of
+  // 0's.
+  class AutoRegressionTransitionMatrix : public SparseMatrixBlock{
+   public:
+    AutoRegressionTransitionMatrix(Ptr<VectorParams> rho);
+    AutoRegressionTransitionMatrix(const AutoRegressionTransitionMatrix &rhs);
+    AutoRegressionTransitionMatrix * clone()const;
+
+    virtual int nrow()const;
+    virtual int ncol()const;
+    // lhs = this * rhs
+    virtual void multiply(VectorView lhs, const ConstVectorView &rhs)const;
+    virtual void Tmult(VectorView lhs, const ConstVectorView &rhs)const;
+    virtual void multiply_inplace(VectorView x)const;
+    virtual void add_to(SubMatrix block)const;
+    // virtual void matrix_multiply_inplace(SubMatrix m)const;
+    // virtual void matrix_transpose_premultiply_inplace(SubMatrix m)const;
+    virtual Mat dense()const;
+   private:
+    Ptr<VectorParams> autoregression_params_;
+  };
+
+  //======================================================================
   // The [dim x dim] identity matrix
   class IdentityMatrix : public SparseMatrixBlock{
    public:
-    IdentityMatrix(int dim) : dim_(dim) {}
+    IdentityMatrix(int dim) : dim_(dim){}
     virtual IdentityMatrix * clone()const{return new IdentityMatrix(*this);}
     virtual int nrow()const{return dim_;}
     virtual int ncol()const{return dim_;}
@@ -235,7 +317,7 @@ namespace BOOM{
   // A square matrix of all zeros.
   class ZeroMatrix : public ConstantMatrix{
    public:
-    ZeroMatrix(int dim) : ConstantMatrix(dim, 0.0) {}
+    ZeroMatrix(int dim) : ConstantMatrix(dim, 0.0){}
     virtual ZeroMatrix * clone()const{return new ZeroMatrix(*this);}
     virtual void add_to(SubMatrix block)const{}
   };
@@ -276,6 +358,7 @@ namespace BOOM{
   };
 
   //======================================================================
+  // A diagonal matrix that is zero in all but (at most) one element.
   class SingleSparseDiagonalElementMatrix : public SparseMatrixBlock{
    public:
     SingleSparseDiagonalElementMatrix(int dim, double value, int which_element)
@@ -316,18 +399,35 @@ namespace BOOM{
   };
 
   //======================================================================
+  // A diagonal matrix whose diagonal entries are zero beyond a
+  // certain point.  Diagonal entry i is the product of a
+  // BOOM::UnivParams and a constant scalar factor.  Interesting
+  // special cases that can be handled include
+  //  *) The entire diagonal is nonzero.
+  //  *) All scale factors are 1.
   class UpperLeftDiagonalMatrix : public SparseMatrixBlock {
    public:
     UpperLeftDiagonalMatrix(const std::vector<Ptr<UnivParams> > &diagonal,
                             int dim)
         : diagonal_(diagonal),
-          dim_(dim)
+          dim_(dim),
+          constant_scale_factor_(diagonal.size(), 1.0)
     {
-      if(dim < diagonal.size()) {
-        report_error("dim must be at least as large as diagonal in "
-                     "constructor for UpperLeftDiagonalMatrix");
-      }
+      check_diagonal_dimension(dim_, diagonal_);
+      check_scale_factor_dimension(diagonal, constant_scale_factor_);
     }
+
+    UpperLeftDiagonalMatrix(const std::vector<Ptr<UnivParams> > &diagonal,
+                            int dim,
+                            const Vector &scale_factor)
+        : diagonal_(diagonal),
+          dim_(dim),
+          constant_scale_factor_(scale_factor)
+    {
+      check_diagonal_dimension(dim_, diagonal_);
+      check_scale_factor_dimension(diagonal_, constant_scale_factor_);
+    }
+
     virtual UpperLeftDiagonalMatrix * clone()const {
       return new UpperLeftDiagonalMatrix(*this);}
     virtual int nrow()const{return dim_;};
@@ -335,8 +435,8 @@ namespace BOOM{
     virtual void multiply(VectorView lhs, const ConstVectorView &rhs)const{
       conforms_to_cols(rhs.size());
       conforms_to_rows(lhs.size());
-      for(int i = 0; i < diagonal_.size(); ++i) {
-        lhs[i] = rhs[i] * diagonal_[i]->value();
+      for(int i = 0; i < diagonal_.size(); ++i){
+        lhs[i] = rhs[i] * diagonal_[i]->value() * constant_scale_factor_[i];
       }
       for(int i = diagonal_.size(); i < dim_; ++i) lhs[i] = 0;
     }
@@ -345,7 +445,9 @@ namespace BOOM{
     }
     virtual void multiply_inplace(VectorView x)const{
       conforms_to_cols(x.size());
-      for(int i = 0; i < diagonal_.size(); ++i) x[i] *= diagonal_[i]->value();
+      for(int i = 0; i < diagonal_.size(); ++i){
+        x[i] *= diagonal_[i]->value() * constant_scale_factor_[i];
+      }
       for(int i = diagonal_.size(); i < dim_; ++i) x[i] = 0;
     }
 
@@ -353,12 +455,30 @@ namespace BOOM{
       conforms_to_rows(block.nrow());
       conforms_to_cols(block.ncol());
       for(int i = 0; i < diagonal_.size(); ++i){
-        block(i,i) += diagonal_[i]->value();
+        block(i,i) += diagonal_[i]->value() * constant_scale_factor_[i];
       }
     }
    private:
     std::vector<Ptr<UnivParams> > diagonal_;
     int dim_;
+    Vector constant_scale_factor_;
+
+    void check_diagonal_dimension(
+        int dim, const std::vector<Ptr<UnivParams> > &diagonal){
+      if(dim < diagonal.size()){
+        report_error("dim must be at least as large as diagonal in "
+                     "constructor for UpperLeftDiagonalMatrix");
+      }
+    }
+
+    void check_scale_factor_dimension(
+        const std::vector<Ptr<UnivParams> > &diagonal,
+        const Vec &scale_factor){
+      if(diagonal.size() != scale_factor.size()){
+        report_error("diagonal and scale_factor must be the same size in "
+                     "constructor for UpperLeftDiagonalMatrix");
+      }
+    }
   };
 
   //======================================================================
@@ -451,9 +571,6 @@ namespace BOOM{
 
   // P += RQR
   void add_block_diagonal(Spd &P, const BlockDiagonalMatrix &RQR);
-
-
-
 
 }
 #endif // BOOM_SPARSE_MATRIX_HPP_

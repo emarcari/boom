@@ -20,6 +20,7 @@
 #define BOOM_R_PRIOR_SPECIFICATION_HPP_
 
 #include <Interfaces/R/boom_r_tools.hpp>
+#include <Models/DoubleModel.hpp>
 
 namespace BOOM{
 
@@ -134,6 +135,7 @@ namespace BOOM{
       explicit MarkovPrior(SEXP prior);
       const Mat & transition_counts()const {return transition_counts_;}
       const Vec & initial_state_counts()const {return initial_state_counts_;}
+      int dim()const {return transition_counts_.nrow();}
       ostream & print(ostream &out)const;
       // Creates a Markov model with this as a prior.
       BOOM::MarkovModel * create_markov_model()const;
@@ -190,6 +192,16 @@ namespace BOOM{
       double sigma_guess_weight_;
     };
 
+    class MvnIndependentSigmaPrior {
+     public:
+      MvnIndependentSigmaPrior(SEXP prior);
+      const MvnPrior & mu_prior()const{return mu_prior_;}
+      const SdPrior & sigma_prior(int i)const{return sigma_priors_[i];}
+     private:
+      MvnPrior mu_prior_;
+      std::vector<SdPrior> sigma_priors_;
+    };
+
     inline ostream & operator<<(ostream &out, const NormalPrior &p) {
       return p.print(out); }
     inline ostream & operator<<(ostream &out, const SdPrior &p) {
@@ -202,6 +214,13 @@ namespace BOOM{
       return p.print(out); }
     inline ostream & operator<<(ostream &out, const MvnPrior &p) {
       return p.print(out); }
+
+  // Creates a pointer to a DoubleModel based on the given
+  // specification.  The specification must correspond to a BOOM model
+  // type inheriting from DoubleModel.  Legal values for specification
+  // are objects inheriting from GammaPrior, BetaPrior and
+  // NormalPrior.  More may be added later.
+  Ptr<DoubleModel> create_double_model(SEXP specification);
   }
 }
 
