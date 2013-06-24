@@ -31,8 +31,10 @@
 #include <stdexcept>
 #include <cmath>
 
+#ifndef NO_BOOST_THREADS
 #include <boost/thread.hpp>
 #include <boost/ref.hpp>
+#endif
 
 namespace BOOM{
 
@@ -271,8 +273,10 @@ namespace BOOM{
   }
 
   double HMM::impute_latent_data(){
+#ifndef NO_BOOST_THREADS
     if(nthreads()>0)
       return impute_latent_data_with_threads();
+#endif
 
     clear_client_data();
     double ans=0;
@@ -315,13 +319,17 @@ namespace BOOM{
   ////////////////////////////////////////////////////////////////////////////
 
   void HMM::set_nthreads(uint n){
+#ifndef NO_BOOST_THREADS
     workers_.clear();
     for(uint i=0; i<n; ++i){
       NEW(HmmDataImputer, imp)(this, i, n);
-      workers_.push_back(imp);}}
+      workers_.push_back(imp);}
+#endif
+}
 
   uint HMM::nthreads()const{ return workers_.size();}
 
+#ifndef NO_BOOST_THREADS
   double HMM::impute_latent_data_with_threads(){
     try{
       clear_client_data();
@@ -347,6 +355,7 @@ namespace BOOM{
     }
     return 0;
   }
+#endif
 
 
 } // ends namespace BOOM

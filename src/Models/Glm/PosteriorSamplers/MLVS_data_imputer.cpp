@@ -17,7 +17,6 @@
 */
 
 #include <Models/Glm/PosteriorSamplers/MLVS_data_imputer.hpp>
-#include <boost/thread.hpp>
 #include <boost/ref.hpp>
 
 #include <cpputil/math_utils.hpp>
@@ -28,15 +27,26 @@
 #include <distributions.hpp>
 #include <cmath>
 
+#ifndef NO_BOOST_THREAD
+#include <boost/thread.hpp>
+
+using boost::thread_group;
+using boost::thread;
+#endif
+
 namespace BOOM{
 
   typedef MlvsDataImputer MDI;
   MDI::MlvsDataImputer(MLogitBase *Mod, Ptr<MlvsCdSuf> Suf, uint nthreads){
+#ifdef NO_BOOST_THREAD
+      imp = new mlvs_impute::MDI_unthreaded(Mod, Suf);
+#else
     if(nthreads<=1){
       imp = new mlvs_impute::MDI_unthreaded(Mod, Suf);
     }else{
       imp = new mlvs_impute::MDI_threaded(Mod, Suf, nthreads);
     }
+#endif
   }
 
   void MDI::draw(){ imp->draw();}
@@ -44,8 +54,6 @@ namespace BOOM{
   //______________________________________________________________________
 
   namespace mlvs_impute{
-    using boost::thread_group;
-    using boost::thread;
     typedef MDI_worker MDIW;
 
   MDI_unthreaded::MDI_unthreaded(MLogitBase *m, Ptr<MlvsCdSuf> s)
@@ -55,7 +63,7 @@ namespace BOOM{
     {}
     void MDI_unthreaded::draw(){ imp(); }
     //======================================================================
-
+#ifndef NO_BOOST_THREAD
     MDI_threaded::MDI_threaded(MLogitBase *m,  Ptr<MlvsCdSuf> s,
 			       uint nthreads)
       : mlm(m),
@@ -80,6 +88,7 @@ namespace BOOM{
 	suf->add(crew[i]->suf());
       }
     }
+#endif
     //======================================================================
 
     unsigned long getseed(){

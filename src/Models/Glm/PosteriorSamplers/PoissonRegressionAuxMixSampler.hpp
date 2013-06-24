@@ -41,7 +41,6 @@ class PoissonRegressionAuxMixSampler : public PosteriorSampler {
 
   // Below this line are implementation details exposed for testing.
   void impute_latent_data();
-  void impute_latent_data_single_threaded();
   double draw_final_event_time(int y);
   double draw_censored_event_time(double final_event_time, double rate);
   double draw_censored_event_time_zero_case(double rate);
@@ -57,6 +56,8 @@ class PoissonRegressionAuxMixSampler : public PosteriorSampler {
                                  Ptr<MvnBase> prior,
                                  int number_of_threads,
                                  int thread_id);
+
+  void impute_latent_data_single_threaded();
 
   PoissonRegressionModel *model_;
   Ptr<MvnBase> prior_;

@@ -8,8 +8,9 @@
 #include <distributions.hpp>
 #include <distributions/Markov.hpp>
 
+#ifndef NO_BOOST_THREADS
 #include <boost/thread.hpp>
-
+#endif
 
 namespace BOOM {
 
@@ -300,6 +301,7 @@ namespace BOOM {
     return ans;
   }
   //----------------------------------------------------------------------
+#ifndef NO_BOOST_THREADS
   double NestedHmm::fwd_bkwd_with_threads(bool bayes, bool find_mode){
     clear_client_data();
     pass_params_to_workers();
@@ -313,12 +315,15 @@ namespace BOOM {
     if(find_mode) complete_data_mode(bayes);
     return loglike;
   }
+#endif
 
   //----------------------------------------------------------------------
   // One step of an EM algorithm for finding point estimates of model
   // parameters
   double NestedHmm::fwd_bkwd(bool bayes, bool find_mode){
+#ifndef NO_BOOST_THREADS
     if(!workers_.empty()) return fwd_bkwd_with_threads(bayes, find_mode);
+#endif
     clear_client_data();
     int N = Nstreams();
     fill_big_Q();
@@ -489,7 +494,9 @@ namespace BOOM {
   Ptr<Clickstream::Stream> NestedHmm::stream(int i){ return this->dat()[i]; }
   //----------------------------------------------------------------------
   double NestedHmm::impute_latent_data(){
+#ifndef NO_BOOST_THREADS
     if(workers_.size()>0) return impute_latent_data_with_threads();
+#endif
     clear_client_data();
     double ans=0;
     fill_big_Q();
@@ -503,6 +510,7 @@ namespace BOOM {
     return ans;
   }
   //----------------------------------------------------------------------
+#ifndef NO_BOOST_THREADS
   double NestedHmm::impute_latent_data_with_threads(){
     clear_client_data();
     pass_params_to_workers();
@@ -512,6 +520,7 @@ namespace BOOM {
     logpost_->set(loglike + logpri());
     return loglike;
   }
+#endif
   //----------------------------------------------------------------------
   struct ClickstreamSamplingImputer{
     Ptr<NestedHmm> mod;
@@ -524,6 +533,20 @@ namespace BOOM {
     Ptr<NestedHmm> mod;
     void operator()(){ mod->fwd_bkwd(false, false); }
   };
+  //----------------------------------------------------------------------
+#ifdef NO_BOOST_THREADS
+  void NestedHmm::set_threads(int n) {
+    // nothing needed.
+  }
+#else
+  void NestedHmm::set_threads(int n){
+    clear_workers();
+    for(int i=0; i<n; ++i){
+      NEW(NestedHmm, worker)(S2_, S1_, S0_);
+      add_worker(worker);
+    }
+    allocate_data_to_workers();
+  }
   //----------------------------------------------------------------------
   void NestedHmm::pass_params_to_workers(){
     Vec v = this->vectorize_params();
@@ -551,15 +574,6 @@ namespace BOOM {
     }
   }
   //----------------------------------------------------------------------
-  void NestedHmm::set_threads(int n){
-    clear_workers();
-    for(int i=0; i<n; ++i){
-      NEW(NestedHmm, worker)(S2_, S1_, S0_);
-      add_worker(worker);
-    }
-    allocate_data_to_workers();
-  }
-  //----------------------------------------------------------------------
   void NestedHmm::start_thread_em(){
     boost::thread_group tg;
     for(int i = 0; i<workers_.size(); ++i){
@@ -583,6 +597,7 @@ namespace BOOM {
     }
     return loglike;
   }
+#endif
   //----------------------------------------------------------------------
   void NestedHmm::clear_client_data(){
     session_model()->clear_data();
