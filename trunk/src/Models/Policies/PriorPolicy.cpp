@@ -41,4 +41,8 @@ namespace BOOM{
   void PP::clear_methods(){
     samplers_.clear();
   }
+
+  int PP::number_of_sampling_methods() const {
+    return samplers_.size();
+  }
 }

@@ -54,7 +54,7 @@ namespace BOOM{
     virtual PointProcess simulate(
         const DateTime &t0,
         const DateTime &t1,
-        std::function<Data*()> mark_generator = NullDataGenerator()) const = 0;
+        boost::function<Data*()> mark_generator = NullDataGenerator()) const = 0;
   };
 
 }

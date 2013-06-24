@@ -94,7 +94,7 @@ namespace BOOM{
       double ans(0), sum(0), xsum(0);
       for(uint i=0; i<x.size(); ++i){
         double xi= x(i);
-        if(xi>1 || xi<0) return logscale ? BOOM::infinity(-1) : 0;
+        if(xi>1 || xi<0) return logscale ? BOOM::negative_infinity() : 0;
         xsum+= xi;
 
         double nui = nu(i);
@@ -103,7 +103,7 @@ namespace BOOM{
       }
       const double eps = 1e-5;  // std::numeric_limits<double>::epsilon()
       if( fabs(xsum-1.0) >  eps ){
-        return logscale ? BOOM::infinity(-1) : 0;
+        return logscale ? BOOM::negative_infinity() : 0;
       }
       ans+= lgamma(sum);
       return logscale? ans: exp(ans);
@@ -181,7 +181,7 @@ namespace BOOM{
  	if(g){
  	  (*g)(i)= -nu(i);
  	  if(h) for(uint j=0; j<n; ++j) (*h)(i,j)= (i==j)?1:0;}}
-      return BOOM::infinity(-1);}
+      return BOOM::negative_infinity();}
 
     double ans= nobs*lgamma(sum);
     double tmp=0.0, tmp1=0.0;

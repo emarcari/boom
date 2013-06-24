@@ -22,6 +22,13 @@ namespace BOOM {
   // print_R_timestamp(1000) prints message like the following on the
   // R terminal window
   // =-=-=-=-= Iteration 1000 Wed Aug 10 10:32:01 2011 =-=-=-=-=
-  void print_R_timestamp(int iteration_number);
+  // Args:
+  //   iteration_number: The iteration number of the algorithm whose
+  //     progress is being tracked.
+  //   ping: The desired frequency of status update messages.  If ping
+  //     <= 0 then this function is a no-op.  Otherwise the update
+  //     message is printed if 'iteration_number' is a multiple of
+  //     'ping'.
+  void print_R_timestamp(int iteration_number, int ping = 1);
 }
 #endif //  BOOM_R_INTERFACE_PRINT_TIMESTAMP_HPP_

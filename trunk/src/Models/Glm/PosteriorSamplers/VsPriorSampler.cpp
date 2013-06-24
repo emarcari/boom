@@ -36,7 +36,7 @@ VSPS::VsPriorSampler(VSP *Vsp, Ptr<BetaModel> Beta)
     for(uint i=0; i<n; ++i){
       Ptr<BinomialModel> mod(vsp->variable(i)->model());
       Ptr<BetaModel> bp(Beta->clone());
-      sam = new BetaBinomialSampler(mod.dumb_ptr(), bp);
+      sam = new BetaBinomialSampler(mod.get(), bp);
       mod->set_method(sam);
       sam_.push_back(sam);
     }
@@ -58,13 +58,13 @@ VSPS::VsPriorSampler(VSP *Vsp, Ptr<BetaModel> Beta)
  	double a = N*pi_guess[i];
  	double b = N*(1-pi_guess[i]);
  	NEW(BetaModel, bp)(a,b);
- 	sam = new BetaBinomialSampler(mod.dumb_ptr(),bp);
+ 	sam = new BetaBinomialSampler(mod.get(),bp);
  	mod->set_method(sam);
  	sam_.push_back(sam);
        }else{  // N is finite
  	double p = pi_guess[i];
  	vsp->variable(i)->set_prob(p);
- 	sam = new FixedProbBinomialSampler(mod.dumb_ptr(), p);
+ 	sam = new FixedProbBinomialSampler(mod.get(), p);
  	mod->set_method(sam);
  	sam_.push_back(sam);
        }
@@ -83,9 +83,9 @@ VSPS::VsPriorSampler(VSP *Vsp, Ptr<BetaModel> Beta)
      Ptr<PosteriorSampler> sam;
      for(uint i=0; i<n; ++i){
        Ptr<BinomialModel> mod  = vsp->variable(i)->model();
-       if(forced_in_[i]) sam = new FixedProbBinomialSampler(mod.dumb_ptr(), 1.0);
-       else if(forced_out_[i]) sam = new FixedProbBinomialSampler(mod.dumb_ptr(), 0.0);
-       else sam = new BetaBinomialSampler(mod.dumb_ptr(), Beta[i]);
+       if(forced_in_[i]) sam = new FixedProbBinomialSampler(mod.get(), 1.0);
+       else if(forced_out_[i]) sam = new FixedProbBinomialSampler(mod.get(), 0.0);
+       else sam = new BetaBinomialSampler(mod.get(), Beta[i]);
        mod->set_method(sam);
        sam_.push_back(sam);
      }
@@ -107,7 +107,7 @@ VSPS::VsPriorSampler(VSP *Vsp, Ptr<BetaModel> Beta)
      Ptr<BetaBinomialSampler> sam;
      for(uint i=0; i<n; ++i){
        Ptr<BinomialModel> mod  = vsp->variable(i)->model();
-       sam = new BetaBinomialSampler(mod.dumb_ptr(), Beta[i]);
+       sam = new BetaBinomialSampler(mod.get(), Beta[i]);
        mod->set_method(sam);
        sam_.push_back(sam);
      }

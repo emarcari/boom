@@ -19,5 +19,5 @@
 #include "math_utils.hpp"
 #include <cmath>
 namespace BOOM{
-  double safelog(double x){ return x==0.0? infinity(-1) : log(x);}
+  double safelog(double x){ return x==0.0? negative_infinity() : log(x);}
 }

@@ -43,11 +43,13 @@ namespace BOOM{
     // HiddenMarkovModel constructor.  Each MixtureComponent already
     // has a prior set.  The rmixture_components argument contains
     // data, which should be extracted separately using ExtractMixtureData.
+    //
     // Args:
     //   rmixture_components:  An R list of class "CompositeMixtureComponent".
     //   state_space_size:  Size of the state space for the latent Markov chain.
     //   io_manager: A BOOM RListIoManager responsible for recording the
     //     MCMC output.
+    //
     // Returns:
     //   A vector of MixtureComponents of length state_space_size,
     //   suitable for passing to the HiddenMarkovModel constructor.  Each
@@ -59,9 +61,39 @@ namespace BOOM{
         int state_space_size,
         RListIoManager *io_manager);
 
+    // Creates an associative container of named mixture components,
+    // indexed by the component names.  Each component is replicated a
+    // number of times equal to the length of
+    // 'mixture_component_names'.  Each MixtureComponent will have its
+    // prior set, but it will contain no data..  The
+    // rmixture_components argument contains data, which should be
+    // extracted separately using ExtractMixtureData.
+    //
+    // Args:
+    //   rmixture_components: An R list of class
+    //     "CompositeMixtureComponent" containing the specification
+    //     for the mixture component to be created.
+    //   mixture_component_names: A vector of strings naming each
+    //     mixture component.
+    //   io_manager: A BOOM RListIoManager responsible for recording the
+    //     MCMC output.
+    //
+    // Returns:
+    //   A map, keyed on mixture_component_names, containing BOOM
+    //   pointers to the newly created mixture components.  each
+    //   component will have a corresponding set of entries in
+    //   io_manager.
+    std::map<std::string, Ptr<MixtureComponent> >
+    UnpackNamedCompositeMixtureComponents(
+        SEXP rmixture_components,
+        const std::vector<std::string> & mixture_component_names,
+        RListIoManager *io_manager);
+
     // Creates a single mixture component that can be used as a part
     // of a composite model.  The prior distribution and posteriorior
-    // sampler are set, but no data is assigned.
+    // sampler are set, but no data is assigned.  The names for
+    // different components are determined by appending a suffix to
+    // the base component name.
     // Args:
     //   mixture_component: An R list containing all the necessary
     //     information to create the MixtureComponent, including a string
@@ -78,6 +110,29 @@ namespace BOOM{
     BOOM::Ptr<BOOM::MixtureComponent> CreateMixtureComponent(
         BOOM::SEXP mixture_component,
         int state_number,
+        BOOM::RListIoManager *io_manager);
+
+    // Creates a single mixture component that can be used as a part
+    // of a composite model.  The prior distribution and posteriorior
+    // sampler are set, but no data is assigned.  The names for
+    // different components are determined by prefixing a string to
+    // the base component name.
+    // Args:
+    //   mixture_component: An R list containing all the necessary
+    //     information to create the MixtureComponent, including a string
+    //     named 'type'.  This object should have been created using one
+    //     of the R constructors found in ../R/create.mixture.components.R.
+    //   component_name_prefix: A string to be prepended to the name of each
+    //     mixture component's parameters.
+    //   io_manager:  An RListIoManager responsible for recording MCMC output.
+    // Returns:
+    //   A BOOM smart pointer to a MixtureComponent of the appropriate
+    //   type.  This is a factory function that determines the derived
+    //   type of the output from a string named 'type' contained in the
+    //   'mixture_component' argument.
+    BOOM::Ptr<BOOM::MixtureComponent> CreateNamedMixtureComponent(
+        BOOM::SEXP mixture_component,
+        const std::string& component_name_prefix,
         BOOM::RListIoManager *io_manager);
 
     // Extracts all the data from all the subjects in the given

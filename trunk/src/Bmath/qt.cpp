@@ -69,8 +69,8 @@ double qt(double p, double ndf, int lower_tail, int log_p)
     if (ISNAN(p) || ISNAN(ndf))
 	return p + ndf;
 #endif
-    if (p == R_DT_0) return BOOM::infinity(-1);
-    if (p == R_DT_1) return BOOM::infinity(1);
+    if (p == R_DT_0) return BOOM::negative_infinity();
+    if (p == R_DT_1) return BOOM::infinity();
     R_Q_P01_check(p);
 
     if (ndf < 1) /* FIXME:  not yet treated here */
@@ -95,7 +95,7 @@ double qt(double p, double ndf, int lower_tail, int log_p)
 	    q = sqrt(2 / (P * (2 - P)) - 2);
 	else { /* P = 0, but maybe = exp(p) ! */
 	    if(log_p) q = M_SQRT2 * exp(- .5 * R_D_Lval(p));
-	    else q = BOOM::infinity(1);
+	    else q = BOOM::infinity();
 	}
     }
     else if (ndf < 1 + eps) { /* df ~= 1  (df < 1 excluded above): Cauchy */
@@ -104,7 +104,7 @@ double qt(double p, double ndf, int lower_tail, int log_p)
 
 	else { /* P = 0, but maybe p_ = exp(p) ! */
 	    if(log_p) q = M_1_PI * exp(-R_D_Lval(p));/* cot(e) ~ 1/e */
-	    else q = BOOM::infinity(1);
+	    else q = BOOM::infinity();
 	}
     }
     else {		/*-- usual case;  including, e.g.,  df = 1.1 */

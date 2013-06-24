@@ -39,10 +39,11 @@ namespace std{
 namespace BOOM{
   inline int I(int r, int s){ return r==s ? 1:0;}
   double safelog(double x);
-  double infinity(int sgn=1);
+  double infinity();
+  double negative_infinity();
+  inline double square(double x) { return x * x; }
+  inline int square(int x) { return x * x; }
   bool finite(double x);
   using std::isnan;
 }
 #endif // BOOM_CPP_MATH_UTILS_H
-
-

@@ -28,11 +28,9 @@
 
 namespace BOOM{
   class BetaSuf: public SufstatDetails<DoubleData>{
-    double n_, sumlog_, sumlogc_;
   public:
-    // default constructors are fine
-    //   BetaSuf(const BetaSuf &);
-
+    BetaSuf();
+    BetaSuf(const BetaSuf &rhs);
     BetaSuf *clone() const;
     void clear(){n_=sumlog_ = sumlogc_ = 0.0;}
     void Update(const DoubleData &);
@@ -50,6 +48,8 @@ namespace BOOM{
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
+   private:
+    double n_, sumlog_, sumlogc_;
   };
 
   class BetaModel
@@ -60,9 +60,16 @@ namespace BOOM{
       public DiffDoubleModel
   {
   public:
-     // constructors
-    BetaModel();  // uniform model: a=b=1
-    BetaModel(double a, double b);
+    // Initialize with the prior number of "successes" (a) and
+    // "failures" (b).  This is the usual parameterization of the Beta
+    // model.
+    BetaModel(double a = 1.0, double b = 1.0);
+
+    // Initialize the Beta model with a mean and a sample size.  In
+    // the standard parameterization, the mean maps to a/(a+b) and the
+    // sample size is (a+b).
+    BetaModel(double mean, double sample_size, int);
+
     BetaModel(const BetaModel &m);
 
     BetaModel *clone() const;
@@ -78,8 +85,17 @@ namespace BOOM{
     void set_b(double beta);
     void set_params(double a, double b);
 
+    // An alternative parameterization:
+    //        mean = a/(a+b)
+    // sample_size = (a+b)
+    double mean()const;         // a/(a+b)
+    double sample_size()const;  // a+b
+    void set_sample_size(double a_plus_b);
+    void set_mean(double a_over_a_plus_b);
+
     // probability calculations
     double Loglike(Vec &, Mat &, uint) const ;
+    double log_likelihood(double a, double b)const;
     double Logp(double x, double &d1, double &d2, uint nd) const ;
     double sim() const;
   private:

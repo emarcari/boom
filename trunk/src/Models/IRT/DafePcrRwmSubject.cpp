@@ -60,7 +60,7 @@ namespace BOOM{
     double TF::operator()(const Vec &v)const{
       ParamHolder ph(v, Theta, wsp);
       double ans = pri->pdf(sub, true);
-      if(ans== BOOM::infinity(-1)) return ans;
+      if(ans== BOOM::negative_infinity()) return ans;
       ans+= sub->loglike();
       return ans;
     }

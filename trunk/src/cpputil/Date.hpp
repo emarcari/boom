@@ -41,6 +41,7 @@ namespace BOOM{
   enum calendar_format{Full,full,Abbreviations, abbreviations,numeric};
 
   MonthNames str2month(const string &m);
+  DayNames str2day(const string &d);
 
   ostream & operator<<(ostream &, const DayNames &);
 

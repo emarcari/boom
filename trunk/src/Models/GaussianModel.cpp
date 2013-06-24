@@ -131,7 +131,7 @@ namespace BOOM{
 
   double GaussianModel::Loglike(Vec &g, Mat &h, uint nd) const {
     double sigsq = this->sigsq();
-    if(sigsq<0) return BOOM::infinity(-1);
+    if(sigsq<0) return BOOM::negative_infinity();
 
     double mu = this->mu();
     const double log2pi = 1.8378770664093453;

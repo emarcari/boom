@@ -94,7 +94,7 @@ namespace BOOM {
       std::ostringstream err;
       err << "Argument " << -info <<
           " had an illegal value in the LAPACK routine for finding eigenvalues"
-          << endl;
+          << std::endl;
       report_error(err.str());
     } else if (info > 0) {
       report_error("Eigenvalue computation failed for numerical reasons "
@@ -119,10 +119,10 @@ namespace BOOM {
            &info);                        // exit status.  0 == success
 
     if (info < 0) {
-      ostringstream err;
+      std::ostringstream err;
       err << "Argument " << -info <<
           " had an illegal value in the LAPACK routine for finding eigenvalues"
-          << endl;
+          << std::endl;
       report_error(err.str());
     } else if (info > 0) {
       report_error("Eigenvalue computation failed for numerical reasons "

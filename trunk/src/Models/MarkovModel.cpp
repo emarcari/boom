@@ -425,7 +425,7 @@ namespace BOOM{
 
 
   inline void BadMarkovData(){
-    throw_exception<std::runtime_error>("Bad data type passed to MarkovModel::pdf");
+    report_error("Bad data type passed to MarkovModel::pdf");
   }
 
   double MarkovModel::pdf(Ptr<Data> dp, bool logscale) const{

@@ -56,7 +56,7 @@ namespace BOOM{
     update_raw(d.value());
   }
 
-  void IndependentMvnSuf::update_raw(const Vec &y){
+  void IndependentMvnSuf::update_raw(const Vector &y){
     n_ += 1;
     sum_ += y;
     for(int i = 0; i < y.size(); ++i){
@@ -64,7 +64,7 @@ namespace BOOM{
     }
   }
 
-  void IndependentMvnSuf::add_mixture_data(const Vec &v, double prob) {
+  void IndependentMvnSuf::add_mixture_data(const Vector &v, double prob) {
     n_ += prob;
     sum_.axpy(v, prob);
     for(int i = 0; i < v.size(); ++i){
@@ -111,15 +111,16 @@ namespace BOOM{
     sumsq_ += s.sumsq_;
   }
 
-  Vec IndependentMvnSuf::vectorize(bool)const{
-    Vec ans(n_);
+  Vector IndependentMvnSuf::vectorize(bool)const{
+    Vector ans(n_);
     ans.reserve(3 * n_.size());
     ans.concat(sum_);
     ans.concat(sumsq_);
     return(ans);
   }
 
-  Vec::const_iterator IndependentMvnSuf::unvectorize(Vec::const_iterator &v, bool){
+  Vec::const_iterator IndependentMvnSuf::unvectorize(
+      Vec::const_iterator &v, bool){
     int dim = sum_.size();
     n_.assign(v, v+dim);
     v += dim;
@@ -130,7 +131,8 @@ namespace BOOM{
     return v;
   }
 
-  Vec::const_iterator IndependentMvnSuf::unvectorize(const Vec &v, bool minimal){
+  Vec::const_iterator IndependentMvnSuf::unvectorize(
+      const Vector &v, bool minimal){
     Vec::const_iterator vi = v.begin();
     return unvectorize(vi, minimal);
   }
@@ -148,7 +150,10 @@ namespace BOOM{
   IndependentMvnModel::IndependentMvnModel(int dim)
       : ParamPolicy(new VectorParams(dim, 0.0),
                     new VectorParams(dim, 1.0)),
-        SufstatDataPolicy(new IndependentMvnSuf(dim))
+        SufstatDataPolicy(new IndependentMvnSuf(dim)),
+        sigma_scratch_(dim),
+        g_(dim),
+        h_(dim, dim)
   {}
 
 
@@ -157,13 +162,17 @@ namespace BOOM{
         MvnBase(rhs),
         ParamPolicy(rhs),
         DataPolicy(rhs),
-        PriorPolicy(rhs)
+        PriorPolicy(rhs),
+        sigma_scratch_(rhs.dim()),
+        g_(rhs.dim()),
+        h_(rhs.dim(), rhs.dim())
   {}
 
   IndependentMvnModel * IndependentMvnModel::clone()const{
     return new IndependentMvnModel(*this);}
 
-  double IndependentMvnModel::Logp(const Vec &x, Vec &g, Mat &h, uint nderivs)const{
+  double IndependentMvnModel::Logp(
+      const Vector &x, Vector &g, Mat &h, uint nderivs)const{
     int d = x.size();
     double qform = 0;
     double ldsi = 0;
@@ -187,7 +196,7 @@ namespace BOOM{
     return 0.5 * (ldsi - qform - d * log2pi);
   }
 
-  const Vec & IndependentMvnModel::mu()const{
+  const Vector & IndependentMvnModel::mu()const{
     return Mu_ref().value();
   }
 
@@ -203,15 +212,15 @@ namespace BOOM{
 
   double IndependentMvnModel::ldsi()const{
     double ans = 0;
-    const Vec &sigsq(this->sigsq());
+    const Vector &sigsq(this->sigsq());
     for(int i = 0; i < length(mu()); ++i){
       ans -= log(sigsq[i]);
     }
     return ans;
   }
 
-  Vec IndependentMvnModel::sim()const{
-    Vec ans(mu());
+  Vector IndependentMvnModel::sim()const{
+    Vector ans(mu());
     for(int i = 0; i < ans.size(); ++i){
       ans += rnorm(0, sigma(i));
     }
@@ -227,7 +236,7 @@ namespace BOOM{
   const VectorParams & IndependentMvnModel::Sigsq_ref()const{return prm2_ref();}
 
 
-  const Vec & IndependentMvnModel::sigsq()const{
+  const Vector & IndependentMvnModel::sigsq()const{
     return Sigsq_ref().value();
   }
 
@@ -243,12 +252,20 @@ namespace BOOM{
     return sqrt(sigsq(i));
   }
 
-  void IndependentMvnModel::set_mu(const Vec &mu){
+  void IndependentMvnModel::set_mu(const Vector &mu){
     Mu_prm()->set(mu);
   }
 
-  void IndependentMvnModel::set_sigsq(const Vec &sigsq){
+  void IndependentMvnModel::set_mu_element(double value, int position){
+    Mu_prm()->set_element(value, position);
+  }
+
+  void IndependentMvnModel::set_sigsq(const Vector &sigsq){
     Sigsq_prm()->set(sigsq);
+  }
+
+  void IndependentMvnModel::set_sigsq_element(double sigsq, int position){
+    Sigsq_prm()->set_element(sigsq, position);
   }
 
   double IndependentMvnModel::pdf(const Data* dp, bool logscale)const{

@@ -114,7 +114,7 @@ namespace {
       df += n;
       double mu_hat = (n * ybar + kappa * mu0) / (n + kappa);
       ss += (n-1)*v  +  n * kappa * pow(ybar - mu0, 2) / (n + kappa);
-      if (sigma_upper_limit_[i] == infinity(1)) {
+      if (sigma_upper_limit_[i] == infinity()) {
         sigsq[i] = 1.0/rgamma_mt(rng(), df/2, ss/2);
       } else {
         sigsq[i] = 1.0 / rtrun_gamma_mt(rng(), df/2, ss/2,

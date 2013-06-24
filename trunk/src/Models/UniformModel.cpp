@@ -25,8 +25,8 @@ namespace BOOM{
 
   typedef UniformSuf US;
   US::UniformSuf()
-    : lo_(BOOM::infinity(1)),
-      hi_(BOOM::infinity(-1))
+    : lo_(BOOM::infinity()),
+      hi_(BOOM::negative_infinity())
   {}
 
   US::UniformSuf(double a, double b)
@@ -57,16 +57,16 @@ namespace BOOM{
   US * US::clone()const{return new US(*this);}
 
   void US::clear(){
-    lo_ = BOOM::infinity(1);
-    hi_ = BOOM::infinity(-1);
+    lo_ = BOOM::infinity();
+    hi_ = BOOM::negative_infinity();
   }
 
-  void US::update_raw_data(double x){
+  void US::update_raw(double x){
     lo_ = x < lo_? x:lo_;
     hi_ = x > hi_? x:hi_;
   }
 
-  void US::Update(const DoubleData &d){ update_raw_data(d.value()); }
+  void US::Update(const DoubleData &d){ update_raw(d.value()); }
 
   double US::lo()const{return lo_;}
   double US::hi()const{return hi_;}
@@ -176,14 +176,14 @@ namespace BOOM{
     if(nd>0){
       g=0;
       if(nd>1) h=0; }
-    return outside ? BOOM::infinity(-1) : log(nc());
+    return outside ? BOOM::negative_infinity() : log(nc());
   }
 
   double UM::loglike()const{
     bool hi_ok = suf()->hi()  <= this->hi();
     bool lo_ok = suf()->lo()  >= this->lo();
     if(hi_ok && lo_ok) return log(nc());
-    return BOOM::infinity(-1);
+    return BOOM::negative_infinity();
   }
 
   void UM::mle(){

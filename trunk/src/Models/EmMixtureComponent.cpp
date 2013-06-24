@@ -15,17 +15,15 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
-#include "EmMixtureComponent.hpp"
-#include <stdexcept>
+#include <Models/EmMixtureComponent.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
   typedef EmMixtureComponent EM;
 
   void EM::find_posterior_mode(){
-    ostringstream err;
-    err << "you've used a model with no 'find_posterior_mode' method defined"
-	<< endl;
-    throw_exception<std::runtime_error>(err.str());
+    report_error("You've used a model with no 'find_posterior_mode' "
+                 "method defined.");
   }
 
 }

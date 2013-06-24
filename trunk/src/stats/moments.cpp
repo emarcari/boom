@@ -82,6 +82,39 @@ namespace BOOM{
     return sqrt(var(x));
   }
 
+  double cor(const std::vector<double> &x, const std::vector<double> &y) {
+    int n = x.size();
+    if (y.size() != n) {
+      report_error("x and y must be the same size in cor(x, y).");
+    }
+    if (n <= 1) return 0;
+    double cov = 0;
+    double xbar = mean(x);
+    double ybar = mean(y);
+    double ssx = 0;
+    double ssy = 0;
+    for (int i = 0; i < n; ++i) {
+      double xx = x[i] - xbar;
+      double yy = y[i] - ybar;
+      cov += xx * yy;
+      ssx += xx * xx;
+      ssy += yy * yy;
+    }
+    if ((ssx == 0) && (ssy == 0)) {
+      return 1.0;  // Correlation between two constants is 1.
+    } else if (cov == 0) {
+      return 0;
+    } else if ((ssx == 0) || (ssy == 0)) {
+      return 0;  // Correlation of a non-constant with a constant
+                 // should be zero.
+    } else {
+      cov /= (n-1);
+      double sdx = sqrt(ssx / (n-1));
+      double sdy = sqrt(ssy / (n-1));
+      return cov / (sdx * sdy);
+    }
+  }
+
   double mean(const std::vector<double> &x, double missing){
     if(x.size() == 0) return 0.0;
     double total = 0;

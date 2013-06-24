@@ -35,7 +35,7 @@ namespace BOOM{
       bool coarse_observation_observed,
       bool contains_end,
       double fraction_of_value_in_initial_period)
-      : x_(new RegressionData(infinity(-1), x)),
+      : x_(new RegressionData(negative_infinity(), x)),
         coarse_observation_(coarse_observation),
         coarse_observation_observed_(coarse_observation_observed),
         contains_end_(contains_end),

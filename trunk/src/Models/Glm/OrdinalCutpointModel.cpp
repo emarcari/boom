@@ -35,11 +35,11 @@ namespace BOOM{
     if(m <= maxscore && m>1){
       return v(m-2);
     }else if(m==0){
-      return BOOM::infinity(-1);
+      return BOOM::negative_infinity();
      }else if(m==1){
        return 0.0;
      }else if(m==maxscore+1){
-       return BOOM::infinity(1);
+       return BOOM::infinity();
      }
     throw_exception<std::runtime_error>("m out of bounds in OrdinalCutpointModel::delta");
     return 0.0;
@@ -175,11 +175,11 @@ namespace BOOM{
 //     if(m <= maxscore() && m>1){
 //       return v(m-2);
 //     }else if(m==0){
-//       return BOOM::infinity(-1);
+//       return BOOM::negative_infinity();
 //      }else if(m==1){
 //        return 0.0;
 //      }else if(m==maxscore()+1){
-//        return BOOM::infinity(1);
+//        return BOOM::infinity();
 //      }
 //     throw_exception<std::runtime_error>("m out of bounds in OrdinalCutpointModel::delta");
 //     return 0.0;
@@ -253,10 +253,10 @@ namespace BOOM{
 	  mscr(d.size()+1)
       {}
       double operator()(uint i){
-	if(i<=0) return BOOM::infinity(-1);
+	if(i<=0) return BOOM::negative_infinity();
 	else if(i==1) return 0.0;
 	else if(i<=mscr) return d[i-2];
-	return BOOM::infinity(1);
+	return BOOM::infinity();
       }
     };//------- end of vdelta local class ------
 
@@ -378,7 +378,7 @@ namespace BOOM{
 
   double OCDLL::operator()(const Vec & delta)const{
     bool ok = m_->check_delta(delta);
-    if(!ok) return BOOM::infinity(-1);
+    if(!ok) return BOOM::negative_infinity();
     const Vec & beta(m_->Beta());
     return m_->log_likelihood(beta, delta);
   }

@@ -37,8 +37,11 @@
         with mean mu, sd=sigma.  The density is truncated such that z > a
         if gt==1 and z<a if gt==0. */
      double x;
-     if(gt==1) x=mu+sigma*trun_norm_mt(rng, (a-mu)/sigma);
-     else x=mu-sigma*trun_norm_mt(rng, (mu-a)/sigma);
+     if (gt) {
+       x = mu + sigma * trun_norm_mt(rng, (a - mu) / sigma);
+     } else {
+       x = mu - sigma * trun_norm_mt(rng, (mu - a) / sigma);
+     }
      return x;
    }
    /*======================================================================*/
@@ -59,8 +62,8 @@
  		      bool logscale){
      /* returns p(x | lo < x < hi) where x~N(mu, sig^2) */
      double ans, nc;
-     if(hi<lo) ans = infinity(-1);
-     else if(hi==lo) ans = (x==hi? infinity(1) : infinity(-1));
+     if(hi<lo) ans = negative_infinity();
+     else if(hi==lo) ans = (x==hi? infinity() : negative_infinity());
      else{
        ans = dnorm(x, mu, sig, 1);  /* answer on log scale */
        nc = pnorm(hi, mu, sig, 1, 0) - pnorm(lo, mu, sig, 1, 0);
@@ -94,11 +97,11 @@
   //----------------------------------------------------------------------
   std::ostream & TnSampler::print(std::ostream & out)const{
     using std::endl;
-    out << "x     = " << x << endl
-        << "logf  = " << logf << endl
-        << "dlogf = " << dlogf << endl
-        << "knots = " << knots << endl
-        << "cdf   = " <<cdf << endl << endl;
+    out << "x     = " << x << std::endl
+        << "logf  = " << logf << std::endl
+        << "dlogf = " << dlogf << std::endl
+        << "knots = " << knots << std::endl
+        << "cdf   = " <<cdf << std::endl << std::endl;
     return out;
   }
   //----------------------------------------------------------------------
@@ -112,7 +115,7 @@
     // else update_cdf();
     update_cdf();
   }
-//----------------------------------------------------------------------
+  //----------------------------------------------------------------------
   void TnSampler::add_point(double z){
     //  cout << "about to add a point: " << endl;
     //  this->print(cout);
@@ -135,7 +138,7 @@
     refresh_knots();
     update_cdf();
   }
-//----------------------------------------------------------------------
+  //----------------------------------------------------------------------
   void TnSampler::refresh_knots(){
     // wasteful!  should only update a knot between the x's, but
     // adding an x will change two knots
@@ -203,46 +206,77 @@
     double yk = logf[k];
     return yk + dk*(z-xk);
   }
- //----------------------------------------------------------------------
- double TnSampler::draw(RNG & rng){
+  //----------------------------------------------------------------------
+  double TnSampler::draw(RNG & rng){
 
-  double u= runif_mt(rng, 0, cdf.back());
-  IT pos = std::lower_bound(cdf.begin(), cdf.end(), u);
-  uint k = pos - cdf.begin();
-  double cand;
-  if(k+1 == cdf.size()){
-    // one sided draw..................
-    cand = knots.back() + rexp_mt(rng, -1*dlogf.back());
-  }else{
-    // draw from the doubly truncated exponential distribution
-    double lo = knots[k];
-    double hi = knots[k+1];
-    double lam = -1*dlogf[k];
-    cand = rtrun_exp_mt(rng, lam, lo, hi);
+    double u= runif_mt(rng, 0, cdf.back());
+    IT pos = std::lower_bound(cdf.begin(), cdf.end(), u);
+    uint k = pos - cdf.begin();
+    double cand;
+    if(k+1 == cdf.size()){
+      // one sided draw..................
+      cand = knots.back() + rexp_mt(rng, -1*dlogf.back());
+    }else{
+      // draw from the doubly truncated exponential distribution
+      double lo = knots[k];
+      double hi = knots[k+1];
+      double lam = -1*dlogf[k];
+      cand = rtrun_exp_mt(rng, lam, lo, hi);
+    }
+    double target = f(cand);
+    double hull = h(cand, k);
+    double logu = hull - rexp_mt(rng, 1);
+    if(logu < target) return cand;
+    add_point(cand);
+    return draw(rng);
   }
-  double target = f(cand);
-  double hull = h(cand, k);
-  double logu = hull - rexp_mt(rng, 1);
-  if(logu < target) return cand;
-  add_point(cand);
-  return draw(rng);
-}
-//----------------------------------------------------------------------
- double trun_norm_mt(RNG & rng, double a){
-   if(a <= 0){  // expect 1 rejection, with sd < sqrt(2)
-     while(1){
-       double x = rnorm_mt(rng, 0,1);
-       if(x>a) return x;}}
+  //----------------------------------------------------------------------
+  double trun_norm_mt(RNG & rng, double a){
+    if(a <= 0){  // expect 1 rejection, with sd < sqrt(2)
+      while(1){
+        double x = rnorm_mt(rng, 0,1);
+        if(x>a) return x;}}
 
-   TnSampler sam(a);
-   return sam.draw(rng);
- }
+    TnSampler sam(a);
+    return sam.draw(rng);
+  }
 
- //======================================================================
+
+  namespace {
+    // Compute either phi(alpha) / Phi(alpha) (if lower_tail is true),
+    // or phi(alpha) / (1 - Phi(alpha)) otherwise.  In either case the
+    // computation is done on the log scale and then exponentiated to
+    // facilitate cancellation.  Here phi() is the standard normal
+    // density, and Phi is the standard normal cumulative distribution
+    // function.
+    inline double lambda(double alpha, bool lower_tail) {
+      double numerator = dnorm(alpha, 0, 1, true);
+      double denominator = pnorm(alpha, 0, 1, lower_tail, true);
+      return exp(numerator - denominator);
+    }
+  }
+
+  void trun_norm_moments(double mu, double sigma,
+                         double cutpoint, bool positive_support,
+                         double *mean, double *variance) {
+    double sigsq = sigma * sigma;
+    double alpha = (cutpoint - mu) / sigma;
+    double lam = lambda(alpha, !positive_support);
+    if (positive_support) {
+      double delta = lam * (lam - alpha);
+      *mean = mu + sigma * lam;
+      *variance = sigsq * (1 - delta);
+    } else {
+      *mean = mu - sigma * lam;
+      *variance = sigsq * (1 - alpha * lam - (lam * lam));
+    }
+  }
+
+  //======================================================================
 
   double rtrun_norm_2_mt(RNG & rng, double mu, double sigma, double lo, double hi){
-    if(hi >= BOOM::infinity(1)) return rtrun_norm_mt(rng, mu, sigma, lo, true);
-    if(lo <= BOOM::infinity(-1)) return rtrun_norm_mt(rng, mu, sigma, hi, false);
+    if(hi >= BOOM::infinity()) return rtrun_norm_mt(rng, mu, sigma, lo, true);
+    if(lo <= BOOM::negative_infinity()) return rtrun_norm_mt(rng, mu, sigma, hi, false);
 
     if(lo < mu && hi > mu){
       if( (hi - lo)/sigma > .5){
@@ -279,14 +313,14 @@
       double y = sam.draw(rng);
       return y * sigma + mu;
     } catch (std::exception &e) {
-      ostringstream err;
-      err << "rtrun_norm_2_mt caught an exception when called with arguments" << endl
-          << "    mu = " << mu << endl
-          << " sigma = " << sigma << endl
-          << "    lo = " << lo << endl
-          << "    hi = " << hi << endl
-          << "The error message of the captured exception is " << endl
-          << e.what() << endl;
+      std::ostringstream err;
+      err << "rtrun_norm_2_mt caught an exception when called with arguments" << std::endl
+          << "    mu = " << mu << std::endl
+          << " sigma = " << sigma << std::endl
+          << "    lo = " << lo << std::endl
+          << "    hi = " << hi << std::endl
+          << "The error message of the captured exception is " << std::endl
+          << e.what() << std::endl;
       report_error(err.str());
     } catch (...) {
       report_error("caught unknown exception in rtrun_norm_2_mt");

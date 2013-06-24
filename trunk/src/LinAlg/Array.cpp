@@ -56,7 +56,7 @@ namespace BOOM{
       template <int N>
           std::vector<int> create_index(int first, ...) {
         va_list ap;
-        vector<int> ans(N);
+        std::vector<int> ans(N);
         ans[0] = first;
 
         va_start(ap, first);

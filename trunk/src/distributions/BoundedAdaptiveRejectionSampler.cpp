@@ -32,12 +32,12 @@ namespace BOOM{
         knots(1,a)
   {
     if(dlogf[0] >=0){
-      ostringstream err;
+      std::ostringstream err;
       err << "lower bound of " << a << " must be to the right of the mode of "
-          << "logf in BoundedAdaptiveRejectionSampler" << endl
-          << "a        = " << a << endl
-          << "logf(a)  = " << logf[0] << endl
-          << "dlogf(a) = " << dlogf[0] << endl;
+          << "logf in BoundedAdaptiveRejectionSampler" << std::endl
+          << "a        = " << a << std::endl
+          << "logf(a)  = " << logf[0] << std::endl
+          << "dlogf(a) = " << dlogf[0] << std::endl;
       throw_exception<std::runtime_error>(err.str());
     }
     update_cdf();

@@ -121,11 +121,11 @@ namespace BOOM{
 
   double PSSS::log_model_prob(const Selector & g){
     double num = gamma_prior_->logp(g);
-    if(num==BOOM::infinity(-1)) return num;
+    if(num==BOOM::negative_infinity()) return num;
 
     Ominv_ = g.select(beta_prior_->siginv());
     num += .5*Ominv_.logdet();
-    if(num == BOOM::infinity(-1)) return num;
+    if(num == BOOM::negative_infinity()) return num;
 
     Vec mu = g.select(beta_prior_->mu());
     Vec Ominv_mu = Ominv_ * mu;
@@ -134,7 +134,7 @@ namespace BOOM{
     bool ok=true;
     iV_tilde_ = Ominv_ + g.select(xtx());
     Mat L = iV_tilde_.chol(ok);
-    if(!ok)  return BOOM::infinity(-1);
+    if(!ok)  return BOOM::negative_infinity();
     double denom = sum(log(L.diag()));  // = .5 log |Ominv_|
 
     Vec S = g.select(xtz()) + Ominv_mu;

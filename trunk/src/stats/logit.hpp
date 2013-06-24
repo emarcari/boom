@@ -21,18 +21,20 @@
 
 #include <distributions/Rmath_dist.hpp>
 #include <cmath>
+#include <LinAlg/Vector.hpp>
+
 namespace BOOM{
   inline double logit(double x){ return qlogis(x);}
   inline double logit_inv(double x){ return plogis(x);}
 
-  inline Vec logit(const Vec &x){
-    Vec ans(x);
+  inline Vector logit(const Vector &x){
+    Vector ans(x);
     for(int i = 0; i < ans.size(); ++i) ans[i] = logit(ans[i]);
     return ans;
   }
 
-  inline Vec logit_inv(const Vec &x){
-    Vec ans(x);
+  inline Vector logit_inv(const Vector &x){
+    Vector ans(x);
     for(int i = 0; i < ans.size(); ++i) ans[i] = logit_inv(ans[i]);
     return ans;
   }

@@ -59,7 +59,7 @@ namespace BOOM {
       double ss = 2 * priors_[i]->beta() + sumsq(i, i);
       if (upper_sigma_truncation_point_[i] == 0.0) {
         siginv(i, i) = 0.0;
-      } else if(upper_sigma_truncation_point_[i] == infinity(1)) {
+      } else if(upper_sigma_truncation_point_[i] == infinity()) {
         siginv(i, i) = rgamma_mt(rng(), df/2, ss/2);
       } else {
         double cutpoint = 1.0/pow(upper_sigma_truncation_point_[i], 2);

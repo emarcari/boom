@@ -65,8 +65,8 @@ namespace BOOM{
       : public SufstatDataPolicy<DoubleData, GaussianSuf>,
         public DiffDoubleModel,    // promises  Logp(x,g,h,nd);
         public NumOptModel,        // promises Loglike(g,h,nd), and mle();
-        public EmMixtureComponent  // promises add_mixture_data, and find_posterior_mode()
-  {
+        public EmMixtureComponent  // promises add_mixture_data,
+  {                                //   and find_posterior_mode()
    public:
     GaussianModelBase();
     GaussianModelBase(const std::vector<double> &y);

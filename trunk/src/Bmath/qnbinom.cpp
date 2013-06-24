@@ -73,7 +73,7 @@ double qnbinom(double p, double n, double pr, int lower_tail, int log_p)
     if (pr <= 0 || pr >= 1 || n <= 0) ML_ERR_return_NAN;
 
     if (p == R_DT_0) return 0;
-    if (p == R_DT_1) return BOOM::infinity(1);
+    if (p == R_DT_1) return BOOM::infinity();
     Q = 1.0 / pr;
     P = (1.0 - pr) * Q;
     mu = n * P;
@@ -85,10 +85,10 @@ double qnbinom(double p, double n, double pr, int lower_tail, int log_p)
     if(!lower_tail || log_p) {
 	p = R_DT_qIv(p); /* need check again (cancellation!): */
 	if (p == R_DT_0) return 0;
-	if (p == R_DT_1) return BOOM::infinity(1);
+	if (p == R_DT_1) return BOOM::infinity();
     }
     /* temporary hack --- FIXME --- */
-    if (p + 1.01*numeric_limits<double>::epsilon() >= 1.) return BOOM::infinity(1);
+    if (p + 1.01*numeric_limits<double>::epsilon() >= 1.) return BOOM::infinity();
 
     /* y := approx.value (Cornish-Fisher expansion) :  */
     z = qnorm(p, 0., 1., /*lower_tail*/true, /*log_p*/false);

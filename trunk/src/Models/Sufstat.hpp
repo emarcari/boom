@@ -18,12 +18,14 @@
 #ifndef BOOM_SUFSTAT_TYPES_HPP
 #define BOOM_SUFSTAT_TYPES_HPP
 
+#include <string>
+
 #include <LinAlg/Types.hpp>
 #include <LinAlg/Vector.hpp>
 #include <cpputil/Ptr.hpp>
-#include <uint.hpp>
 #include <cpputil/RefCounted.hpp>
-#include <string>
+#include <cpputil/report_error.hpp>
+#include <uint.hpp>
 
 namespace BOOM{
   class Data;
@@ -36,12 +38,12 @@ namespace BOOM{
     virtual Sufstat * clone() const =0;
     virtual Sufstat * abstract_combine(Sufstat *rhs)=0;
 
-    virtual Vec vectorize(bool minimal=true)const=0;
+    virtual Vector vectorize(bool minimal=true)const=0;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true)=0;
-    virtual Vec::const_iterator unvectorize(const Vec &v,
+    virtual Vec::const_iterator unvectorize(const Vector &v,
 					    bool minimal=true)=0;
-    virtual ostream & print(ostream &)const = 0;
+    virtual std::ostream & print(std::ostream &)const = 0;
   private:
     RefCounted rc_;
     void up_count(){rc_.up_count();}
@@ -49,15 +51,15 @@ namespace BOOM{
     unsigned int ref_count(){return rc_.ref_count();}
     friend void intrusive_ptr_add_ref(Sufstat *s);
     friend void intrusive_ptr_release(Sufstat *s);
-   protected:
-    void error(const std::string &s)const;
   };
 
-  inline ostream & operator<<(ostream &out, const Sufstat &s){
+  inline std::ostream & operator<<(std::ostream &out, const Sufstat &s){
     return s.print(out);}
 
-  Vec vectorize(const std::vector<Ptr<Sufstat> > &v, bool minimal=true);
-  void unvectorize(std::vector<Ptr<Sufstat> > &, const Vec &v, bool minimal=true);
+  Vector vectorize(const std::vector<Ptr<Sufstat> > &v, bool minimal=true);
+  void unvectorize(std::vector<Ptr<Sufstat> > &,
+                   const Vector &v,
+                   bool minimal=true);
 
   void intrusive_ptr_add_ref(Sufstat *s);
   void intrusive_ptr_release(Sufstat *s);
@@ -110,7 +112,8 @@ namespace BOOM{
         update_series(*ds);
         return;
       }
-      error("TimeSeriesSfustatDetails::update failed due to unknown type");
+      report_error("TimeSeriesSfustatDetails::update failed due to "
+                   "unknown type");
     }
     virtual void update(Ptr<DataPointType> dp){Update(*dp);}
 

@@ -180,12 +180,12 @@ namespace BOOM{
     int k=dim();
     const Spd  &SS(sumsq());
     double nu = this->nu();
-    if(nu <k) return infinity(-1);
+    if(nu <k) return negative_infinity();
     double ldSS = 0;
 
     bool ok=true;
     ldSS = SS.logdet(ok);
-    if(!ok) return infinity(-1);
+    if(!ok) return negative_infinity();
 
     double n = suf()->n();
     double sumldw = suf()->sumldw();

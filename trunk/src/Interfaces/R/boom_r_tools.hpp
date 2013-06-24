@@ -60,6 +60,10 @@ namespace BOOM{
   // Returns 'list' with the new and improved set of 'list_names'.
   SEXP setListNames(SEXP list, const std::vector<std::string> &list_names);
 
+  // Returns the levels attribute of the factor argument.  Throws an
+  // exception if the argument is not a factor.
+  std::vector<std::string> GetFactorLevels(SEXP factor);
+
   // Converts an R character vector into a c++ vector of strings.  If
   // the object is NULL an empty string vector is returned.  Otherwise
   // if the object is not a character vector an exception is thrown.
@@ -90,6 +94,10 @@ namespace BOOM{
   // matrix then R's error() function will be called.
   std::pair<int, int> GetMatrixDimensions(SEXP matrix);
 
+  // Returns a vector of dimensions for an R multi-way array.  If the
+  // argument is not an array, then an exception will be thrown.
+  std::vector<int> GetArrayDimensions(SEXP array);
+
   // If 'my_list' contains a character vector named 'name' then the
   // first element of that character vector is returned.  If not then
   // R's 'error()' function is called.
@@ -116,6 +124,8 @@ namespace BOOM{
   // direction because we know the type of the input.
   SEXP ToRVector(const Vec &boom_vector);
   SEXP ToRMatrix(const Mat &boom_matrix);
+
+  std::string ToString(SEXP r_string);
 }
 
 #endif  // BOOM_R_TOOLS_HPP_

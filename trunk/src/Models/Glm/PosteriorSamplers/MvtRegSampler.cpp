@@ -29,7 +29,7 @@ namespace BOOM{
 
   struct Logp_nu{
     Logp_nu( Ptr<ScaledChisqModel> Numod, Ptr<DoubleModel> Pri)
-      : loglike(Numod.dumb_ptr() ), pri(Pri) {}
+      : loglike(Numod.get() ), pri(Pri) {}
     double operator()(const Vec &x)const{ return loglike(x) + pri->logp(x[0]); }
     LoglikeTF loglike;
     Ptr<DoubleModel> pri;
@@ -44,7 +44,7 @@ namespace BOOM{
       nu_prior(Nu_prior)
   {
     reg_model->set_params(mod->Beta_prm(), mod->Sigma_prm());
-    reg_sampler = new MvRegSampler(reg_model.dumb_ptr(), B_guess, prior_nobs, prior_df, Sigma_guess);
+    reg_sampler = new MvRegSampler(reg_model.get(), B_guess, prior_nobs, prior_df, Sigma_guess);
     nu_model->set_prm(mod->Nu_prm());
     Logp_nu nu_logpost(nu_model, nu_prior);
     nu_sampler = new SliceSampler(nu_logpost, true);
@@ -80,7 +80,7 @@ namespace BOOM{
       Ptr<MvRegData> dp = dat[i];
       w = impute_w(dp);
       rs->update_raw_data(dp->y(), dp->x(), w);
-      gs->update_raw_data(w);
+      gs->update_raw(w);
     }
   }
 

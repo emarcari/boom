@@ -43,6 +43,11 @@ namespace BOOM{
 
   BS * BS::clone()const{return new BS(*this);}
 
+  void BS::set(double sum, double observation_count){
+    nobs_ = observation_count;
+    sum_ = sum;
+  }
+
   void BS::clear(){ nobs_ = sum_ = 0;}
 
   void BS::Update(const IntData &d){
@@ -133,7 +138,16 @@ namespace BOOM{
 
   uint BM::n()const{return n_;}
   double BM::prob()const{ return Prob_prm()->value();}
-  void BM::set_prob(double p){ Prob_prm()->set(p);}
+  void BM::set_prob(double p){
+    if (p < 0 || p > 1) {
+      std::ostringstream err;
+      err << "The argument to BinomialModel::set_prob was " << p
+          << ", but a probability must be in the range [0, 1]."
+          << endl;
+      report_error(err.str());
+    }
+    Prob_prm()->set(p);
+  }
 
   Ptr<UnivParams> BM::Prob_prm(){ return ParamPolicy::prm();}
   const Ptr<UnivParams> BM::Prob_prm()const{ return ParamPolicy::prm();}
@@ -161,7 +175,7 @@ namespace BOOM{
 
   double BM::pdf(uint x,  bool logscale)const{
     if(x>n_)
-      return logscale ? BOOM::infinity(-1) : 0;
+      return logscale ? BOOM::negative_infinity() : 0;
     if(n_==1){
       double p = x==1 ? prob() : 1-prob();
       return logscale ? log(p) : p;

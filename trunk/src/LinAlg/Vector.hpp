@@ -60,7 +60,7 @@ namespace BOOM{
     Vector(const std::string &s, const std::string &sep);
 
     // A vector can be build using a stream of numbers, e.g. from a file.
-    explicit Vector(istream &in);
+    explicit Vector(std::istream &in);
 
     // Conversion from std::vector<double> is covered under the
     // template container structure, but the specialization for
@@ -182,7 +182,6 @@ namespace BOOM{
 
   template <class VEC>
       Vector & Vector::concat(const VEC &v){
-    iterator old_end = end();
     reserve(size() + v.size());
     dVector::insert(end(), v.begin(), v.end());
     return *this;
@@ -224,6 +223,9 @@ namespace BOOM{
   inline double prod(const Vector &x){return x.prod();}
   inline double max(const Vector &x){return x.max();}
   inline double min(const Vector &x){return x.min();}
+  std::pair<double, double> range(const Vector &x);
+  std::pair<double, double> range(const VectorView &x);
+  std::pair<double, double > range(const ConstVectorView &x);
   inline void swap(Vector &x, Vector &y){x.swap(y);}
   Vector cumsum(const Vector &x);
   // IO

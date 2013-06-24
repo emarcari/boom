@@ -123,10 +123,10 @@ namespace BOOM{
   // been precomputed.
     double SepStratSampler::logp0(const Spd & Sigma, double alpha)const{
     Chol L(Sigma);
-    if(!L.is_pos_def()) return BOOM::infinity(-1);
+    if(!L.is_pos_def()) return BOOM::negative_infinity();
 
     double ans = logprior(Sigma);
-    if(ans == BOOM::infinity(-1)) return ans;
+    if(ans == BOOM::negative_infinity()) return ans;
     ans += -.5 * (n_ * alpha * L.logdet()
                   + L.solve(sqrt(alpha) * sumsq_upper_chol_.t()).sumsq());
     return ans;
@@ -146,10 +146,10 @@ namespace BOOM{
     sd_ = sqrt(diag(Sigma));
 
     double ans = Rpri_->logp(R_);
-    if(ans == BOOM::infinity(-1)) return ans;
+    if(ans == BOOM::negative_infinity()) return ans;
     for(int i = 0; i < sd_.size(); ++i){
       double sd = sd_[i];
-      if(sd <=0 ) return BOOM::infinity(-1);
+      if(sd <=0 ) return BOOM::negative_infinity();
       ans += sinv_pri_[i]->logp(1.0/pow(sd, 2));
       ans += (d-3) * log(sd);
       // d-3 comes from the Jacobian of two transformations:

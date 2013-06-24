@@ -34,6 +34,8 @@ namespace BOOM{
     BinomialSuf();
     BinomialSuf(const BinomialSuf &rhs);
     BinomialSuf * clone()const;
+    void set(double sum, double observation_count);
+
     double sum()const;
     double nobs()const;
     virtual void clear();

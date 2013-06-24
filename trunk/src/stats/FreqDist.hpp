@@ -35,7 +35,7 @@ namespace BOOM{
     const std::vector<int> & counts()const{
       return counts_; }
 
-    ostream & print(ostream &out)const;
+    std::ostream & print(std::ostream &out)const;
    private:
     std::vector<std::string> labs_;
     std::vector<int> counts_;
@@ -45,7 +45,7 @@ namespace BOOM{
                const std::vector<std::string> &labels);
   };
 
-  inline ostream & operator<<(ostream &out, const FreqDist &f){
+  inline std::ostream & operator<<(std::ostream &out, const FreqDist &f){
     return f.print(out);
   }
 }

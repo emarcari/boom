@@ -25,9 +25,8 @@
 
 namespace BOOM {
 
-  // The GammaPosteriorSampler assumes indepdendent priors on a/b and
+  // The GammaPosteriorSampler assumes independent priors on a/b and
   // a.
-
   class GammaPosteriorSampler : public PosteriorSampler {
    public:
     GammaPosteriorSampler(GammaModel *model,
@@ -36,14 +35,30 @@ namespace BOOM {
     virtual void draw();
     virtual double logpri()const;
 
-    double logpost_mean(double mean)const;
-    double logpost_alpha(double shape)const;
    private:
     GammaModel *model_;
     Ptr<DoubleModel> mean_prior_;
     Ptr<DoubleModel> alpha_prior_;
     ScalarSliceSampler mean_sampler_;
     ScalarSliceSampler alpha_sampler_;
+  };
+
+  // GammaPosteriorSamplerBeta assumes independent priors on a/b and
+  // b.  It is otherwise identical to GammaPosteriorSampler.
+  class GammaPosteriorSamplerBeta : public PosteriorSampler {
+   public:
+    GammaPosteriorSamplerBeta(GammaModel *model,
+                              Ptr<DoubleModel> mean_prior,
+                              Ptr<DoubleModel> beta_prior);
+    virtual void draw();
+    virtual double logpri()const;
+
+   private:
+    GammaModel *model_;
+    Ptr<DoubleModel> mean_prior_;
+    Ptr<DoubleModel> beta_prior_;
+    ScalarSliceSampler mean_sampler_;
+    ScalarSliceSampler beta_sampler_;
   };
 
 }  // namespace BOOM

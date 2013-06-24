@@ -202,6 +202,16 @@ namespace BOOM{
       std::vector<SdPrior> sigma_priors_;
     };
 
+    class MvnDiagonalPrior {
+     public:
+      MvnDiagonalPrior(SEXP prior);
+      const Vector & mean()const{return mean_;}
+      const Vector & sd()const{return sd_;}
+     private:
+      Vector mean_;
+      Vector sd_;
+    };
+
     inline ostream & operator<<(ostream &out, const NormalPrior &p) {
       return p.print(out); }
     inline ostream & operator<<(ostream &out, const SdPrior &p) {

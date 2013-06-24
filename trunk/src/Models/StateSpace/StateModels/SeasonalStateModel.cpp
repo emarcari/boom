@@ -77,8 +77,7 @@ namespace BOOM{
                      "SeasonalStateModel::observe_state");
       }
       double mu = -1 * (then.sum());
-      double s = now[0];
-      double delta = s - mu;
+      double delta = now[0] - mu;
       suf()->update_raw(delta);
     }
   }
@@ -97,7 +96,7 @@ namespace BOOM{
     return nseasons_ - 1;
   }
 
-  void SSM::simulate_state_error(VectorView eta, int t)const{
+  void SSM::simulate_state_error(VectorView state_error, int t)const{
     if(initial_state_mean_.size() != state_dimension()
        || initial_state_variance_.nrow() != state_dimension()){
       ostringstream err;
@@ -109,10 +108,10 @@ namespace BOOM{
           ;
       report_error(err.str());
     }
-    eta = 0;
-    assert(eta.size() == state_dimension());
+    state_error = 0;
+    assert(state_error.size() == state_dimension());
     if(new_season(t)){
-      eta[0] = rnorm(0, sigma());
+      state_error[0] = rnorm(0, sigma());
     }
   }
 
@@ -143,7 +142,6 @@ namespace BOOM{
           << "number_of_seasons - 1.";
       report_error(err.str());
     }
-
     return initial_state_variance_;}
 
   void SSM::set_initial_state_mean(const Vec &mu){

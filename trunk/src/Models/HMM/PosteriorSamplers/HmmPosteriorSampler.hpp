@@ -17,7 +17,7 @@
 */
 
 #ifndef BOOM_HMM_POSTERIOR_SAMPLER_HPP
-#define BOOM_HMM_POSTERIOR_SAMPLER_HP
+#define BOOM_HMM_POSTERIOR_SAMPLER_HPP
 
 #include <Models/HMM/HMM2.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>

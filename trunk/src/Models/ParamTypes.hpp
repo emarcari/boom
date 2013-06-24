@@ -113,7 +113,6 @@ namespace BOOM{
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
-  private:
   };
 
   //------------------------------------------------------------
@@ -126,13 +125,13 @@ namespace BOOM{
     VectorParams(const VectorParams &rhs); // copies data
     VectorParams * clone()const;
 
-    virtual uint size(bool minimal=true)const {return VectorData::size(minimal);}
+    virtual uint size(bool minimal=true)const {
+      return VectorData::size(minimal);}
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
-  private:
   };
   //------------------------------------------------------------
   class MatrixParams : public MatrixData,
@@ -150,8 +149,6 @@ namespace BOOM{
 					    bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
 					    bool minimal=true);
-  private:
-    //    MatrixParams & operator=(const MatrixParams &rhs);
   };
   //------------------------------------------------------------
   class CorrParams : public CorrData, virtual public Params{

@@ -20,6 +20,7 @@
 #include <boost/bind.hpp>
 #include <distributions.hpp>
 #include <stats/logit.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 
@@ -75,7 +76,20 @@ namespace BOOM{
     for (int i = 0; i < nobs; ++i) {
       int y = data[i]->y();
       int n = data[i]->n();
-      double theta = rbeta_mt(rng(), y + a, n - y + b);
+      double theta;
+      int failure_count = 0;
+      do {
+        // In obscure corner cases where either a or b is very close
+        // to zero you can get theta == 0.0 or theta == 1.0
+        // numerically.  In that case just keep trying.  If it takes
+        // more than 100 tries then something is really wrong.
+        theta = rbeta_mt(rng(), y + a, n - y + b);
+        if (++failure_count > 100) {
+          report_error(
+              "Too many attempts at rbeta in "
+              "BetaBinomialPosteriorSampler::draw_data_augmentation");
+        }
+      } while (theta == 0.0 || theta == 1.0 || !finite(theta));
       complete_data_suf_.update_raw(theta);
     }
     draw_slice();
@@ -97,10 +111,11 @@ namespace BOOM{
     double ans = probability_prior_distribution_->logp(prob)
         + sample_size_prior_distribution_->logp(sample_size);
     if (sampling_method_ == DATA_AUGMENTATION) {
-      return ans + beta_log_likelihood(a, b, complete_data_suf_);
+      ans += beta_log_likelihood(a, b, complete_data_suf_);
     } else {
-    return ans + model_->loglike(a, b);
+      ans += model_->loglike(a, b);
     }
+    return ans;
   }
 
   double BBPS::logp_sample_size(double sample_size)const{

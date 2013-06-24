@@ -231,7 +231,7 @@ namespace BOOM{
   //----------------------------------------------------------------------
   BinomialLogitLogPostChunk BLCSSS::log_posterior(int chunk)const{
     return BinomialLogitLogPostChunk(
-        m_, pri_.dumb_ptr(), compute_chunk_size(), chunk);
+        m_, pri_.get(), compute_chunk_size(), chunk);
   }
   //----------------------------------------------------------------------a
   inline int divide_rounding_up(int a, int b){

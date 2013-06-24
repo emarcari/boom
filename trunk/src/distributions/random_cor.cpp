@@ -40,8 +40,8 @@ namespace BOOM{
         double ans = R_.det();
         if(isnan(ans)){
           std::ostringstream err;
-          err << "Illegal determinant in random_cor:  R = " << endl
-              << R_ << endl;
+          err << "Illegal determinant in random_cor:  R = " << std::endl
+              << R_ << std::endl;
           report_error(err.str());
         }
         return ans;

@@ -29,7 +29,9 @@ namespace BOOM{
   class GaussianMeanSampler : public PosteriorSampler {
    public:
     // mu ~ N(mu_bar, tausq), independent of sigma^2
-    GaussianMeanSampler(GaussianModel *Mod, double expected_mu, double prior_sd_mu);
+    GaussianMeanSampler(GaussianModel *Mod,
+                        double expected_mu,
+                        double prior_sd_mu);
     GaussianMeanSampler(GaussianModel *Mod, Ptr<GaussianModel> Pri);
     double logpri()const;
     virtual void draw();

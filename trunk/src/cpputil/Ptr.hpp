@@ -68,14 +68,10 @@ namespace BOOM{
       return *this; }
 
     bool operator<(const Ptr<T,true> & rhs)const{
-      return  dumb_ptr() < rhs.dumb_ptr();}
+      return  get() < rhs.get();}
 
     T & operator*() const{ return *pt;}
     T * operator->() const{ return pt.operator->();}
-    T * dumb_ptr() const{return pt.get();}
-    // The get() method has become a standard idiom for accessing a
-    // traditional pointer from a smart pointer.  In the future, use
-    // get(), and consider dumb_ptr() deprecated.
     T * get() const{return pt.get();}
 
     template <class U>
@@ -166,10 +162,10 @@ namespace BOOM{
 
     T & operator*()const{return *pt;}
     T * operator->()const{return pt.operator->();}
-    T * dumb_ptr()const{return pt.get();}
+    T * get() const{return pt.get();}
 
     bool operator<(const Ptr<T,false> & rhs)const{
-      return dumb_ptr() < rhs.dumb_ptr();}
+      return get() < rhs.get();}
 
     bool unique()const{return pt.unique();}
     long use_count() const{return pt.use_count();}
@@ -205,12 +201,12 @@ namespace BOOM{
   template<class T, class U>
   inline
   bool operator==(const Ptr<T,false> &a, const Ptr<U,false> &b)
-  {return a.dumb_ptr()==b.dumb_ptr();}
+  {return a.get()==b.get();}
 
   template<class T, class U>
   inline
   bool operator!=(const Ptr<T,false> &a, const Ptr<U,false> &b){
-    return a.dumb_ptr()!=b.dumb_ptr();}
+    return a.get()!=b.get();}
 
   template <class T, class U>
   inline
@@ -224,7 +220,7 @@ namespace BOOM{
 
   template<class T>
   inline
-  T * get_pointer(Ptr<T,false> &a){ return a.dumb_ptr();}
+  T * get_pointer(Ptr<T,false> &a){ return a.get();}
 
   //-------------------------------------------------------
 
@@ -249,7 +245,7 @@ namespace BOOM{
 
   template <class To, class From>
   Ptr<To,true> dcast(const Ptr<From,true> &a){
-    return Ptr<To>( dynamic_cast<To*>(a.dumb_ptr()));}
+    return Ptr<To>( dynamic_cast<To*>(a.get()));}
 
 
 }

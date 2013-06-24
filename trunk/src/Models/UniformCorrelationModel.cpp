@@ -41,7 +41,7 @@ namespace BOOM{
   void UCM::initialize_params(){}
 
   double UCM::logp(const Corr &m)const{
-    return m.is_pos_def() ? 0.0 : BOOM::infinity(-1);
+    return m.is_pos_def() ? 0.0 : BOOM::negative_infinity();
   }
 
   double UCM::pdf(Ptr<Data> dp, bool logscale)const{

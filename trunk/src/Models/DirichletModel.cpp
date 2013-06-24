@@ -215,7 +215,7 @@ namespace BOOM{
 //  	if(nd>0){
 //  	  g(i)= -nu(i);
 //  	  if(nd>1) for(uint j=0; j<n; ++j) h(i,j)= (i==j)?1:0;}}
-//       return infinity(-1);}
+//       return negative_infinity();}
 
 //     double ans= nobs*lgamma(sum);
 //     double tmp=0.0, tmp1=0.0;

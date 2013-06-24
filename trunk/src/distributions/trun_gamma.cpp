@@ -35,7 +35,7 @@ namespace BOOM{
      * variable x, given x > cut
      */
 
-    if(a < 0 || b< 0 || cut < 0 || x < cut) return BOOM::infinity(-1);
+    if(a < 0 || b< 0 || cut < 0 || x < cut) return BOOM::negative_infinity();
 
     double ans = (a-1)*log(x) - b * x;
     return logscale ? ans : exp(ans);
@@ -80,14 +80,14 @@ namespace BOOM{
             cut, LogGammaDensity(a, b, cut), DLogGammaDensity(a, b, cut));
         return sam.draw(rng);
       } catch (std::exception &e) {
-        ostringstream err;
-        err << "Caught exception with error message:  " << endl
-            << e.what() << endl
-            << "in call to rtrun_gamma_mt with " << endl
-            << "  a = " << a << endl
-            << "  b = " << b << endl
-            << "cut = " << cut << endl
-            << "  n = " << n << endl;
+        std::ostringstream err;
+        err << "Caught exception with error message:  " << std::endl
+            << e.what() << std::endl
+            << "in call to rtrun_gamma_mt with " << std::endl
+            << "  a = " << a << std::endl
+            << "  b = " << b << std::endl
+            << "cut = " << cut << std::endl
+            << "  n = " << n << std::endl;
         report_error(err.str());
       } catch (...) {
         report_error("caught unknown exception in rtrun_gamma_mt");

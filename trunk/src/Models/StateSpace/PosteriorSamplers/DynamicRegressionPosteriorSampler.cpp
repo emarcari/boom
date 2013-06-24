@@ -42,7 +42,7 @@ namespace BOOM {
           + 2 * siginv_prior_->beta();
       double sigsq = 1.0 / rgamma_mt(rng(), df/2, sumsq/2);
       model_->set_sigsq(sigsq, i);
-      siginv_prior_->suf()->update_raw_data(1.0/sigsq);
+      siginv_prior_->suf()->update_raw(1.0/sigsq);
     }
     if (!handle_siginv_prior_separately_) {
       siginv_prior_->sample_posterior();

@@ -12,7 +12,7 @@ namespace BOOM{
       throw_exception<std::invalid_argument>("non-positive z0 in  dusp");
 
     if(x<=0)
-      return logscale ? infinity(-1) : 0.0;
+      return logscale ? negative_infinity() : 0.0;
 
     if(logscale){
       return log(z0) - 2.0*log(z0+x);
@@ -23,7 +23,7 @@ namespace BOOM{
   }
   //======================================================================
   double pusp(double x, double z0, bool logscale){
-    if(x<=0) return logscale ? BOOM::infinity(-1) : 0;
+    if(x<=0) return logscale ? BOOM::negative_infinity() : 0;
     if(z0<=0)
       throw_exception<std::invalid_argument>("error: non-positive z0 in  pusp");
     if(logscale) return log(x) - log(x+z0);

@@ -29,7 +29,9 @@ namespace BOOM{
 
   class GaussianVarSampler : public PosteriorSampler{
    public:
-    GaussianVarSampler(GaussianModelBase * m, double prior_df, double prior_sigma_guess);
+    GaussianVarSampler(GaussianModelBase * m,
+                       double prior_df,
+                       double prior_sigma_guess);
     GaussianVarSampler(GaussianModelBase * m, Ptr<GammaModelBase> g);
     virtual void draw();
     double logpri()const;

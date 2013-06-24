@@ -71,7 +71,7 @@ namespace BOOM{
     }
     double ItemDafeTF::operator()(const Vec &b)const{
       PcrBetaHolder ph(b, mod, tmpbeta);
-      if( mod->a() <=0) return BOOM::infinity(-1);
+      if( mod->a() <=0) return BOOM::negative_infinity();
       const SubjectSet & subjects(mod->subjects());
       ans=0.0;
       for_each(subjects.begin(), subjects.end(),

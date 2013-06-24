@@ -42,7 +42,8 @@ class ProductDirichletPosteriorSampler
   virtual double logpri()const;
  private:
   ProductDirichletModel *m_;
-  std::vector<Ptr<VectorModel> > phi_row_prior_;  // pretty much has to be Dirichlet
+  // phi_row_prior_ pretty much has to be Dirichlet
+  std::vector<Ptr<VectorModel> > phi_row_prior_;
   std::vector<Ptr<DoubleModel> > alpha_row_prior_;
   double min_nu_;
 };

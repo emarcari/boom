@@ -19,24 +19,32 @@
 #ifndef POISSON_MODEL_H
 #define POISSON_MODEL_H
 
-#include "ModelTypes.hpp"
-#include "EmMixtureComponent.hpp"
-#include "Sufstat.hpp"
+#include <Models/ModelTypes.hpp>
+#include <Models/Sufstat.hpp>
 #include <Models/Policies/ParamPolicy_1.hpp>
 #include <Models/Policies/SufstatDataPolicy.hpp>
-#include <Models/Policies/ConjugatePriorPolicy.hpp>
+#include <Models/Policies/PriorPolicy.hpp>
 
 //----------------------------------------------------------------------//
 namespace BOOM{
-  class GammaModel;
-  class PoissonGammaSampler;
 
   class PoissonSuf : public SufstatDetails<IntData>{
   public:
     // constructor
     PoissonSuf();
+
+    // If this constructor is used, then the normalizing constant will
+    // not be correctly set.  That's probably okay for most
+    // applications.
+    PoissonSuf(double event_count, double exposure);
+
     PoissonSuf(const PoissonSuf &rhs);
     PoissonSuf *clone() const;
+
+    // If this function is used to set the value of the sufficient
+    // statistics, then the normalizing constant will be wrong, which
+    // is probably fine for most applications.
+    void set(double event_count, double exposure);
 
     void clear();
     double sum()const;
@@ -63,9 +71,9 @@ namespace BOOM{
 
   class PoissonModel : public ParamPolicy_1<UnivParams>,
 		       public SufstatDataPolicy<IntData, PoissonSuf>,
-		       public ConjugatePriorPolicy<PoissonGammaSampler>,
+		       public PriorPolicy,
 		       public NumOptModel,
-		       public EmMixtureComponent
+		       public MixtureComponent
   {
   public:
 
@@ -92,9 +100,6 @@ namespace BOOM{
     double var()const;
     double sd()const;
     double simdat() const;
-
-    void set_conjugate_prior(Ptr<GammaModel>);
-    void set_conjugate_prior(Ptr<PoissonGammaSampler>);
 
     virtual void add_mixture_data(Ptr<Data>,  double prob);
   };

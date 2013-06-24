@@ -42,6 +42,7 @@ namespace BOOM{
       // Pointer semantics: make the memory here point to the memory
       // there.
       SubMatrix & reset(const SubMatrix &rhs);
+      SubMatrix & reset(double *v, int nrow, int ncol, int stride);
 
       uint nrow()const;
       uint ncol()const;
@@ -57,9 +58,13 @@ namespace BOOM{
 
       VectorView col(uint j);
       ConstVectorView col(uint j)const;
+      VectorView last_col();
+      ConstVectorView last_col()const;
 
       VectorView row(uint j);
       ConstVectorView row(uint j)const;
+      VectorView last_row();
+      ConstVectorView last_row()const;
 
       VectorView diag();
       ConstVectorView diag()const;
@@ -86,12 +91,15 @@ namespace BOOM{
       uint stride;    // number of rows in the parent matrix
       double *cols(int i){return start_ + stride*i;}
       const double *cols(int i)const{return start_ + stride*i;}
+
+      friend class ConstSubMatrix;
     };
     //======================================================================
     class ConstSubMatrix{
     public:
       typedef const double * const_col_iterator;
-
+      ConstSubMatrix(const Matrix &);
+      ConstSubMatrix(const SubMatrix &);
       ConstSubMatrix(const Matrix &, uint rlo, uint rhi, uint clo, uint chi);
 
       uint nrow()const;
@@ -103,7 +111,9 @@ namespace BOOM{
 
       // TODO(stevescott):  range checking
       ConstVectorView col(uint j)const;
+      ConstVectorView last_col()const;
       ConstVectorView row(uint j)const;
+      ConstVectorView last_row()const;
       ConstVectorView diag()const;
       ConstVectorView subdiag(int i)const;
       ConstVectorView superdiag(int i)const;

@@ -57,7 +57,7 @@ namespace BOOM{
   }
 
   VectorView MatrixPartition::view(Vector &v, int i, bool premultiply)const{
-    const vector<int> &pos(premultiply ? col_start_ : row_start_);
+    const std::vector<int> &pos(premultiply ? col_start_ : row_start_);
     int max = premultiply ? col_max_ : row_max_;
     int start = pos[i];
     int stop = (i < max) ? pos[i+1] - 1 : length(v) - 1;
@@ -65,7 +65,7 @@ namespace BOOM{
   }
 
   VectorView MatrixPartition::view(VectorView v, int i, bool premultiply)const{
-    const vector<int> &pos(premultiply ? col_start_ : row_start_);
+    const std::vector<int> &pos(premultiply ? col_start_ : row_start_);
     int max = premultiply ? col_max_ : row_max_;
     int start = pos[i];
     int stop = (i < max) ? pos[i+1] - 1 : length(v) - 1;

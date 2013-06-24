@@ -18,11 +18,11 @@
 #ifndef BOOM_POISSON_GAMMA_METHOD_HPP
 #define BOOM_POISSON_GAMMA_METHOD_HPP
 
-#include "PosteriorSampler.hpp"
+#include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/GammaModel.hpp>
 
 namespace BOOM{
   class PoissonModel;
-  class GammaModel;
 
   class PoissonGammaSampler : public PosteriorSampler{
   public:
@@ -34,7 +34,7 @@ namespace BOOM{
     void find_posterior_mode();
   private:
     PoissonModel *pois;
-    Ptr<GammaModel>   gam;
+    Ptr<GammaModel> gam;
   };
 }
 #endif // BOOM_POISSON_GAMMA_METHOD_HPP

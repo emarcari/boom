@@ -35,11 +35,11 @@ OneWayChiSquareTest::OneWayChiSquareTest(const Vec & observed,
       chi_square_ += pow(Oi - Ei, 2) / Ei;
     }else{
       --df_;
-      if(Oi>0) chi_square_ = BOOM::infinity(1);
+      if(Oi>0) chi_square_ = BOOM::infinity();
       p_value_ = 0.0;
     }
   }
-  if(chi_square_ < BOOM::infinity(1)) {
+  if(chi_square_ < BOOM::infinity()) {
     if(df_ > 0){
       // usual case...
       p_value_ = 1 - pchisq(chi_square_, df_);

@@ -114,7 +114,7 @@ namespace BOOM{
       bool in = inc[pos()];
       bool oi_in = inc[obs_ind_pos_];
       if(oi_in) return Variable::logp(inc);
-      return in ? BOOM::infinity(-1) : 0;
+      return in ? BOOM::negative_infinity() : 0;
     }
 
     void MME::make_valid(Selector &inc)const{
@@ -159,7 +159,7 @@ namespace BOOM{
       uint n = nparents();
       for(uint i=0; i<n; ++i){
 	uint indx = parent_pos_[i];
-	if(!inc[indx]) return BOOM::infinity(-1);
+	if(!inc[indx]) return BOOM::negative_infinity();
       }
       return Variable::logp(inc);
     }
@@ -334,6 +334,11 @@ namespace BOOM{
     for(uint i=0; i<n; ++i) vars_[i]->set_prob(pi[i]);
   }
 
+  double VSP::prob(uint i)const{
+    check_size_gt(i, "prob");
+    return vars_[i]->prob();
+  }
+
   void VSP::set_param_filename(const string &fname){
     pi_->set_fname(fname); }
 
@@ -408,7 +413,7 @@ namespace BOOM{
   uint VSP::potential_nvars()const{ return vars_.size();}
 
   double VSP::logp(const Selector &inc)const{
-    const double neg_inf = BOOM::infinity(-1);
+    const double neg_inf = BOOM::negative_infinity();
     //    if(inc.nvars()==0) return neg_inf;
     uint n = vars_.size();
     double ans=0;

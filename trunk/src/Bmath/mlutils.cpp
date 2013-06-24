@@ -109,7 +109,7 @@ int R_IsNaNorNA(double x)
 /* #  include <fp.h> */
 /*      return FINITE(x); */
 /* # else */
-/*     return (!isnan(x) & (x != BOOM::infinity(1)) & (x != BOOM::infinity(-1))); */
+/*     return (!isnan(x) & (x != BOOM::infinity()) & (x != BOOM::negative_infinity())); */
 /* # endif */
 /* #endif */
 /* } */
@@ -128,7 +128,7 @@ int R_IsNaNorNA(double x)
 /* bool R_finite(double x) */
 /* { */
 /* # ifndef HAVE_FINITE */
-/*     return (x !=  numeric_limits<double>::quiet_NaN() && x < BOOM::infinity(1) && x > BOOM::infinity(-1)); */
+/*     return (x !=  numeric_limits<double>::quiet_NaN() && x < BOOM::infinity() && x > BOOM::negative_infinity()); */
 /* # else */
 /*     int finite(double); */
 /*     return finite(x); */
@@ -145,7 +145,7 @@ static double myfmod(double x1, double x2)
 #ifdef HAVE_WORKING_LOG
 # define R_log	log
 #else
-double R_log(double x) { return(x > 0 ? log(x) : x < 0 ? numeric_limits<double>::quiet_NaN() : BOOM::infinity(-1)); }
+double R_log(double x) { return(x > 0 ? log(x) : x < 0 ? numeric_limits<double>::quiet_NaN() : BOOM::negative_infinity()); }
 #endif
 
 double R_pow(double x, double y) /* = x ^ y */
@@ -154,7 +154,7 @@ double R_pow(double x, double y) /* = x ^ y */
 	return(1.);
     if(x == 0.) {
 	if(y > 0.) return(0.);
-	/* y < 0 */return(BOOM::infinity(1));
+	/* y < 0 */return(BOOM::infinity());
     }
     if (R_FINITE(x) && R_FINITE(y))
 	return(pow(x,y));
@@ -170,7 +170,7 @@ double R_pow(double x, double y) /* = x ^ y */
     }
     if(!R_FINITE(x)) {
 	if(x > 0)		/* Inf ^ y */
-	    return((y < 0.)? 0. : BOOM::infinity(1));
+	    return((y < 0.)? 0. : BOOM::infinity());
 	else {			/* (-Inf) ^ y */
 	    if(R_FINITE(y) && y == FLOOR(y)) /* (-Inf) ^ n */
 		return((y < 0.) ? 0. : (myfmod(y,2.) ? x  : -x));
@@ -179,9 +179,9 @@ double R_pow(double x, double y) /* = x ^ y */
     if(!R_FINITE(y)) {
 	if(x >= 0) {
 	    if(y > 0)		/* y == +Inf */
-		return((x >= 1)? BOOM::infinity(1) : 0.);
+		return((x >= 1)? BOOM::infinity() : 0.);
 	    else		/* y == -Inf */
-		return((x < 1) ? BOOM::infinity(1) : 0.);
+		return((x < 1) ? BOOM::infinity() : 0.);
 	}
     }
     return(numeric_limits<double>::quiet_NaN());		/* all other cases: (-Inf)^{+-Inf,
@@ -205,7 +205,7 @@ double R_pow_di(double x, int n)
 }
 
 double NA_REAL = numeric_limits<double>::quiet_NaN();
-double R_PosInf = BOOM::infinity(1), R_NegInf = BOOM::infinity(-1);
+double R_PosInf = BOOM::infinity(), R_NegInf = BOOM::negative_infinity();
 
 #endif /* MATHLIB_STANDALONE */
 }

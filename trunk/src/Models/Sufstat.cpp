@@ -34,15 +34,12 @@ namespace BOOM{
     return ans;
   }
 
-  void unvectorize(std::vector<Ptr<Sufstat> >  &svec, const Vec &v, bool minimal){
+  void unvectorize(std::vector<Ptr<Sufstat> >  &svec,
+                   const Vec &v,
+                   bool minimal){
     Vec::const_iterator it=v.begin();
     for(uint i=0; i<svec.size(); ++i){
       it = svec[i]->unvectorize(it, minimal);
     }
   }
-
-  void Sufstat::error(const std::string &msg) const {
-    throw_exception<std::runtime_error>(msg);
-  }
-
 }

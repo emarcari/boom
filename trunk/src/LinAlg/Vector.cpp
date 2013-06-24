@@ -26,6 +26,7 @@
 #include <cmath>
 #include <numeric>
 
+#include <cpputil/math_utils.hpp>
 #include <cpputil/string_utils.hpp>
 #include <distributions.hpp>
 #include <sstream>
@@ -512,6 +513,36 @@ namespace BOOM{
       double * d = ans.data();
       for(uint i=0; i<n; ++i) d[i] = std::pow(d[i], p);
       return ans; }
+
+    namespace {
+      template <class VECTOR>
+      std::pair<double, double> range_impl(const VECTOR &v){
+        double lo = infinity();
+        double hi = negative_infinity();
+        for (int i = 0; i < v.size(); ++i) {
+          double x = v[i];
+          if (x < lo) {
+            lo = x;
+          }
+          if (x > hi) {
+            hi = x;
+          }
+        }
+        return std::make_pair(lo, hi);
+      }
+    }
+
+    std::pair<double, double> range(const Vector &v) {
+      return range_impl(v);
+    }
+
+    std::pair<double, double> range(const VectorView &v) {
+      return range_impl(v);
+    }
+
+    std::pair<double, double> range(const ConstVectorView &v) {
+      return range_impl(v);
+    }
 
     Vector cumsum(const Vector &x){
       Vector ans(x);

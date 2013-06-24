@@ -21,32 +21,6 @@
 
 namespace BOOM {
 
-  PoissonRegressionData::PoissonRegressionData(int y, const Vec &x)
-      : GlmData<IntData>(y, x),
-        exposure_(1.0),
-        log_exposure_(0)
-  {}
-
-  PoissonRegressionData::PoissonRegressionData(int y, const Vec &x, double exposure)
-      : GlmData<IntData>(y, x),
-        exposure_(exposure),
-        log_exposure_(log(exposure))
-  {}
-
-  PoissonRegressionData * PoissonRegressionData::clone()const{
-    return new PoissonRegressionData(*this);}
-
-  ostream & PoissonRegressionData::display(ostream &out)const{
-    out << "[" << exposure_ << "]  ";
-    return GlmData<IntData>::display(out);
-  }
-
-  double PoissonRegressionData::exposure()const{return exposure_;}
-
-  double PoissonRegressionData::log_exposure()const{return log_exposure_;}
-
-  //======================================================================
-
   PoissonRegressionModel::PoissonRegressionModel(int xdim)
       : ParamPolicy(new GlmCoefs(xdim))
   {}

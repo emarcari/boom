@@ -47,7 +47,9 @@ namespace BOOM{
   {
    public:
     MvnGivenScalarSigma(const Spd &ominv, Ptr<UnivParams> sigsq);
-    MvnGivenScalarSigma(const Vec &mean, const Spd &ominv, Ptr<UnivParams> sigsq);
+    MvnGivenScalarSigma(const Vec &mean,
+                        const Spd &ominv,
+                        Ptr<UnivParams> sigsq);
 
     MvnGivenScalarSigma(const MvnGivenScalarSigma & rhs);
     virtual MvnGivenScalarSigma * clone()const;

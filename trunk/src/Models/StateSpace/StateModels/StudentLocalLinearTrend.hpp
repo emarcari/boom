@@ -123,6 +123,12 @@ namespace BOOM{
     const WeightedGaussianSuf & sigma_slope_complete_data_suf()const;
     const GammaSuf & nu_level_complete_data_suf()const;
     const GammaSuf & nu_slope_complete_data_suf()const;
+
+    // Posterior draws for the weights in the normal mixture
+    // representation of the T distribution.  For Gaussian models the
+    // weights will be around 1.  A large outlier has a small weight.
+    const Vec & latent_level_weights()const;
+    const Vec & latent_slope_weights()const;
    private:
     void check_dim(const ConstVectorView &)const;
 

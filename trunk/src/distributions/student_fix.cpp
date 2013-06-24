@@ -30,7 +30,7 @@ namespace BOOM{
        its degrees of freedom) */
 
     double ans;
-    if(sigma==0) return (x==mu ? infinity(1) : 0.0);
+    if(sigma==0) return (x==mu ? infinity() : 0.0);
 
     ans = (x-mu)/sigma;
     ans = dt(ans, df, 1) - log(sigma);  /* log sigma from the jacobian */

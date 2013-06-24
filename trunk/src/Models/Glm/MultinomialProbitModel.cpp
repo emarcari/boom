@@ -106,7 +106,7 @@ namespace BOOM{
     }
     void set_y(uint Y){y = Y;}
     double operator()(const Vec &x)const{
-      if(x.imax()!=y) return BOOM::infinity(-1);
+      if(x.imax()!=y) return BOOM::negative_infinity();
       return dmvn(x,mu,Ivar, ldsi, true);
     }
   private:

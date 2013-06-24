@@ -32,16 +32,16 @@ namespace BOOM{
   /*----------------------------------------------------------------------
     functions for maximizing functions of several variables.
     ----------------------------------------------------------------------*/
-  double max_nd0(Vec &x, Target tf){
+  double max_nd0(Vector &x, Target tf){
     Negate f(tf);
-    Vec wsp(x);
+    Vector wsp(x);
     int fc=0;
     double ans = nelder_mead_driver(x, wsp, f, 1e-8, 1e-8, 1.0, .5, 2.0,
  				    false, fc, 1000);
     return ans * -1;
   }
   //======================================================================
-  double max_nd1(Vec &x, Target f, dTarget dtf, double eps){
+  double max_nd1(Vector &x, Target f, dTarget dtf, double eps){
     dNegate df(f, dtf);
     bool fail=false;
     int fcount=0;
@@ -51,7 +51,7 @@ namespace BOOM{
     double ans = bfgs(x,df, df, 200, eps, eps, fcount, gcount, fail);
 
     while(fail && ntries < maxntries){
-      Vec g = x;
+      Vector g = x;
       nelder_mead_driver(x,g, Target(df), 1e-5, 1e-5, 1.0, .5, 2.0, false,
  			 fcount, 1000);
       fcount=gcount=0;
@@ -63,7 +63,7 @@ namespace BOOM{
   }
 
   //======================================================================
-  double max_nd2(Vec &x, Vec &g, Mat &h, Target f, dTarget df, d2Target d2f,
+  double max_nd2(Vector &x, Vector &g, Mat &h, Target f, dTarget df, d2Target d2f,
  		 double leps){
     double ans;
     string error_msg;
@@ -75,11 +75,12 @@ namespace BOOM{
   }
 
   //======================================================================
-  bool max_nd2_careful(Vec &x, Vec &g, Mat &h, double &ans,
+  bool max_nd2_careful(Vector &x, Vector &g, Mat &h, double &ans,
                        Target f, dTarget df, d2Target d2f,
                        double leps, string &error_msg){
 
     unsigned int ntries=0, maxtries = 5;
+    Vector original_x = x;
     d2Negate nd2f(f, df, d2f);
     /*------------ we should check that h is negative definite -----------*/
     int function_count = 0;
@@ -92,6 +93,7 @@ namespace BOOM{
                              happy, error_msg);
       ++ntries;
       if(!happy){
+        x = original_x;
         double bfgs_answer = bfgs(x, nd2f, nd2f, 200, leps, leps,
                                   function_count, gradient_count, fail);
         happy = (!fail) && (fabs(bfgs_answer - ans) < leps);

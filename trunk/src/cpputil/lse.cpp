@@ -18,13 +18,16 @@
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Types.hpp>
 #include <cmath>
+#include <cpputil/math_utils.hpp>
+
 namespace BOOM{
 
   double lse_safe(const Vec &eta){
     double m = eta.max();
+    if (m == negative_infinity()) return m;
     double tmp=0;
     uint n = eta.size();
-    for(uint i=0; i<n; ++i) tmp+= exp(eta[i]-m);
+    for (uint i=0; i<n; ++i) tmp+= exp(eta[i]-m);
     return m + log(tmp);
   }
 
@@ -32,7 +35,12 @@ namespace BOOM{
     double ans = 0;
     uint n = eta.size();
     const double *d(eta.data());
-    for(uint i=0; i<n; ++i) ans += exp(d[i]);
+    for (uint i=0; i<n; ++i) {
+      ans += exp(d[i]);
+    }
+    if (ans <= 0) {
+      return negative_infinity();
+    }
     return log(ans);
   }
 

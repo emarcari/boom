@@ -45,7 +45,11 @@ struct target
   uint which_;
   Ptr<DoubleModel> pri_;
 
-  target(const Vec & sumlog, double nobs, Vec & nu_, uint i, Ptr<DoubleModel> &pri)
+  target(const Vec & sumlog,
+         double nobs,
+         Vec & nu_,
+         uint i,
+         Ptr<DoubleModel> &pri)
       : sumlog_(sumlog),
         nobs_(nobs),
         nu_(nu_),

@@ -20,12 +20,15 @@
 #define BOOM_POISSON_REGRESSION_AUXILIARY_MIXTURE_SAMPLER_HPP_
 
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/Glm/PosteriorSamplers/PoissonDataImputer.hpp>
 #include <Models/Glm/PoissonRegressionModel.hpp>
 #include <Models/Glm/WeightedRegressionModel.hpp>
 #include <Models/MvnBase.hpp>
 #include <Models/Glm/PosteriorSamplers/NormalMixtureApproximation.hpp>
 
 namespace BOOM{
+
+class PoissonDataImputer;
 
 class PoissonRegressionAuxMixSampler : public PosteriorSampler {
  public:
@@ -43,10 +46,6 @@ class PoissonRegressionAuxMixSampler : public PosteriorSampler {
   double draw_censored_event_time(double final_event_time, double rate);
   double draw_censored_event_time_zero_case(double rate);
 
-  // Find the parameters of the Gaussian mixture responsible for this
-  // value of u = -log(tau) - eta.
-  void unmix(double u, int y, double *mu, double *sigsq);
-
   void draw_beta_given_complete_data();
   const WeightedRegSuf &complete_data_sufficient_statistics()const;
 
@@ -62,25 +61,18 @@ class PoissonRegressionAuxMixSampler : public PosteriorSampler {
   PoissonRegressionModel *model_;
   Ptr<MvnBase> prior_;
   WeightedRegSuf complete_data_suf_;
+  boost::shared_ptr<PoissonDataImputer> data_imputer_;
 
   // A flag when running in 'master mode'
   bool first_time_;
-
-  // The NormalMixtureApproximationTable is really big.  We'll make it
-  // static so that multiple samplers (e.g. in a hierarchical model)
-  // don't all need their own copy.  Note that during the first MCMC
-  // iteration the table can get modified, so we need to run in single
-  // threaded mode for a single iteration.  After all possible values
-  // of y have been observed it is safe to run in multi-threaded mode.
-  static NormalMixtureApproximationTable mixture_table_;
 
   // num_threads_ and thread_id_ are used by slaves in the impute_data
   // method.  To check the number of threads in the master, you should
   // call data_imputers_.size(), and not rely on num_threads_.
   int num_threads_;
   int thread_id_;
-  typedef boost::shared_ptr<PoissonRegressionAuxMixSampler> DataImputerPtr;
-  std::vector<DataImputerPtr> data_imputers_;
+  typedef boost::shared_ptr<PoissonRegressionAuxMixSampler> WorkerPtr;
+  std::vector<WorkerPtr> workers_;
 };
 
 }  // namespace BOOM

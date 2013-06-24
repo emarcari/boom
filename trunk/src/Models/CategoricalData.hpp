@@ -170,8 +170,10 @@ namespace BOOM{
     CategoricalFreqDist(const std::vector<Ptr<CategoricalData> > &data);
   };
 
-  std::vector<Ptr<CategoricalData> > make_catdat_ptrs(const std::vector<string> &);
-  std::vector<Ptr<CategoricalData> > make_catdat_ptrs(const std::vector<uint> &);
+  std::vector<Ptr<CategoricalData> >
+  make_catdat_ptrs(const std::vector<string> &);
+  std::vector<Ptr<CategoricalData> >
+  make_catdat_ptrs(const std::vector<uint> &);
 
   std::vector<Ptr<OrdinalData> > make_ord_ptrs(const std::vector<uint> &);
 

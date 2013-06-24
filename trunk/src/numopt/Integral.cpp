@@ -2433,10 +2433,10 @@ namespace BOOM{
   void Integral::set_work_vector_size(int lenw){
     work_.resize(lenw);
     if(4 * iwork_.size() < lenw) {
-      ostringstream err;
-      err << "error in Integral::set_work_vector_size.  " << endl
-          << "lenw = " << lenw << endl
-          << "must be at least " << 4 * iwork_.size() << endl;
+      std::ostringstream err;
+      err << "error in Integral::set_work_vector_size.  " << std::endl
+          << "lenw = " << lenw << std::endl
+          << "must be at least " << 4 * iwork_.size() << std::endl;
       report_error(err.str());
     }
   }
@@ -2453,8 +2453,8 @@ namespace BOOM{
     throw_on_error_ = tf;}
 
   double Integral::integrate(){
-    bool lower_inf = lo_==BOOM::infinity(-1);
-    bool upper_inf = hi_==BOOM::infinity(1);
+    bool lower_inf = lo_==BOOM::negative_infinity();
+    bool upper_inf = hi_==BOOM::infinity();
     int inf = 0;
     error_code_ = 0;
     int work_limit = work_.size();
@@ -2542,11 +2542,11 @@ namespace BOOM{
     return npartitions_;}
   int Integral::error_code()const{ return error_code_;}
 
-  string Integral::error_message()const{
-    ostringstream msg;
+  std::string Integral::error_message()const{
+    std::ostringstream msg;
     msg << "Error in BOOM::Integral:" << std::endl
-        << "lower_limit = " << lo_ << endl
-        << "upper_limit = " << hi_ << endl
+        << "lower_limit = " << lo_ << std::endl
+        << "upper_limit = " << hi_ << std::endl
         ;
     if(error_code_ == 0){
       return "ok";
@@ -2598,15 +2598,15 @@ namespace BOOM{
 
   std::string Integral::debug_string()const{
     std::ostringstream out;
-    out << "lo                : " << lo_ << endl
-        << "hi                : " << hi_ << endl
-        << "relative tolerance: " << rel_tol_ << endl
-        << "absolute tolerance: " << abs_tol_ << endl
-        << "result            : " << result_ << endl
-        << "absolute error    : " << abs_err_ << endl
-        << "number of evals   : " << neval_ << endl
-        << "number of partitions " << npartitions_ << endl
-        << "error code        : " << error_code_ << endl
+    out << "lo                : " << lo_ << std::endl
+        << "hi                : " << hi_ << std::endl
+        << "relative tolerance: " << rel_tol_ << std::endl
+        << "absolute tolerance: " << abs_tol_ << std::endl
+        << "result            : " << result_ << std::endl
+        << "absolute error    : " << abs_err_ << std::endl
+        << "number of evals   : " << neval_ << std::endl
+        << "number of partitions " << npartitions_ << std::endl
+        << "error code        : " << error_code_ << std::endl
         ;
     return out.str();
   }

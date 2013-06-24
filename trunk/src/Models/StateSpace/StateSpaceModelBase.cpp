@@ -144,6 +144,12 @@ namespace BOOM{
           *state_transition_matrix(t),
           *state_variance_matrix(t));
       if(!use_shortcut){
+        ////////////////////////
+        // TODO(stevescott): The actual one step ahead prediction
+        // errors are being stored in supplemental_kalman_storage_,
+        // and not kalman_storage_.  We should eventually get rid of
+        // the 'use_shortcut' option and keep the prediction errors in
+        // the right place.
         sparse_scalar_kalman_update(
             adjusted_observation(t),
             supplemental_a_,
@@ -286,7 +292,10 @@ namespace BOOM{
 
     if (mcmc_kalman_storage_is_current_) {
       for (int i = 0; i < n; ++i) {
-        errors[i] = kalman_storage_[i].v;
+        // TODO(stevescott): Clean up this hack by making sure the one
+        // step prediction errors are stored in kalman_storage_
+        // instead of supplemental_kalman_storage_.
+        errors[i] = supplemental_kalman_storage_[i].v;
       }
       return errors;
     }

@@ -32,6 +32,7 @@
 #include <numopt/Brent.hpp>
 #include <numopt/Integral.hpp>
 #include <numopt/Powell.hpp>
+#include <iomanip>
 
 namespace {
   using namespace BOOM;
@@ -120,7 +121,8 @@ namespace BOOM {
         weights_(n),
         log_weights_(n),
         wsp_(n),
-        kullback_leibler_(infinity(-1)),
+        force_zero_mu_(false),
+        kullback_leibler_(negative_infinity()),
         number_of_function_evaluations_(-1)
   {
     check_sizes();
@@ -134,7 +136,8 @@ namespace BOOM {
         sigma_(sigma),
         weights_(weights),
         wsp_(mu.size()),
-        kullback_leibler_(infinity(-1)),
+        force_zero_mu_(false),
+        kullback_leibler_(negative_infinity()),
         number_of_function_evaluations_(-1)
   {
     order_by_mu();
@@ -149,12 +152,14 @@ namespace BOOM {
       const Vector &initial_weights,
       double precision,
       int max_evals,
-      double initial_stepsize)
+      double initial_stepsize,
+      bool force_zero_mu)
       : mu_(initial_mu),
         sigma_(initial_sigma),
         weights_(initial_weights),
         log_weights_(weights_),
-        wsp_(mu_.size())
+        wsp_(mu_.size()),
+        force_zero_mu_(force_zero_mu)
   {
     check_sizes();
     BrentMaximizer brent(logf);
@@ -176,9 +181,16 @@ namespace BOOM {
     Vector log_sigma = log(initial_sigma);
     Vector logit_w = vector_logit(initial_weights);
 
-    Vector theta = initial_mu;
-    theta.concat(log_sigma);
-    theta.concat(logit_w);
+    Vector theta;
+    if (force_zero_mu_) {
+      mu_ = 0;
+      theta = log_sigma;
+      theta.concat(logit_w);
+    } else {
+      theta = initial_mu;
+      theta.concat(log_sigma);
+      theta.concat(logit_w);
+    }
 
     KullbackLeiblerDivergence kl(logf, *this, lower_limit, upper_limit, guess_at_mode);
     PowellMinimizer powell(kl);
@@ -192,22 +204,40 @@ namespace BOOM {
     number_of_function_evaluations_ = powell.number_of_function_evaluations();
 
     int number_of_components = initial_mu.size();
-    ConstVectorView final_mu(theta, 0, number_of_components);
-    ConstVectorView final_log_sigma(
-        theta, number_of_components, number_of_components);
-    ConstVectorView final_logit_w(
-        theta, 2*number_of_components, number_of_components-1);
-
-    set(final_mu, exp(final_log_sigma), inverse_logit(final_logit_w));
+    if (force_zero_mu_) {
+      ConstVectorView final_log_sigma(theta, 0, number_of_components);
+      ConstVectorView final_logit_w(
+          theta, number_of_components, number_of_components - 1);
+      mu_ = 0;
+      set(mu_, exp(final_log_sigma), inverse_logit(final_logit_w));
+    } else {
+      ConstVectorView final_mu(theta, 0, number_of_components);
+      ConstVectorView final_log_sigma(
+          theta, number_of_components, number_of_components);
+      ConstVectorView final_logit_w(
+          theta, 2*number_of_components, number_of_components - 1);
+      set(final_mu, exp(final_log_sigma), inverse_logit(final_logit_w));
+    }
   }
 
   void NormalMixtureApproximation::set(const Vector &theta) {
-    int dimension = (theta.size() + 1) / 3;
-    mu_ = ConstVectorView(theta, 0, dimension);
-    sigma_ = exp(ConstVectorView(theta, dimension, dimension));
-    weights_ = inverse_logit(ConstVectorView(theta, 2*dimension, dimension - 1));
-    wsp_.resize(mu_.size());
-    order_by_mu();
+    if (force_zero_mu_) {
+      int dimension = (theta.size() + 1) / 2;
+      sigma_ = exp(ConstVectorView(theta, 0, dimension));
+      weights_ = inverse_logit(
+          ConstVectorView(theta, dimension, dimension - 1));
+      mu_.resize(dimension);
+      mu_ = 0;
+      wsp_.resize(dimension);
+      order_by_sigma();
+    } else {
+      int dimension = (theta.size() + 1) / 3;
+      mu_ = ConstVectorView(theta, 0, dimension);
+      sigma_ = exp(ConstVectorView(theta, dimension, dimension));
+      weights_ = inverse_logit(ConstVectorView(theta, 2*dimension, dimension - 1));
+      wsp_.resize(mu_.size());
+      order_by_mu();
+    }
     log_weights_ = log(weights_);
     check_sizes();
   }
@@ -224,16 +254,29 @@ namespace BOOM {
     sigma_ = sigma;
     weights_ = weights;
     wsp_.resize(mu_.size());
-    order_by_mu();
+    if (force_zero_mu_) {
+      mu_ = 0;
+      order_by_sigma();
+    } else {
+      order_by_mu();
+    }
     log_weights_ = log(weights_);
   }
 
+  void NormalMixtureApproximation::set_order(
+      const std::vector<int> &permutation) {
+    permute_inplace(permutation, mu_);
+    permute_inplace(permutation, sigma_);
+    permute_inplace(permutation, weights_);
+    permute_inplace(permutation, log_weights_);
+  }
+
   void NormalMixtureApproximation::order_by_mu(){
-    std::vector<int> order = index_table(mu_);
-    permute_inplace(order, mu_);
-    permute_inplace(order, sigma_);
-    permute_inplace(order, weights_);
-    permute_inplace(order, log_weights_);
+    set_order(index_table(mu_));
+  }
+
+  void NormalMixtureApproximation::order_by_sigma() {
+    set_order(index_table(sigma_));
   }
 
   double NormalMixtureApproximation::logp(double y)const{
@@ -303,7 +346,8 @@ namespace BOOM {
   }
 
   ostream & NormalMixtureApproximation::print(ostream &out) const {
-    out << "mu:      " << mu_ << endl
+
+    out << "mu:      " << std::setprecision(15) << mu_ << endl
         << "sigma:   " << sigma_ << endl
         << "weights: " << weights_ << endl
         << "kl:      " << kullback_leibler_ << endl

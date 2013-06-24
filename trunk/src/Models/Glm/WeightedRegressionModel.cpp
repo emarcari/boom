@@ -340,7 +340,7 @@ namespace BOOM{
       g=0;
       g.back() = -sigsq();
       h = h.Id();
-      return BOOM::infinity(-1);
+      return BOOM::negative_infinity();
     }
 
     Spd xtwx(suf()->xtx(inc));

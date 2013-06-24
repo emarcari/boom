@@ -24,6 +24,10 @@
 
 namespace BOOM{
 
+  // A composite model class that can be used in a finite mixture that
+  // expects to be fit using the EM algorithm.  The primary methods
+  // needed here are find_posterior_mode() and add_mixture_data(),
+  // both of which operate by delegating to the composite elements.
   class CompositeEmMixtureComponent
     : public CompositeModel,
       public EmMixtureComponent
@@ -36,7 +40,7 @@ namespace BOOM{
     template <class MOD>
     CompositeEmMixtureComponent(const std::vector<Ptr<MOD> > &mod)
         : CompositeModel(mod),
-          m_(mod.begin(), mod.end())
+          em_components_(mod.begin(), mod.end())
     {}
 
     CompositeEmMixtureComponent(const CompositeEmMixtureComponent &rhs);
@@ -46,13 +50,20 @@ namespace BOOM{
     virtual void find_posterior_mode();
     virtual void add_mixture_data(Ptr<Data>, double prob);
 
-    void add_model(Ptr<EmMixtureComponent>);
+    // add_model will report an error if called with a
+    // MixtureComponent that is not also an EmMixtureComponent.
+    virtual void add_model(Ptr<MixtureComponent>);
+
+    // Define members that are ambiguous because of multiple
+    // inheritance.
     virtual double pdf(Ptr<Data> dp, bool logscale)const{
       return CompositeModel::pdf(dp, logscale);}
     virtual double pdf(const Data * dp, bool logscale)const{
       return CompositeModel::pdf(dp, logscale);}
   private:
-    std::vector<Ptr<EmMixtureComponent> > m_;
+    // em_components_ points to the same thing as m_ in the
+    // CompositeModel base class.
+    std::vector<Ptr<EmMixtureComponent> > em_components_;
   };
 
 }

@@ -294,23 +294,23 @@ namespace BOOM{
     // non-cumulated client data.  The observation model for the
     // cumulated data is a Gaussian model with zero variance.
     virtual GaussianModel * observation_model(){
-      return observation_model_.dumb_ptr();}
+      return observation_model_.get();}
     virtual const GaussianModel * observation_model()const{
-      return observation_model_.dumb_ptr(); }
+      return observation_model_.get(); }
 
     // Returns a pointer to the RegressionModel that manages the
     // linear prediction based on contemporaneous covariates.
     RegressionModel * regression_model(){
-      return regression_.dumb_ptr();}
+      return regression_.get();}
     const RegressionModel * regression_model()const{
-      return regression_.dumb_ptr();}
+      return regression_.get();}
 
     // Returns a pointer to the RegressionStateModel used in the
     // Kalman filter.
     AggregatedRegressionStateModel * regression_state_model() {
-      return regression_state_.dumb_ptr();}
+      return regression_state_.get();}
     const AggregatedRegressionStateModel * regression_state_model()const{
-      return regression_state_.dumb_ptr();}
+      return regression_state_.get();}
 
     // This function updates the regression portion of the model.
     virtual void observe_data_given_state(int t);

@@ -139,7 +139,7 @@ namespace BOOM{
     double lam = this->lam();
     double ans=0;
     if(lam<=0){
-      ans = infinity(-1);
+      ans = negative_infinity();
       if(nd>0){
  	g[0]= std::max(fabs(lam), .10);
  	if(nd>1) h(0,0) = -1;
@@ -166,8 +166,8 @@ namespace BOOM{
 
   double ExponentialModel::Logp(double x, double &g, double &h, uint nd)const{
     double lam = this->lam();
-     if(lam<=0) return infinity(-1);
-     double ans = x <0 ? infinity(-1) : log(lam) - lam*x;
+     if(lam<=0) return negative_infinity();
+     double ans = x <0 ? negative_infinity() : log(lam) - lam*x;
     if(nd>0){
       if(lam>0) g = 1.0/lam - x;
       else g = 1.0;

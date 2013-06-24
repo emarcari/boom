@@ -54,9 +54,13 @@ double PDPS::logpri()const{
   double ans=0;
   for(uint i=0; i<d; ++i){
     double a = sum(Nu.row(i));
-    if(a <=0) return BOOM::infinity(-1);
+    if(a <=0) return BOOM::negative_infinity();
     phi = Nu.row(i);
-    for(uint j=0; j<d; ++j) if(phi[j] < min_nu_) return BOOM::infinity(-1);
+    for(uint j=0; j<d; ++j) {
+      if(phi[j] < min_nu_) {
+        return BOOM::negative_infinity();
+      }
+    }
     phi/=a;
     ans += alpha_row_prior_[i]->logp(a);
     ans += phi_row_prior_[i]->logp(phi);

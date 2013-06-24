@@ -29,22 +29,24 @@ namespace BOOM{
   GVS::GaussianVarSampler(GaussianModelBase * m, Ptr<GammaModelBase> g)
     : gam(g),
       mod(m),
-      upper_truncation_point_(BOOM::infinity(1))
+      upper_truncation_point_(BOOM::infinity())
   {}
 
   inline double sumsq(double nu, double sig){ return nu*sig*sig;}
 
-  GVS::GaussianVarSampler(GaussianModelBase* m, double prior_df, double prior_sigma_guess)
+  GVS::GaussianVarSampler(GaussianModelBase* m,
+                          double prior_df,
+                          double prior_sigma_guess)
     : gam(new GammaModel(prior_df/2.0, sumsq(prior_df,prior_sigma_guess)/2.0)),
       mod(m),
-      upper_truncation_point_(BOOM::infinity(1))
+      upper_truncation_point_(BOOM::infinity())
   {}
 
   void GVS::set_sigma_upper_limit(double max_sigma){
     if(max_sigma <= 0) {
       ostringstream err;
-      err << "GaussianVarSampler::set_sigma_upper_limit expects a positive argument, given "
-          << max_sigma;
+      err << "GaussianVarSampler::set_sigma_upper_limit expects a "
+          << "positive argument.  It was given " << max_sigma;
       report_error(err.str());
     }
     upper_truncation_point_ = max_sigma;
@@ -61,7 +63,7 @@ namespace BOOM{
     double ss = sumsq + 2*gam->beta();
 
     double ans;
-    if(upper_truncation_point_ == BOOM::infinity(1)){
+    if(upper_truncation_point_ == BOOM::infinity()){
       ans = rgamma_mt(rng(), df/2,ss/2);
     }else{
       ans = rtrun_gamma_mt(rng(), df/2, ss/2,

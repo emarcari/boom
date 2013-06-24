@@ -76,9 +76,9 @@ namespace BOOM{
   }
 
   ZeroMeanGaussianModel* SSM::observation_model(){
-    return observation_model_.dumb_ptr();}
+    return observation_model_.get();}
   const ZeroMeanGaussianModel* SSM::observation_model()const{
-    return observation_model_.dumb_ptr();}
+    return observation_model_.get();}
 
   void SSM::observe_data_given_state(int t){
     // Assuming ignorable missing data.
@@ -155,7 +155,7 @@ namespace BOOM{
 
     for(int t = 0; t < n; ++t){
       double y = observed_data[t];
-      bool missing(y == BOOM::infinity(-1));
+      bool missing(y == BOOM::negative_infinity());
       sparse_scalar_kalman_update(y,
                                   ks.a,
                                   ks.P,

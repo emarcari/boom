@@ -78,6 +78,13 @@ namespace BOOM{
     return *this;
   }
 
+  SM & SM::reset(double *data, int nrow, int ncol, int new_stride) {
+    start_ = data;
+    nr_ = nrow;
+    nc_ = ncol;
+    stride = new_stride;
+    return *this;
+  }
 
   SM & SM::operator=(const Matrix &rhs){
     assert(rhs.nrow()==nr_ && rhs.ncol()==nc_);
@@ -99,6 +106,13 @@ namespace BOOM{
     ConstVectorView ans(cols(j), nr_, 1);
     return ans;
   }
+  VectorView SM::last_col(){
+    return col(nc_ - 1);
+  }
+  ConstVectorView SM::last_col()const{
+    return col(nc_ - 1);
+  }
+
   //------------------------------------------------------------
   VectorView SM::row(uint i){
     VectorView ans(cols(0) + i, nc_, stride);
@@ -107,6 +121,12 @@ namespace BOOM{
   ConstVectorView SM::row(uint i)const{
     ConstVectorView ans(cols(0)+i, nc_, stride);
     return ans;
+  }
+  VectorView SM::last_row(){
+    return row(nr_ - 1);
+  }
+  ConstVectorView SM::last_row()const{
+    return row(nr_ - 1);
   }
 
   VectorView SM::diag(){
@@ -224,6 +244,20 @@ namespace BOOM{
   }
 
   //======================================================================
+  CSM::ConstSubMatrix(const Matrix &m)
+      : start_(m.data()),
+        nr_(m.nrow()),
+        nc_(m.ncol()),
+        stride(m.nrow())
+  {}
+
+  CSM::ConstSubMatrix(const SubMatrix &m)
+      : start_(m.start_),
+        nr_(m.nr_),
+        nc_(m.nc_),
+        stride(m.stride)
+  {}
+
   CSM::ConstSubMatrix(const Matrix &m, uint rlo, uint rhi, uint clo, uint chi)
       : start_(m.data() + clo*m.nrow() + rlo),
         nr_(rhi-rlo+1),
@@ -247,9 +281,15 @@ namespace BOOM{
     ConstVectorView ans(cols(j), nr_, 1);
     return ans;
   }
+  ConstVectorView CSM::last_col()const{
+    return col(nc_ - 1);
+  }
   ConstVectorView CSM::row(uint i)const{
     ConstVectorView ans(cols(0)+i, nc_, stride);
     return ans;
+  }
+  ConstVectorView CSM::last_row()const{
+    return row(nr_ - 1);
   }
 
   ConstVectorView CSM::diag()const{

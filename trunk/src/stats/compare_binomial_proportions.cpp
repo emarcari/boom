@@ -64,15 +64,15 @@ namespace BOOM{
       std::swap(trials1, trials2);
       complement = false;
     }else{
-      ostringstream err;
+      std::ostringstream err;
       err << "None of the four inputs was minimal in "
           << "compare_binomial_proportions.  "
-          << "Something has gone horribly wrong." << endl
-          << "min_value = " << min_value << endl
-          << "successes1 = " << successes1 << endl
-          << "successes2 = " << successes2 << endl
-          << "failures1 = " << failures1 << endl
-          << "failures2 = " << failures2 << endl;
+          << "Something has gone horribly wrong." << std::endl
+          << "min_value = " << min_value << std::endl
+          << "successes1 = " << successes1 << std::endl
+          << "successes2 = " << successes2 << std::endl
+          << "failures1 = " << failures1 << std::endl
+          << "failures2 = " << failures2 << std::endl;
       report_error(err.str());
     }
 

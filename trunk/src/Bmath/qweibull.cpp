@@ -54,7 +54,7 @@ double qweibull(double p, double shape, double scale, int lower_tail, int log_p)
     if (shape <= 0 || scale <= 0) ML_ERR_return_NAN;
 
     if (p == R_D__0) return 0;
-    if (p == R_D__1) return BOOM::infinity(1);
+    if (p == R_D__1) return BOOM::infinity();
     return scale * pow(- R_DT_Clog(p), 1./shape) ;
 }
 }

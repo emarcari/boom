@@ -71,9 +71,9 @@ namespace BOOM{
     virtual double adjusted_observation(int t)const;
     virtual bool is_missing_observation(int t)const;
     virtual RegressionModel * observation_model(){
-      return regression_.dumb_ptr();}
+      return regression_.get();}
     virtual const RegressionModel * observation_model()const{
-      return regression_.dumb_ptr(); }
+      return regression_.get(); }
 
     virtual void observe_data_given_state(int t);
 

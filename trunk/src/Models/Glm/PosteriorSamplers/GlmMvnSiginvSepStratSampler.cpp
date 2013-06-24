@@ -209,7 +209,7 @@ namespace BOOM{
 
     const VectorView ell_diag(LT.diag());
     for(uint k=0; k<K; ++k){
-      if(S[k]==0) return BOOM::infinity(-1);
+      if(S[k]==0) return BOOM::negative_infinity();
       double ss = 2*Spri[k]->beta();
       double df = 2*Spri[k]->alpha();
       ans -= .5* ss/pow(S[k],2);
@@ -219,10 +219,10 @@ namespace BOOM{
       VectorView ell_full(LT.col(k));
       VectorView ell = subvector(ell_full, 0, k);
       double diagSiginv = ell.normsq();
-      if(diagSiginv==0) return BOOM::infinity(-1);
+      if(diagSiginv==0) return BOOM::negative_infinity();
       ans -= 0.5*(K+1) * log(fabs(diagSiginv));
 
-      if(ell_diag[k]==0.0) return BOOM::infinity(-1);
+      if(ell_diag[k]==0.0) return BOOM::negative_infinity();
       ans += (K-k) * log(fabs(ell_diag[k]));
     }
     return ans;

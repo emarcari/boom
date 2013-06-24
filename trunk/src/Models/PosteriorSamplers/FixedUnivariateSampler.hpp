@@ -38,7 +38,7 @@ namespace BOOM{
 
     virtual double logpri()const{
       if(prm_->value() == value_) return 0;
-      return BOOM::infinity(-1);
+      return BOOM::negative_infinity();
     }
 
    private:

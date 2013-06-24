@@ -17,36 +17,15 @@
 */
 
 #include <Models/Glm/PosteriorSamplers/PoissonRegressionAuxMixSampler.hpp>
+#include <Models/Glm/PosteriorSamplers/poisson_mixture_approximation_table.hpp>
 #include <distributions.hpp>
 #include <boost/thread/thread.hpp>
 
-namespace BOOM {
-  void fill_poisson_mixture_approximation_table_1(
-      NormalMixtureApproximationTable *table);
-  void fill_poisson_mixture_approximation_table_2(
-      NormalMixtureApproximationTable *table);
-  void fill_poisson_mixture_approximation_table_3(
-      NormalMixtureApproximationTable *table);
-}
-
 namespace {
   inline double square(double x) { return x * x; }
-
-  BOOM::NormalMixtureApproximationTable create_table() {
-    BOOM::NormalMixtureApproximationTable table;
-    BOOM::fill_poisson_mixture_approximation_table_1(&table);
-    BOOM::fill_poisson_mixture_approximation_table_2(&table);
-    BOOM::fill_poisson_mixture_approximation_table_3(&table);
-    return table;
-  }
-
 }
 
 namespace BOOM {
-
-  // Initialize static objects.
-  NormalMixtureApproximationTable
-  PoissonRegressionAuxMixSampler::mixture_table_(create_table());
 
   // This is the public constructor to be called by a master node.
   PoissonRegressionAuxMixSampler::PoissonRegressionAuxMixSampler(
@@ -56,6 +35,7 @@ namespace BOOM {
       : model_(model),
         prior_(prior),
         complete_data_suf_(model_->xdim()),
+        data_imputer_(new PoissonDataImputer),
         first_time_(true),
         num_threads_(1),
         thread_id_(0)
@@ -67,7 +47,7 @@ namespace BOOM {
     // in the unthreaded case (i.e. when there is a master but no
     // workers).
     if (number_of_threads > 1) {
-      data_imputers_.reserve(number_of_threads);
+      workers_.reserve(number_of_threads);
       for (int i = 0; i < number_of_threads; ++i) {
         boost::shared_ptr<PoissonRegressionAuxMixSampler> data_imputer(
             new PoissonRegressionAuxMixSampler(
@@ -75,7 +55,7 @@ namespace BOOM {
                 prior_,
                 number_of_threads,
                 i));
-        data_imputers_.push_back(data_imputer);
+        workers_.push_back(data_imputer);
       }
     }
   }
@@ -90,6 +70,7 @@ namespace BOOM {
       : model_(model),
         prior_(prior),
         complete_data_suf_(model->xdim()),
+        data_imputer_(new PoissonDataImputer),
         first_time_(false),
         num_threads_(num_threads),
         thread_id_(thread_id)
@@ -113,36 +94,34 @@ namespace BOOM {
     PoissonRegressionAuxMixSampler *sampler_;
   };
 
-
   void PoissonRegressionAuxMixSampler::impute_latent_data_single_threaded(){
     const std::vector<Ptr<PoissonRegressionData> > &data(model_->dat());
     int n = data.size();
     for(int i = thread_id_; i < n; i += num_threads_){
-      const Vec &x(data[i]->x());
-
-      // Lambda incorporates the exposure term, if used.
-      double eta = model_->predict(x) + data[i]->log_exposure();
-      double lambda = exp(eta);
-
-      int y = data[i]->y();
-      double final_event_time = 0;
-      double mu, sigsq;
+      const PoissonRegressionData *dp = data[i].get();
+      const Vec &x(dp->x());
+      double eta = model_->predict(x);
+      int y = dp->y();
+      double exposure = dp->exposure();
+      double internal_neglog_final_event_time;
+      double internal_mu;
+      double internal_weight;
+      double neglog_final_interarrival_time;
+      double external_mu;
+      double external_weight;
+      data_imputer_->impute(rng(), y, exposure, eta,
+                            &internal_neglog_final_event_time,
+                            &internal_mu,
+                            &internal_weight,
+                            &neglog_final_interarrival_time,
+                            &external_mu,
+                            &external_weight);
       if (y > 0) {
-        final_event_time = draw_final_event_time(y);
-        double neglog_final_event_time = -log(final_event_time);
-        double mu, sigsq;
-        unmix(neglog_final_event_time - eta, y, &mu, &sigsq);
-        complete_data_suf_.add_data(x,
-                                    neglog_final_event_time - mu,
-                                    1.0/sigsq);
+        complete_data_suf_.add_data(
+            x, internal_neglog_final_event_time - internal_mu, internal_weight);
       }
-      double censored_event_time =
-          rexp_mt(rng(), lambda) + (1-final_event_time);
-      double neglog_censored_event_time = -log(censored_event_time);
-      unmix(neglog_censored_event_time - eta, 1, &mu, &sigsq);
-      complete_data_suf_.add_data(x,
-                                  neglog_censored_event_time - mu,
-                                  1.0/sigsq);
+      complete_data_suf_.add_data(
+          x, neglog_final_interarrival_time - external_mu, external_weight);
     }
   }
 
@@ -167,7 +146,7 @@ namespace BOOM {
   // above 1 - tau[i].
   void PoissonRegressionAuxMixSampler::impute_latent_data(){
     complete_data_suf_.clear();
-    if (first_time_ || data_imputers_.empty()) {
+    if (first_time_ || workers_.empty()) {
       impute_latent_data_single_threaded();
       first_time_ = false;
     } else {
@@ -175,16 +154,16 @@ namespace BOOM {
       // least one trip through the data has taken place, then launch
       // a series of threads to do the data augmentation.
       std::vector<boost::shared_ptr<boost::thread> > threads;
-      for (int i = 0; i < data_imputers_.size(); ++i) {
+      for (int i = 0; i < workers_.size(); ++i) {
         boost::shared_ptr<boost::thread> thread(
             new boost::thread(
-                PoissonRegressionDataImputer(data_imputers_[i].get())));
+                PoissonRegressionDataImputer(workers_[i].get())));
         threads.push_back(thread);
       }
-      for (int i = 0; i < data_imputers_.size(); ++i) {
+      for (int i = 0; i < workers_.size(); ++i) {
         threads[i]->join();
         complete_data_suf_.combine(
-            data_imputers_[i]->complete_data_sufficient_statistics());
+            workers_[i]->complete_data_sufficient_statistics());
       }
     }
   }
@@ -205,19 +184,4 @@ namespace BOOM {
     return complete_data_suf_;
   }
 
-  void PoissonRegressionAuxMixSampler::unmix(
-      double u, int n, double *mu, double *sigsq){
-    if (n >= 30000) {
-      // If n is very large then the distribution very close to
-      // Gaussian.  The mode can be obtained analytically, and the
-      // curvature at the mode is just 1.0/n.
-      *mu = -log(n);
-      *sigsq = 1.0/n;
-      return;
-    } else {
-      NormalMixtureApproximation approximation(mixture_table_.approximate(n));
-      approximation.unmix(rng(), u, mu, sigsq);
-    }
-  }
-
-}
+}  // namespace BOOM

@@ -50,7 +50,7 @@ namespace BOOM{
   //======================================================================
 
   ostream & CHD::display(ostream &out)const{
-    out << CategoricalData::display(out) << " " << *xsubject_ << " ";
+    CategoricalData::display(out) << " " << *xsubject_ << " ";
     for(uint i=0; i<xchoice_.size(); ++i) out << Xchoice(i) << " ";
     return out;
   }
