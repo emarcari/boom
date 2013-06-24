@@ -76,11 +76,12 @@ double AMCS::logpri()const{
   for(uint s=0; s<S; ++s){
     if(!abs_[s]){
       ans += ddirichlet(Q.row(s), Nu().row(s), true);
-      if(ans == BOOM::infinity(-1)){
+      if(ans == BOOM::negative_infinity()){
         ostringstream err;
         err << "Q(" << s << ") = " << Q.row(s) << endl
             << "Nu(" << s << ") = " << Nu().row(s) << endl
-            << "ddirichlet(Q,Nu, true) = " << ddirichlet(Q.row(s), Nu().row(s), true)
+            << "ddirichlet(Q,Nu, true) = "
+            << ddirichlet(Q.row(s), Nu().row(s), true)
             << endl;
         report_error(err.str());
       }
@@ -92,7 +93,9 @@ double AMCS::logpri()const{
   check_pi0();
   nu = this->nu();
 
-  ans += ddirichlet(trans_.select(mod_->pi0()), trans_.select(this->nu()), true);
+  ans += ddirichlet(trans_.select(mod_->pi0()),
+                    trans_.select(this->nu()),
+                    true);
   return ans;
 }
 

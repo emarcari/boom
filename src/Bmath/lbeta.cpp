@@ -71,10 +71,10 @@ double lbeta(double a, double b)
     if (p < 0)
 	ML_ERR_return_NAN
     else if (p == 0) {
-	return BOOM::infinity(1);
+	return BOOM::infinity();
     }
     else if (!R_FINITE(q)) {
-	return BOOM::infinity(-1);
+	return BOOM::negative_infinity();
     }
 
     if (p >= 10) {

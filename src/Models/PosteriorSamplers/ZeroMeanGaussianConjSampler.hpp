@@ -33,7 +33,8 @@ namespace BOOM{
                                  double df, double sigma_guess);
 
      ZeroMeanGaussianConjSampler * clone()const;
-     void find_posterior_mode();  // mode taken with respect to d sigsq, not d siginv
+     // The posterior mode is with respect to d sigsq, not d siginv.
+     void find_posterior_mode();
     private:
      ZeroMeanGaussianModel * mod;
    };

@@ -71,7 +71,7 @@ double dgamma(double x, double shape, double scale, int give_log)
 	return R_D__0;
     if (x == 0) {
       //	if (shape < 1) ML_ERR_return_NAN;
-      if(shape < 1) return BOOM::infinity(1);
+      if(shape < 1) return BOOM::infinity();
       if(shape > 1) return R_D__0;
       /* else */
       return give_log ? -log(scale) : 1 / scale;

@@ -56,7 +56,7 @@ namespace BOOM{
     CompositeModel(const CompositeModel &rhs);
     CompositeModel * clone()const;
 
-    void add_model(Ptr<MixtureComponent>);
+    virtual void add_model(Ptr<MixtureComponent>);
 
     virtual void add_data(Ptr<CompositeData>);
     virtual void add_data(Ptr<Data>);

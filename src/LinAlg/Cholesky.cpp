@@ -146,11 +146,11 @@ namespace BOOM{
 
     void Chol::check()const{
       if(!pos_def){
-        ostringstream err;
-        err << "attempt to use an invalid cholesky decomposition" << endl
-            << "dcmp = " << endl
-            << dcmp << endl
-            << "original matrix = " << endl
+        std::ostringstream err;
+        err << "attempt to use an invalid cholesky decomposition" << std::endl
+            << "dcmp = " << std::endl
+            << dcmp << std::endl
+            << "original matrix = " << std::endl
             << original_matrix();
         report_error(err.str());
       }

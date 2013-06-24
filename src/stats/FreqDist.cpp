@@ -74,7 +74,7 @@ namespace BOOM{
     counts_ = count_values(y, labs_);
   }
 
-  ostream & FreqDist::print(ostream &out)const{
+  std::ostream & FreqDist::print(std::ostream &out)const{
     uint N = labs_.size();
     uint labfw=0;
     uint countfw=0;
@@ -92,7 +92,7 @@ namespace BOOM{
     for(uint i=0; i<N; ++i){
       out << std::setw(labfw) << labs_[i]
 	  << std::setw(countfw) << counts_[i]
-	  << endl;
+	  << std::endl;
     }
     return out;
   }

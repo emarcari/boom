@@ -124,7 +124,7 @@ namespace Rmath{
 
 
     const double xbig = 171.624;
-    /* BOOM::infinity(1) ==   const double xinf = 1.79e308;*/
+    /* BOOM::infinity() ==   const double xinf = 1.79e308;*/
     /* numeric_limits<double>::epsilon() = const double eps = 2.22e-16;*/
     /* numeric_limits<double>::min() ==   const double xminin = 2.23e-308;*/
 
@@ -175,7 +175,7 @@ namespace Rmath{
 	fact = -M_PI / sin(M_PI * res);
 	y += 1.;
       } else {
-	return(BOOM::infinity(1));
+	return(BOOM::infinity());
       }
     }
     /* -----------------------------------------------------------------
@@ -188,7 +188,7 @@ namespace Rmath{
       if (y >= numeric_limits<double>::min()) {
 	res = 1. / y;
       } else {
-	return(BOOM::infinity(1));
+	return(BOOM::infinity());
       }
     } else if (y < 12.) {
       yi = y;
@@ -244,7 +244,7 @@ namespace Rmath{
 	sum += (y - .5) * log(y);
 	res = exp(sum);
       } else {
-	return(BOOM::infinity(1));
+	return(BOOM::infinity());
       }
     }
     /* ----------------------------------------------------------------------

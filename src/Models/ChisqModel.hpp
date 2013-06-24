@@ -40,6 +40,7 @@ namespace BOOM{
 
     double df()const;
     double sigsq()const;
+    double sum_of_squares()const;
 
     virtual double alpha()const;
     virtual double beta()const;

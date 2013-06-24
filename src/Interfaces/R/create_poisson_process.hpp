@@ -34,14 +34,14 @@ namespace BOOM{
   //     in the list managed by io_manager.
   //   io_manager: A pointer to the object managing the R list that
   //     will record (or has already recorded) the MCMC output.
-  //   prefix: A string to be prepended to this model's name in the
-  //     list managed by io_manager.
+  //   process_name: The name of this process, to be used in the list
+  //     managed by io_manager.
   // Returns:
   //   A PoissonProcess model of the appropriate type.  The model has
   //   a posterior sampling method assigned, but no data is assigned.
   Ptr<PoissonProcess> CreatePoissonProcess(SEXP r_poisson_process,
                                            RListIoManager *io_manager,
-                                           const string &prefix);
+                                           const string &process_name);
   }
 }
 #endif // BOOM_RINTERFACE_CREATE_POISSON_PROCESS_HPP_

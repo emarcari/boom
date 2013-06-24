@@ -76,8 +76,8 @@ double qnorm(double p, double mu, double sigma, int lower_tail, int log_p)
     if (ISNAN(p) || ISNAN(mu) || ISNAN(sigma))
 	return p + mu + sigma;
 #endif
-    if (p == R_DT_0)	return BOOM::infinity(-1);
-    if (p == R_DT_1)	return BOOM::infinity(1);
+    if (p == R_DT_0)	return BOOM::negative_infinity();
+    if (p == R_DT_1)	return BOOM::infinity();
     R_Q_P01_check(p);
 
     if(sigma  < 0)	ML_ERR_return_NAN;
@@ -148,8 +148,8 @@ double qnorm(double p, double mu, double sigma, int lower_tail, int log_p)
 	    REprintf("\t r < numeric_limits<double>::min() : giving up (-> +- Inf \n");
 #endif
 	   BOOM::throw_exception<std::range_error>("");
-	    if(q < 0.0) return BOOM::infinity(-1);
-	    else	return BOOM::infinity(1);
+	    if(q < 0.0) return BOOM::negative_infinity();
+	    else	return BOOM::infinity();
 	}
     }
 /* FIXME: This could be improved when log_p or !lower_tail ?

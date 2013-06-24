@@ -107,7 +107,7 @@ namespace BOOM{
     }
   }
 
-  ostream & Polynomial::print(std::ostream &out)const{
+  std::ostream & Polynomial::print(std::ostream &out)const{
     for (int n = degree(); n >= 0; --n) {
       if (n < degree() && coefficients_[n] > 0) out << " + ";
       if (coefficients_[n] != 0.000) {

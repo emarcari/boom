@@ -39,9 +39,10 @@ namespace BOOM{
     GammaSuf(const GammaSuf &);
     GammaSuf *clone() const;
 
+    void set(double sum, double sumlog, double n);
     void clear();
     void Update(const DoubleData &dat);
-    void update_raw_data(double y);
+    void update_raw(double y);
     void add_mixture_data(double y, double prob);
 
     double sum()const;
@@ -90,10 +91,14 @@ namespace BOOM{
       public PriorPolicy
   {
   public:
-    // if moments==true then this is a Gamma model with mean b and
-    // shape parameter a.  Otherwise the mean is a/b (usual
-    // parameterization)
-    GammaModel(double a=1.0, double b=1.0, bool moments=false);
+    // The usual parameterization of the Gamma distribution a =
+    // shape, b = scale, mean = a/b.
+    GammaModel(double a=1.0, double b=1.0);
+
+    // To initialize a GammaModel with shape (a) and mean parameters,
+    // simply include a third argument that is an int.
+    GammaModel(double shape, double mean, int);
+
     GammaModel(const GammaModel &m);
     GammaModel *clone() const;
 
@@ -107,6 +112,8 @@ namespace BOOM{
     void set_alpha(double);
     void set_beta(double);
     void set_params(double a, double b);
+
+    double mean()const;
 
     // probability calculations
     double Loglike(Vec &g, Mat &h, uint lev) const;

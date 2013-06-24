@@ -35,7 +35,7 @@ namespace BOOM{
     random_direction();
     pstar = f(theta);
     if(!BOOM::finite(pstar)){
-      string msg = "invalid condition used to initialize SliceSampler";
+      std::string msg = "invalid condition used to initialize SliceSampler";
       throw_exception<std::runtime_error>(msg);
     }
 

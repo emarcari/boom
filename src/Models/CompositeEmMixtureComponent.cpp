@@ -17,6 +17,7 @@
 */
 
 #include "CompositeEmMixtureComponent.hpp"
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 
@@ -27,37 +28,52 @@ namespace BOOM{
 
   CME::CompositeEmMixtureComponent(const CME &rhs)
     : Model(rhs),
-      CompositeModel(rhs.m_),
+      CompositeModel(rhs),
       EmMixtureComponent(rhs)
   {
-    uint S = rhs.m_.size();
-    for(uint s=0; s<S; ++s) m_.push_back(rhs.m_[s]->clone());
-    CM::set_models(m_.begin(), m_.end());
+    int S = components().size();
+    em_components_.reserve(S);
+    for (int s = 0; s < S; ++s) {
+      em_components_.push_back(components()[s].dcast<EmMixtureComponent>());
+    }
   }
 
   CME * CME::clone()const{return new CME(*this);}
 
   void CME::mle(){
-    for(int s = 0; s < m_.size(); ++s){
-      m_[s]->mle();
+    for(int s = 0; s < em_components_.size(); ++s){
+      em_components_[s]->mle();
     }
   }
 
   void CME::find_posterior_mode(){
-    for(uint s=0; s<m_.size(); ++s){
-      m_[s]->find_posterior_mode();
+    for(uint s=0; s<em_components_.size(); ++s){
+      em_components_[s]->find_posterior_mode();
     }
   }
 
   void CME::add_mixture_data(Ptr<Data> dp, double prob){
     Ptr<CompositeData> d(CM::DAT(dp));
-    uint S = m_.size();
+    uint S = em_components_.size();
     assert(d->dim() == S);
-    for(uint s=0; s<S; ++s) m_[s]->add_mixture_data(d->get_ptr(s), prob);
+    for(uint s=0; s<S; ++s){
+      em_components_[s]->add_mixture_data(d->get_ptr(s), prob);
+    }
   }
 
-  void CME::add_model(Ptr<EmMixtureComponent> new_model){
-    m_.push_back(new_model);
-    CM::add_model(new_model);
+  void CME::add_model(Ptr<MixtureComponent> new_model){
+    Ptr<EmMixtureComponent> em_model = new_model.dcast<EmMixtureComponent>();
+    if (!em_model) {
+      report_error("Could not convert argument to an EmMixtureComponent in "
+                   "CompositeEmMixtureComponent::"
+                   "add_model(Ptr<MixtureComponent>)");
+    }
+    em_components_.push_back(em_model);
+    CM::add_model(em_model);
   }
+
+  // void CME::add_model(Ptr<EmMixtureComponent> new_model){
+  //   em_components_.push_back(new_model);
+  //   CM::add_model(new_model);
+  // }
 }

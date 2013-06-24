@@ -22,24 +22,61 @@
 #include <numopt.hpp>
 #include <LinAlg/Vector.hpp>
 #include <distributions/rng.hpp>
+#include <distributions/Rmath_dist.hpp>
 
 namespace BOOM {
 
+  // A NormalMixtureApproximation is a finite mixture approximation to
+  // a specific distribution.  The mixture approximation is determined
+  // by a set of mixing weights w (non-negative numbers that sum to
+  // 1), a vector of means mu, and a vector of standard deviations
+  // sigma.  Then the distribution is approximated by
+  //
+  //       f(x) \approx sum_k w[k] N(x | mu[k], sigma[k]).
   class NormalMixtureApproximation {
    public:
+    // Use this constructor for an empty NormalMixtureApproximation
+    // with n mixture components.
     NormalMixtureApproximation(int n);
+
+    // Use this constructor for a NormalMixtureApproximation with a
+    // specified set of mixture components and mixing weights.
     NormalMixtureApproximation(const Vector &mu,
                                const Vector &sigma,
                                const Vector &weights);
+
+    // Use this constructor to find the approximation that best fits a
+    // specific target distribution.
+    // Args:
+    //   log_target_density: The log of the distribution to be
+    //     approximated.
+    //   initial_mu: A vector of initial values to use for the means
+    //     of the approximating mixture components.
+    //   initial_sigma: A vector of standard deviations to use as the
+    //     initial values for the approximating mixture components.
+    //   initial_weights: A vector to use as the initial values of the
+    //     mixing weights.
+    //   precision: The fitting algorithm will stop if the
+    //     Kullback-Leibler divergence between target and the
+    //     approximating mixture is less than this number.
+    //   max_evals: The maximum number of trials allowed for the
+    //     fitting algorithm.
+    //   initial_stepsize: A parameter passed to the NEWUOA fitting
+    //     algorithm.
+    //   force_zero_mu: If true then then all mixture components will
+    //     be forced to have zero mean.
     NormalMixtureApproximation(
-        ScalarTarget target,
+        ScalarTarget log_target_density,
         const Vector &initial_mu,
         const Vector &initial_sigma,
         const Vector &initial_weights,
         double precision = 1e-6,   // the precision of the final KL divergence
         int max_evals = 20000,     // max number of times to evaluate logf
-        double initial_stepsize = 10.0);
+        double initial_stepsize = 10.0,
+        bool force_zero_mu = false);
 
+    // Set the mixing weights, means, and standard deviations to the
+    // specified values.
     void set(const Vector &mu, const Vector &sigma, const Vector &weights);
 
     // If the dimension of the approximation is k, then the first k
@@ -47,15 +84,21 @@ namespace BOOM {
     // log(sigma), then the k-1 values of log(weights / weights[0]).
     void set(const Vector &theta);
 
+    // The number of mixture components used in the approximation.
     int dim()const{return mu_.size();}
+
     const Vector &mu()const{return mu_;}
     const Vector &sigma()const{return sigma_;}
     const Vector &weights()const{return weights_;}
     const Vector &log_weights()const{return log_weights_;}
 
-    // Return the log of the approximating normal mixture density at x.
+    // Return the log of the approximating normal mixture density at
+    // x.
     double logp(double x)const;
 
+    // For a particular observation u drawn from the distribution
+    // being approximated, take a random draw of the mixture component
+    // that generated it.
     void unmix(RNG &rng, double u, double *mu, double *sigsq)const;
 
     double kullback_leibler()const;
@@ -68,12 +111,20 @@ namespace BOOM {
    private:
     // Ensures that mu, sigma, and weights are all the correct size.
     void check_sizes();
+    // Apply the given permutation to the mixture components.
+    // Args:
+    //   permutation: An arrangement of the numbers 0, 1, 2,
+    //   ... dim()-1 representing the new order of the mixture
+    //   components.
+    void set_order(const std::vector<int> &permutation);
     void order_by_mu();
+    void order_by_sigma();
     Vector mu_;
     Vector sigma_;
     Vector weights_;
     Vector log_weights_;
     mutable Vector wsp_;
+    bool force_zero_mu_;
 
     // The kl distance between the approximation and the target.  This
     // is set automatically by the constructor that takes the target.
@@ -86,6 +137,13 @@ namespace BOOM {
   inline ostream & operator<<(ostream &out,
                               const NormalMixtureApproximation &approximation){
     return approximation.print(out);}
+
+
+  // A ZeroMeanNormalMixtureApproximation is a
+  // NormalMixtureApproximation with mu forced to zero.
+  class ZeroMeanNormalMixtureApproximation {
+  };
+
 
   //======================================================================
   class ApproximationDistance {
@@ -141,6 +199,7 @@ namespace BOOM {
 
   //======================================================================
 
+  // A table of NormalMixtureApproximations.
   class NormalMixtureApproximationTable {
    public:
     NormalMixtureApproximationTable();
@@ -173,8 +232,8 @@ namespace BOOM {
   class NegLogGamma {
    public:
     NegLogGamma(double nu) : nu_(nu) {}
-    double operator()(double y)const{
-      return -nu_*y - exp(-y) - std::lgamma(nu_); }
+    double operator()(double y)const {
+      return -nu_*y - exp(-y) - lgamma(nu_); }
    private:
     double nu_;
   };

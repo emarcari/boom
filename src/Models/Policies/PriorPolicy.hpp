@@ -25,37 +25,24 @@
 
 namespace BOOM{
 
-  class PriorPolicyBase
-      : private RefCounted
-  {
-   public:
-    virtual  PriorPolicyBase * clone()const=0;
-    virtual void sample_posterior()=0;
-    virtual double logpri()const=0;
-    virtual void set_method(Ptr<PosteriorSampler>)=0;
-    friend void intrusive_ptr_add_ref(PriorPolicyBase *d){d->up_count();}
-    friend void intrusive_ptr_release(PriorPolicyBase *d){
-      d->down_count(); if(d->ref_count()==0) delete d;}
-
-   private:
-
-  };
-
-
-
   class PriorPolicy : virtual public Model{
     // policy class to cover how a model sets priors for its paramters.
   public:
     virtual PriorPolicy * clone()const=0;
 
-    virtual void sample_posterior();  //
+    // Invoke each of the sampling methods that have been set, in the
+    // order they were set.
+    virtual void sample_posterior();
     virtual double logpri()const;
     virtual void set_method(Ptr<PosteriorSampler>);
-
     virtual void clear_methods();
 
+    // Returns the number of sampling methods that have been set.
+    int number_of_sampling_methods() const;
   private:
     std::vector<Ptr<PosteriorSampler> > samplers_;
   };
-}
+
+}  // namespace BOOM
+
 #endif // BOOM_PRIOR_POLICY_HPP

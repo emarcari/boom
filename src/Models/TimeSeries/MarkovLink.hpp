@@ -32,8 +32,8 @@ namespace BOOM{
     MarkovLink(Ptr<D> Prev);
     MarkovLink(const MarkovLink &rhs);
     virtual ~MarkovLink(){ clear_links(); } // problems?????
-    D * prev()const{return prev_.dumb_ptr();}
-    D * next()const{return next_.dumb_ptr();}
+    D * prev()const{return prev_.get();}
+    D * next()const{return next_.get();}
     MarkovLink<D> & operator=(const MarkovLink &rhs);
     void unset_prev(){prev_ = Ptr<D>();}
     void unset_next(){next_ = Ptr<D>();}

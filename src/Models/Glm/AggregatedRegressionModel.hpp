@@ -183,7 +183,7 @@ namespace BOOM {
     // the model parameters.
     void distribute_group_totals();
 
-    RegressionModel *regression_model()const{return model_.dumb_ptr();}
+    RegressionModel *regression_model()const{return model_.get();}
    private:
     // Method used to implement the constructor.
     // Args:

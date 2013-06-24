@@ -56,7 +56,7 @@ namespace BOOM{
     // there are no regression effects, or if the state contains a
     // RegressionStateModel this is literally y[t].  If there are
     // regression effects it is y[t] - beta * x[t].  If y[t] is
-    // missing then infinity(1) is returned.
+    // missing then infinity() is returned.
     virtual double adjusted_observation(int t)const = 0;
 
     // Returns true if observation t is missing, and false otherwise.

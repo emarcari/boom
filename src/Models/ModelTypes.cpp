@@ -125,7 +125,8 @@ namespace BOOM{
 
   uint Model::track_progress(const string & dname, bool restart, uint nskip,
 			     const string & prog_name, bool keep_existing_msg){
-    progress_.reset(new ProgressTracker(dname, nskip, restart, prog_name, keep_existing_msg));
+    progress_.reset(new ProgressTracker(
+        dname, nskip, restart, prog_name, keep_existing_msg));
     uint ans = restart ? progress_->restart() : 0 ;
     return ans;
   }

@@ -131,6 +131,7 @@ namespace BOOM{
 
     virtual const Vec & value()const{return x;}
     virtual void set(const Vec &rhs, bool signal=true);
+    virtual void set_element(double value, int position, bool signal = true);
 
     double operator[](uint)const;
     double & operator[](uint);
@@ -145,7 +146,8 @@ namespace BOOM{
     MatrixData(const MatrixData &rhs);
     MatrixData * clone()const;
 
-    uint size(bool =true)const{return x.size();}  // number of elements in Matrix
+    // The size() is the number of elements in the Matrix.
+    uint size(bool =true)const{return x.size();}
     uint nrow()const{return x.nrow();}
     uint ncol()const{return x.ncol();}
 
@@ -153,6 +155,7 @@ namespace BOOM{
 
     virtual const Mat & value()const{return x;}
     virtual void set(const Mat &rhs, bool signal=true);
+    virtual void set_element(double value, int row, int col, bool signal=true);
   private:
     Mat x;
   };

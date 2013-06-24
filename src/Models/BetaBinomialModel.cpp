@@ -126,6 +126,14 @@ namespace BOOM {
       } catch(...) {
         method_of_moments();
       }
+      // Make sure a and b don't get set to absurdly small values in
+      // the constructor.
+      if (a() < .1) {
+        set_a(.1);
+      }
+      if (b() < .1) {
+        set_b(.1);
+      }
     }
   }
 
@@ -146,7 +154,7 @@ namespace BOOM {
   double BetaBinomialModel::Loglike(Vec &g, Mat &h, uint nd)const{
     double a = this->a();
     double b = this->b();
-    if(a <= 0 || b <= 0) return BOOM::infinity(-1);
+    if(a <= 0 || b <= 0) return BOOM::negative_infinity();
     const std::vector<Ptr<BinomialData> > &data(dat());
     int nobs = data.size();
     double ans = 0;
@@ -181,7 +189,7 @@ namespace BOOM {
   }
 
   double BetaBinomialModel::logp(int n, int y, double a, double b)const{
-    if(a <= 0 || b <= 0) return BOOM::infinity(-1);
+    if(a <= 0 || b <= 0) return BOOM::negative_infinity();
     double ans = lgamma(n+1) - lgamma(y+1) - lgamma(n-y+1);
     ans += lgamma(a+b) - lgamma(a) - lgamma(b);
     ans -= lgamma(n+a+b) - lgamma(a+y) - lgamma(b+n-y);
@@ -189,7 +197,7 @@ namespace BOOM {
   }
 
   double BetaBinomialModel::loglike(double a, double b)const{
-    if(a <= 0 || b <= 0) return BOOM::infinity(-1);
+    if(a <= 0 || b <= 0) return BOOM::negative_infinity();
     const std::vector<Ptr<BinomialData> > &data(dat());
     int nobs = data.size();
     double ans = 0;

@@ -32,6 +32,6 @@ namespace BOOM{
 
   double FBS::logpri()const{
     double p = m_->prob();
-    return p_ == p ? 0 : BOOM::infinity(-1);
+    return p_ == p ? 0 : BOOM::negative_infinity();
   }
 }

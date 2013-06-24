@@ -36,6 +36,7 @@ namespace BOOM{
   double mean(const std::vector<double> &x);
   double var(const std::vector<double> &x);
   double sd(const std::vector<double> &x);
+  double cor(const std::vector<double> &x, const std::vector<double> &y);
 
   double mean(const std::vector<double> &x, double missing_value_code);
   double var(const std::vector<double> &x, double missing_value_code);

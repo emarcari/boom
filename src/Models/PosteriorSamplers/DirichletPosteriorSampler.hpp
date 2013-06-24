@@ -28,7 +28,9 @@ namespace BOOM{
   class DirichletPosteriorSampler
     : public PosteriorSampler{
   public:
-    DirichletPosteriorSampler(DirichletModel *m, Ptr<VectorModel> phi, Ptr<DoubleModel> alpha);
+    DirichletPosteriorSampler(DirichletModel *m,
+                              Ptr<VectorModel> phi,
+                              Ptr<DoubleModel> alpha);
 
     virtual void draw();
     virtual double logpri()const;

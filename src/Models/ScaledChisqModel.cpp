@@ -49,7 +49,7 @@ namespace BOOM{
   void SCM::set_nu(double nu){Nu_prm()->set(nu);}
 
   // probability calculations
-  double SCM::Loglike(Vec &g, Mat &h, uint nd) const {
+  double SCM::Loglike(Vector &g, Matrix &h, uint nd) const {
 
     // loglike is a function of nu, derivatives are with respect to
     // nu.  however the model is w~Ga(nu/2, nu/2)
@@ -60,7 +60,7 @@ namespace BOOM{
 
     double nu = this->nu();
     if(nu <=0){
-      double ans = infinity(-1);
+      double ans = negative_infinity();
       if(nd>0){
 	g[0] = -nu;
 	if(nd>1) h(0,0) = -1;
@@ -78,23 +78,4 @@ namespace BOOM{
  	h(lo,lo) = halfn*(1.0/nu - .5*trigamma(nu2));}}
     return ans;}
 
-//   double SCM::pdf(dPtr dp, bool logscale) const{
-//     return pdf(DAT(dp)->value(), logscale);}
-
-//   double SCM::pdf(double x, bool logscale) const{
-//     double nu_2 = nu()/2.0;
-//     return dgamma(x, nu_2, nu_2, logscale); }
-
-//   double SCM::Logp(const double x, double &g, double &h, uint nd) const{
-//     double nu = this->nu();
-//     double lognu = log(nu);
-//     double ans = nu*lognu - lgamma(nu) + (nu-1)*log(x) - nu*x;
-//     if(nd > 0){
-//       g = (nu-1)/x - nu;
-//       if(nd>1){
-//  	h = -(nu-1)/(x*x);}}
-//     return ans;}
-
-//  double SCM::simdat() const{ double nu_2 = nu()/2.0; return rgamma(nu_2, nu_2);}
-
-}
+}  // namespace BOOM

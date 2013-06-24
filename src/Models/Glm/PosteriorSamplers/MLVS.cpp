@@ -70,7 +70,7 @@ namespace BOOM{
   double MLVS::logpri()const{
     const Selector &g = mod_->coef().inc();
     double ans = vpri->logp(g);
-    if(ans==BOOM::infinity(-1)) return ans;
+    if(ans==BOOM::negative_infinity()) return ans;
     if(g.nvars() > 0){
       ans += dmvn(g.select(mod_->beta()),
                   g.select(pri->mu()),
@@ -186,11 +186,11 @@ namespace BOOM{
 
   double MLVS::log_model_prob(const Selector & g){
     double num = vpri->logp(g);
-    if(num==BOOM::infinity(-1)) return num;
+    if(num==BOOM::negative_infinity()) return num;
 
     Ominv = g.select(pri->siginv());
     num += .5*Ominv.logdet();
-    if(num == BOOM::infinity(-1)) return num;
+    if(num == BOOM::negative_infinity()) return num;
 
     Vec mu = g.select(pri->mu());
     Vec Ominv_mu = Ominv * mu;
@@ -199,7 +199,7 @@ namespace BOOM{
     bool ok=true;
     iV_tilde_ = Ominv + g.select(suf->xtwx());
     Mat L = iV_tilde_.chol(ok);
-    if(!ok)  return BOOM::infinity(-1);
+    if(!ok)  return BOOM::negative_infinity();
     double denom = sum(log(L.diag()));  // = .5 log |Ominv|
 
     Vec S = g.select(suf->xtwu()) + Ominv_mu;

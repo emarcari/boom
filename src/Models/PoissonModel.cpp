@@ -30,6 +30,9 @@ namespace BOOM{
   PoissonSuf *PoissonSuf::clone() const{return new PoissonSuf(*this);}
   void PoissonSuf::clear(){sum_=n_=lognc_=0;}
 
+  PoissonSuf::PoissonSuf(double event_count, double exposure)
+      : sum_(event_count), n_(exposure), lognc_(0) {}
+
   PoissonSuf::PoissonSuf(const PoissonSuf &rhs)
     : Sufstat(rhs),
       SufstatDetails<DataType>(rhs)
@@ -39,11 +42,18 @@ namespace BOOM{
     lognc_ = rhs.lognc_;
   }
 
+  void PoissonSuf::set(double event_count, double exposure){
+    sum_ = event_count;
+    n_ = exposure;
+    lognc_ = 0;
+  }
+
   void PoissonSuf::Update(const DataType  &X){
     int x = X.value();
     sum_+=x;
     lognc_+= lgamma(x+1);
-    n_+=1.0; }
+    n_+=1.0;
+  }
 
   void PoissonSuf::add_mixture_data(double y, double prob){
     n_ += prob;
@@ -99,13 +109,13 @@ namespace BOOM{
   PoissonModel::PoissonModel(double lam)
     : ParamPolicy(new UnivParams(lam)),
       DataPolicy(new PoissonSuf()),
-      ConjPriorPolicy()
+      PriorPolicy()
   {}
 
   PoissonModel::PoissonModel(const std::vector<uint> &raw)
     : ParamPolicy(new UnivParams(1.0)),
       DataPolicy(new PoissonSuf()),
-      ConjPriorPolicy()
+      PriorPolicy()
   {
     uint n = raw.size();
     for(uint i=0; i<n; ++i){
@@ -120,9 +130,9 @@ namespace BOOM{
       MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
-      ConjPriorPolicy(rhs),
+      PriorPolicy(rhs),
       NumOptModel(rhs),
-      EmMixtureComponent(rhs)
+      MixtureComponent(rhs)
   {}
 
   PoissonModel * PoissonModel::clone()const{
@@ -170,16 +180,6 @@ namespace BOOM{
   double PoissonModel::sd()const{return sqrt(lam());}
   double PoissonModel::simdat()const{
     return rpois(lam());}
-
-  void PoissonModel::set_conjugate_prior(Ptr<GammaModel> p){
-    NEW(PoissonGammaSampler, pri)(this, p);
-    set_conjugate_prior(pri);
-  }
-
-  void PoissonModel::set_conjugate_prior(Ptr<PoissonGammaSampler> p){
-    ConjPriorPolicy::set_conjugate_prior(p);
-  }
-
 
   void PoissonModel::add_mixture_data(Ptr<Data> dp, double prob){
     double y = DAT(dp)->value();

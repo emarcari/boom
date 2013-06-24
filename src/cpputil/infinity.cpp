@@ -4,15 +4,18 @@
 
 namespace BOOM{
 
-  double infinity(int sgn){
-    return (sgn>0 ? 1:-1)*std::numeric_limits<double>::infinity(); }
+  double infinity(){
+    return std::numeric_limits<double>::infinity(); }
+
+  double negative_infinity(){
+    return -1*std::numeric_limits<double>::infinity(); }
 
   bool finite(double x){
     return std::isfinite(x);}
 
 //   bool finite(double x){
-//     return x > infinity(-1)
-//       && x < infinity(1)
+//     return x > negative_infinity()
+//       && x < infinity()
 //       && !isnan(x);
 //   }
 

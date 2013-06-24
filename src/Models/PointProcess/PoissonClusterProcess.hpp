@@ -28,7 +28,7 @@
 #include <LinAlg/Selector.hpp>
 #include <vector>
 #include <map>
-#include <functional>  // for std::function
+#include <boost/function.hpp>
 
 namespace BOOM{
 
@@ -259,8 +259,8 @@ namespace BOOM{
     virtual PointProcess simulate(
         const DateTime &t0,
         const DateTime &t1,
-        std::function<Data*()> primary_mark_simulator = NullDataGenerator(),
-        std::function<Data*()> secondary_mark_simulator = NullDataGenerator())const;
+        boost::function<Data*()> primary_mark_simulator = NullDataGenerator(),
+        boost::function<Data*()> secondary_mark_simulator = NullDataGenerator())const;
 
     const std::vector<Mat> & probability_of_activity()const;
     const std::vector<Mat> & probability_of_responsibility()const;

@@ -49,6 +49,7 @@ namespace BOOM{
 
   double CSM::df()const{return Df_prm()->value();}
   double CSM::sigsq()const{return Sigsq_prm()->value();}
+  double CSM::sum_of_squares()const{return sigsq() * df();}
 
   double CSM::alpha()const{return df()/2.0;}
   double CSM::beta()const{return sigsq()*df()/2.0;}
@@ -67,7 +68,7 @@ namespace BOOM{
 	g[1] = (s <= 0) ? s : 0;
 	if(nd>1) h.set_diag(-1);
       }
-      return BOOM::infinity(-1);
+      return BOOM::negative_infinity();
     }
 
     //-----

@@ -62,7 +62,7 @@ namespace BOOM{
 
   double LogPostTF::operator()(const Vec &z)const{
     double ans = pri->logp(z);
-    if(ans==BOOM::infinity(-1)) return ans;
+    if(ans==BOOM::negative_infinity()) return ans;
     ans += loglike(z);
     return ans;
   }

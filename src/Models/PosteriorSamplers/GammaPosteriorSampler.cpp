@@ -17,62 +17,185 @@
 */
 
 #include <Models/PosteriorSamplers/GammaPosteriorSampler.hpp>
-#include <boost/bind.hpp>
 #include <cpputil/math_utils.hpp>
 
 namespace BOOM{
 
-GammaPosteriorSampler::GammaPosteriorSampler(GammaModel *model,
-                                             Ptr<DoubleModel> mean_prior,
-                                             Ptr<DoubleModel> alpha_prior)
-    : model_(model),
-      mean_prior_(mean_prior),
-      alpha_prior_(alpha_prior),
-      mean_sampler_(boost::bind(&GammaPosteriorSampler::logpost_mean,
-                                this,
-                                _1),
-                    true),
-      alpha_sampler_(boost::bind(&GammaPosteriorSampler::logpost_alpha,
-                                 this,
-                                 _1),
-                     true)
-{
-  mean_sampler_.set_lower_limit(0);
-  alpha_sampler_.set_lower_limit(0);
-}
+  // A private namespace for defining functors used just for implementation.
+  namespace {
+    // A functor for evaluating the log posterior of the mean
+    // parameter in the mean/alpha parameterization.
+    class GammaMeanAlphaLogPosterior {
+     public:
+      GammaMeanAlphaLogPosterior(
+          const GammaModel *model,
+          const DoubleModel *mean_prior)
+          : model_(model),
+            mean_prior_(mean_prior)
+      {}
 
-  double GammaPosteriorSampler::logpost_mean(double mean)const{
-    if (mean < 0) return infinity(-1);
-    double a = model_->alpha();
-    if (mean <= 0 &&  a > 0) return infinity(-1);
-    double ans = mean_prior_->logp(mean);
-    double b = a / mean;
-    ans += model_->loglikelihood(a, b);
-    return ans;
-  }
+      double operator()(double mean) const {
+        if (mean <= 0) {
+          return negative_infinity();
+        }
+        double a = model_->alpha();
+        double b = a/mean;
+        double ans = mean_prior_->logp(mean);
+        ans += model_->loglikelihood(a, b);
+        return ans;
+      }
 
-  double GammaPosteriorSampler::logpost_alpha(double alpha)const{
-    if (alpha < 0) return infinity(-1);
-    double ans = alpha_prior_->logp(alpha);
-    if (ans <= infinity(-1)) return ans;
-    ans += model_->loglikelihood(alpha, model_->beta());
-    return ans;
+     private:
+      const GammaModel *model_;
+      const DoubleModel *mean_prior_;
+    };
+
+    // A functor for evaluating the log posterior of the mean
+    // parameter in the mean/beta parameterization.
+    class GammaMeanBetaLogPosterior {
+     public:
+      GammaMeanBetaLogPosterior(
+          const GammaModel *model,
+          const DoubleModel *mean_prior)
+          : model_(model),
+            mean_prior_(mean_prior) {}
+
+      double operator()(double mean)const {
+        if (mean <= 0.0) {
+          return negative_infinity();
+        }
+        double ans = mean_prior_->logp(mean);
+        double b = model_->beta();
+        double a = mean * b;
+        ans += model_->loglikelihood(a, b);
+        return ans;
+      }
+
+     private:
+      const GammaModel *model_;
+      const DoubleModel *mean_prior_;
+    };
+
+    // A functor for evaluating the log posterior of the alpha
+    // parameter in the mean/alpha parameterization.
+    class GammaAlphaLogPosterior {
+     public:
+      GammaAlphaLogPosterior(const GammaModel *model,
+                             const DoubleModel *alpha_prior)
+          : model_(model),
+            alpha_prior_(alpha_prior)
+      {}
+
+      double operator()(double alpha) const {
+        if (alpha <= 0) {
+          return negative_infinity();
+        }
+        double mean = model_->alpha() / model_->beta();
+        double beta = alpha / mean;
+        double ans = alpha_prior_->logp(alpha);
+        ans += model_->loglikelihood(alpha, beta);
+        return ans;
+      }
+
+     private:
+      const GammaModel *model_;
+      const DoubleModel *alpha_prior_;
+    };
+
+    // A functor for evaluating the log posterior of the beta
+    // parameter in the mean/beta parameterization.
+    class GammaBetaLogPosterior {
+     public:
+      GammaBetaLogPosterior(
+          const GammaModel *model,
+          const DoubleModel *beta_prior)
+          : model_(model), beta_prior_(beta_prior) {}
+
+      double operator()(double beta)const {
+        if (beta <= 0.0) {
+          return negative_infinity();
+        }
+        double ans = beta_prior_->logp(beta);
+        double mean = model_->alpha() / model_->beta();
+        double a = mean * beta;
+        ans += model_->loglikelihood(a, beta);
+        return ans;
+      }
+
+     private:
+      const GammaModel *model_;
+      const DoubleModel *beta_prior_;
+    };
+
+  }  // namespace
+
+  //======================================================================
+  GammaPosteriorSampler::GammaPosteriorSampler(
+      GammaModel *model,
+      Ptr<DoubleModel> mean_prior,
+      Ptr<DoubleModel> alpha_prior)
+      : model_(model),
+        mean_prior_(mean_prior),
+        alpha_prior_(alpha_prior),
+        mean_sampler_(GammaMeanAlphaLogPosterior(
+            model_, mean_prior_.get()), true),
+        alpha_sampler_(GammaAlphaLogPosterior(
+            model_, alpha_prior_.get()), true)
+  {
+    mean_sampler_.set_lower_limit(0);
+    alpha_sampler_.set_lower_limit(0);
   }
 
   void GammaPosteriorSampler::draw(){
     double alpha = alpha_sampler_.draw(model_->alpha());
-    model_->set_alpha(alpha);
-
-    double mean = alpha / model_->beta();
-    mean = mean_sampler_.draw(mean);
+    double mean = model_->mean();
     double beta = alpha / mean;
-    model_->set_beta(beta);
+    model_->set_params(alpha, beta);
+
+    mean = mean_sampler_.draw(mean);
+    beta = alpha / mean;
+    model_->set_params(alpha, beta);
   }
 
   double GammaPosteriorSampler::logpri()const{
     double a = model_->alpha();
     double mean = a / model_->beta();
     return mean_prior_->logp(mean) + alpha_prior_->logp(a);
+  }
+
+  //======================================================================
+
+  GammaPosteriorSamplerBeta::GammaPosteriorSamplerBeta(
+      GammaModel *model,
+      Ptr<DoubleModel> mean_prior,
+      Ptr<DoubleModel> beta_prior)
+      : model_(model),
+        mean_prior_(mean_prior),
+        beta_prior_(beta_prior),
+        mean_sampler_(GammaMeanBetaLogPosterior(
+            model, mean_prior.get())),
+        beta_sampler_(GammaBetaLogPosterior(
+            model, beta_prior.get()))
+  {}
+
+  void GammaPosteriorSamplerBeta::draw(){
+    double beta = beta_sampler_.draw(model_->beta());
+    double mean = model_->mean();
+    double alpha = beta * mean;
+    model_->set_params(alpha, beta);
+
+    mean = mean_sampler_.draw(mean);
+    alpha = beta * mean;
+    model_->set_params(alpha, beta);
+  }
+
+  double GammaPosteriorSamplerBeta::logpri()const{
+    double beta = model_->beta();
+    double mean = model_->alpha() / beta;
+    if (mean <= 0 || beta <= 0) {
+      return negative_infinity();
+    }
+    return mean_prior_->logp(mean) + beta_prior_->logp(beta);
   }
 
 }  // namespace BOOM

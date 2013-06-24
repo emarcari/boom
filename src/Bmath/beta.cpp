@@ -86,7 +86,7 @@ namespace Rmath{
       if (a < 0 || b < 0)
 	ML_ERR_return_NAN
 	  else if (a == 0 || b == 0) {
-	    return BOOM::infinity(1);
+	    return BOOM::infinity();
 	  }
       else if (!R_FINITE(a) || !R_FINITE(b)) {
 	return 0;

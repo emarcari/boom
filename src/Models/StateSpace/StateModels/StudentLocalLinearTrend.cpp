@@ -38,6 +38,9 @@ namespace BOOM {
         behavior_(MIXTURE)
   {
     observation_matrix_[0] = 1.0;
+    // The latent_slope_scale_factors_ and latent_level_scale_factors_
+    // are initialized as zero length vectors, and then resized when
+    // observe_time_dimension is called.
   }
 
   StudentLocalLinearTrendStateModel::StudentLocalLinearTrendStateModel(
@@ -99,21 +102,22 @@ namespace BOOM {
     level_complete_data_sufficient_statistics_.update_raw(
         level_residual,
         latent_level_scale_factors_[time_now - 1]);
-    double alpha = .5 * (1 + nu_level());
+    double level_alpha = .5 * (1 + nu_level());
     double level_beta = .5 * (nu_level() +
                               level_residual * level_residual / sigsq_level());
-    latent_level_scale_factors_[time_now - 1] = rgamma(alpha, level_beta);
-    level_weight_sufficient_statistics_.update_raw_data(
+    latent_level_scale_factors_[time_now - 1] = rgamma(level_alpha, level_beta);
+    level_weight_sufficient_statistics_.update_raw(
         latent_level_scale_factors_[time_now - 1]);
 
     double slope_residual = slope_now - slope_then;
     slope_complete_data_sufficient_statistics_.update_raw(
         slope_residual,
         latent_slope_scale_factors_[time_now - 1]);
+    double slope_alpha = .5 * (1 + nu_slope());
     double slope_beta = .5 * (nu_slope() +
                               slope_residual * slope_residual / sigsq_slope());
-    latent_slope_scale_factors_[time_now - 1] = rgamma(alpha, slope_beta);
-    slope_weight_sufficient_statistics_.update_raw_data(
+    latent_slope_scale_factors_[time_now - 1] = rgamma(slope_alpha, slope_beta);
+    slope_weight_sufficient_statistics_.update_raw(
         latent_slope_scale_factors_[time_now - 1]);
   }
 
@@ -307,6 +311,14 @@ namespace BOOM {
   const GammaSuf &
   StudentLocalLinearTrendStateModel::nu_slope_complete_data_suf()const{
     return slope_weight_sufficient_statistics_;
+  }
+
+  const Vec & StudentLocalLinearTrendStateModel::latent_level_weights()const{
+    return latent_level_scale_factors_;
+  }
+
+  const Vec & StudentLocalLinearTrendStateModel::latent_slope_weights()const{
+    return latent_slope_scale_factors_;
   }
 
   void StudentLocalLinearTrendStateModel::set_behavior(

@@ -52,7 +52,7 @@ double qlnorm(double p, double logmean, double logsd, int lower_tail, int log_p)
 #endif
     R_Q_P01_check(p);
 
-    if (p == R_DT_1)	return BOOM::infinity(1);
+    if (p == R_DT_1)	return BOOM::infinity();
     if (p == R_DT_0)	return 0;
     return exp(qnorm(p, logmean, logsd, lower_tail, log_p));
 }

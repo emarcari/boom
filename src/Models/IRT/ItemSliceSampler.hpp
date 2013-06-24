@@ -37,4 +37,4 @@ namespace BOOM{
     };
   }
 }
-#endif BOOM_IRT_ITEM_SLICE_SAMPLER_HPP
+#endif  // BOOM_IRT_ITEM_SLICE_SAMPLER_HPP

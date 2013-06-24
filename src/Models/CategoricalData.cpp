@@ -22,6 +22,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <set>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 
@@ -74,7 +75,7 @@ namespace BOOM{
     observers.insert(dat);
     dat->labs_ = this;
     if(dat->value() >= labs_.size()){
-      throw_exception<std::runtime_error>("illegal value passed to CatKey::Register");
+      report_error("illegal value passed to CatKey::Register");
     }
   }
 
@@ -89,7 +90,7 @@ namespace BOOM{
 	add_label(lab);
 	dat->val_ = findstr(lab, found);
       }
-      else throw_exception<std::runtime_error>("illegal label passed to CatKey::Register");
+      else report_error("illegal label passed to CatKey::Register");
     }
   }
 
@@ -114,7 +115,7 @@ namespace BOOM{
     if(!found){
       ostringstream out;
       out << "label " << lab << " not found in CatKey::findstr";
-      throw_exception<std::runtime_error>(out.str());
+      report_error(out.str());
     }
     return ans;
   }
@@ -190,7 +191,7 @@ namespace BOOM{
 	      << endl
 	      << "Could not find level: " << labs_[i]
 	      << " in replacement labels." << endl;
-	  throw_exception<std::runtime_error>(err.str());
+	  report_error(err.str());
 	}
       }
     }
@@ -355,7 +356,7 @@ namespace BOOM{
   bool CD::comparable(const CD &rhs)const { return labs_ == rhs.labs_;}
 
   inline void incompat(){
-    throw_exception<runtime_error>("comparison between incompatable categorical variables");
+    report_error("comparison between incompatible categorical variables");
   }
   //------------------------------------------------------------
   ostream & CD::display(ostream &out)const{
@@ -545,7 +546,7 @@ namespace BOOM{
   void share_labels(CatVec &dv){
     Ptr<CK> key = dv[0]->key();
     for(uint i=0; i<dv.size(); ++i)
-      key->Register(dv[i].dumb_ptr());}
+      key->Register(dv[i].get());}
 
   void set_order(CatVec &v, const StringVec &s){
     share_labels(v);

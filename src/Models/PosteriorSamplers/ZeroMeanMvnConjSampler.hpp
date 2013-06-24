@@ -28,7 +28,9 @@ namespace BOOM{
     ZeroMeanMvnConjSampler(ZeroMeanMvnModel *m, Ptr<WishartModel> prior);
     // creates a WishartModel with nu = prior_df and a diagonal scale
     // matrix with prior_df * sigma_guess^2
-    ZeroMeanMvnConjSampler(ZeroMeanMvnModel *m, double prior_df, double sigma_guess);
+    ZeroMeanMvnConjSampler(ZeroMeanMvnModel *m,
+                           double prior_df,
+                           double sigma_guess);
     virtual void draw();
     virtual double logpri()const;
     virtual void find_posterior_mode();

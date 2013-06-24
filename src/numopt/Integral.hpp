@@ -29,8 +29,8 @@ namespace BOOM{
    public:
     typedef boost::function<double(double)> Fun;
     Integral(const Fun &integrand,
-             double lower_limit = BOOM::infinity(-1),
-             double upper_limit = BOOM::infinity(1),
+             double lower_limit = BOOM::negative_infinity(),
+             double upper_limit = BOOM::infinity(),
              int iwork_limit=100
              );
 
@@ -46,7 +46,7 @@ namespace BOOM{
     int number_of_function_evaluations()const;
     int number_of_partitions()const;
     int error_code()const;
-    string error_message()const;
+    std::string error_message()const;
 
     std::string debug_string() const;
    private:

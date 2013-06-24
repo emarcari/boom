@@ -166,7 +166,7 @@ namespace BOOM{
   double BVS::prior_ss()const{ return 2 * spri_->beta(); }
 
   double BVS::log_model_prob(const Selector &g)const{
-    //    if(g.nvars()==0) return BOOM::infinity(-1);
+    //    if(g.nvars()==0) return BOOM::negative_infinity();
     if(g.nvars()==0){
       // integrate out sigma
       double ss = m_->suf()->yty() + prior_ss();
@@ -174,9 +174,13 @@ namespace BOOM{
       double ans = vpri_->logp(g) - (.5*df-1)*log(ss);
       return ans;
     }
+    double ans = vpri_->logp(g);
+    if(ans == negative_infinity()){
+      return ans;
+    }
     double ldoi = set_reg_post_params(g, true);
-    double ans = vpri_->logp(g)+ .5*(ldoi - iV_tilde_.logdet());
-    ans -=  (.5*DF_-1)*log(SS_);
+    ans += .5*(ldoi - iV_tilde_.logdet());
+    ans -= (.5*DF_-1)*log(SS_);
     return ans;
   }
   //----------------------------------------------------------------------
@@ -246,7 +250,7 @@ namespace BOOM{
   double BVS::logpri()const{
     const Selector &g(m_->coef().inc());
     double ans = vpri_->logp(g);  // p(gamma)
-    if(ans <= BOOM::infinity(-1)) return ans;
+    if(ans <= BOOM::negative_infinity()) return ans;
 
     double sigsq = m_->sigsq();
     ans += spri_->logp(1.0/sigsq);               // p(1/sigsq)

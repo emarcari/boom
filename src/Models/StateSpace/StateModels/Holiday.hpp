@@ -16,199 +16,108 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-#include <boost/shared_ptr.hpp>
-#include <Models/StateSpace/StateModels/StateModel.hpp>
-#include <Models/ZeroMeanGaussianModel.hpp>
+#ifndef BOOM_HOLIDAY_HPP_
+#define BOOM_HOLIDAY_HPP_
+
+#include <map>
 #include <cpputil/Date.hpp>
 
 namespace BOOM{
 
-  class Holiday;
-
-  Holiday * CreateNamedHoliday(const string &holiday_name,
-                               int days_before,
-                               int days_after);
-
-  class RandomWalkHolidayStateModel :
-      public StateModel,
-      public ZeroMeanGaussianModel{
-   public:
-    // time_zero may need to be set
-    RandomWalkHolidayStateModel(Holiday *holiday, const Date &time_zero);
-    virtual RandomWalkHolidayStateModel * clone()const;
-    virtual void observe_state(const ConstVectorView then,
-                               const ConstVectorView now,
-                               int time_now);
-
-    virtual uint state_dimension()const;
-    virtual void simulate_state_error(VectorView eta, int t)const;
-
-    virtual Ptr<SparseMatrixBlock> state_transition_matrix(int t)const;
-    virtual Ptr<SparseMatrixBlock> state_variance_matrix(int t)const;
-    virtual SparseVector observation_matrix(int t)const;
-    virtual Vec initial_state_mean()const;
-    virtual Spd initial_state_variance()const;
-
-    void set_initial_state_mean(const Vec &v);
-    void set_initial_state_variance(const Spd &Sigma);
-    void set_time_zero(const Date &time_zero);
-
-    virtual void set_sigsq(double sigsq);
-   private:
-    boost::shared_ptr<Holiday> holiday_;
-    Date time_zero_;
-    Vec initial_state_mean_;
-    Spd initial_state_variance_;
-    Ptr<IdentityMatrix> identity_transition_matrix_;
-    Ptr<ZeroMatrix> zero_state_variance_matrix_;
-    std::vector<Ptr<SingleSparseDiagonalElementMatrix> > active_state_variance_matrix_;
-
-  };
-
-  // A HolidayStateModel is like a SeasonalModel for daily data.
-  class HolidayStateModel
-      : public StateModel,
-        public ZeroMeanGaussianModel{
-   public:
-    HolidayStateModel();
-    // Time zero is the date of the first observation in the training
-    // data.
-    HolidayStateModel(Date time_zero);
-    virtual HolidayStateModel * clone()const;
-
-    // Takes ownership of holiday in a boost::shared_ptr.
-    void add_holiday(Holiday *holiday);
-
-    // An initialization to be performed once all all holidays have
-    // been added.  This will set the model matrices.
-    void initialize();
-
-    // Time zero is the date of the first observation in the training
-    // data.
-    void set_time_zero(const Date &time_zero);
-
-    virtual void observe_state(const ConstVectorView then,
-                               const ConstVectorView now,
-                               int time_now);
-
-    // This is the number of holiday coefficients (number of days in a
-    // year covered by a holiday effect), minus one.
-    virtual uint state_dimension()const;
-
-    virtual void simulate_state_error(VectorView eta, int t)const;
-
-    // The transition matrix is the identity if t is not in a holiday
-    // window, and a Seasonal matrix if it is.
-    virtual Ptr<SparseMatrixBlock> state_transition_matrix(int t)const;
-
-    // The state_variance_matrix is zero if t is not a holiday.  It
-    // matches the Seasonal model if t is in a holiday window.
-    virtual Ptr<SparseMatrixBlock> state_variance_matrix(int t)const;
-
-    // The result is Zero if t is not part of a holiday window.
-    // [1,0,0,...] if it is.
-    virtual SparseVector observation_matrix(int t)const;
-
-    void set_initial_state_mean(const Vec &initial_state_mean);
-    virtual Vec initial_state_mean()const;
-    void set_initial_state_variance(const Spd &initial_state_variance);
-    virtual Spd initial_state_variance()const;
-
-    Date date_at_time_t(int t_days_since_time_zero)const;
-    bool in_holiday_window(const Date &date)const;
-   private:
-    // Ensure that the vector of holidays is ordered by the date of
-    // earliest effect.
-    std::vector<Holiday *> get_active_holidays(const Date &date);
-
-    Date time_zero_;
-    std::vector<boost::shared_ptr<Holiday> > holidays_in_one_year_;
-    int number_of_days_in_holiday_windows_;
-    bool initialized_;
-
-    Vec initial_state_mean_;
-    Spd initial_state_variance_;
-
-    // Workspace used to implement date_at_time_t();
-    mutable Date date_marker_;
-    mutable int t_marker_;
-
-    // Model matrices for use when t is part of an active holiday
-    // window.
-    Ptr<SeasonalStateSpaceMatrix> active_transition_matrix_;
-    Ptr<UpperLeftCornerMatrix> active_state_variance_matrix_;
-
-    // Model matrices for use when t is _not_ part of an active
-    // holiday window.
-    Ptr<IdentityMatrix> inactive_transition_matrix_;
-    Ptr<ZeroMatrix> inactive_state_variance_matrix_;
-  };
-
-  // A Holiday is a "bump" in the value of the series that occurs
-  // each year.  It differs from a standard seasonal model in that
-  // holidays can sometimes move, either because of complicated
-  // religious logic (e.g. easter), or because of calendar effects,
-  // such as when independence day falls on a weekend people get the
-  // closest Monday or Friday off.
+  //======================================================================
+  // A Holiday is a recurring Date.  It differs from a standard
+  // "season" in that holidays can sometimes move, either because of
+  // complicated religious logic (e.g. Easter), or because of calendar
+  // effects (e.g. when Independence Day falls on a weekend people get
+  // the closest Monday or Friday off).
   //
   // A Holiday is defined in terms of a window, specified as the Date
   // of the holiday, as well as some number of days before or after.
   // This window might be of different width each year, as holidays
-  // sometimes interact with weekends in strange ways.
+  // sometimes interact with weekends and other holidays in strange
+  // ways.
   class Holiday{
    public:
-    // The Holiday constructor needs to know the initial time (t == 0)
-    // and the time between observations so that it can know whether
-    // it applies for arbitrary t > 0.  The time_scale argument must
-    // be a string matching one of the enum values in the private:
-    // section.
     virtual ~Holiday(){}
 
-    // The date the holiday occurs on a given year.
-    virtual Date date(int year)const=0;
+    // The first incidence of the holiday ON or AFTER the given date.
+    // Returns a Date object of 'date' or later.
+    virtual Date date_on_or_after(const Date &arbitrary_date)const=0;
 
-    // Beginning and end of this Holiday's influence window in the
-    // given year.  Years are specifed by a 4 digit integer,
-    // e.g. 2011.
-    virtual Date earliest_influence(int year)const=0;
-    virtual Date latest_influence(int year)const=0;
-    // Holidays can sometimes exert an influence before or after the
-    // date of the actual holiday.  The number of days from the
-    // earliest influenced day to the last influenced day is the
-    // maximum_window_width.
+    // The last incidence of the holiday ON or BEFORE the given date.
+    // Returns a Date object of 'date' or before.
+    virtual Date date_on_or_before(const Date &arbitrary_date)const=0;
+
+    // The date of the closest holiday to 'arbitrary_date'.
+    virtual Date nearest(const Date &arbitrary_date)const;
+
+    // Holidays can sometimes (or will usually) exert an influence
+    // before or after the date of the actual holiday.  The number of
+    // days from the earliest influenced day to the last influenced
+    // day (including the end points) is the maximum_window_width.
     virtual int maximum_window_width()const=0;
 
-    virtual bool active(const Date &d)const;
+    // The dates of earliest and latest influence for a holiday
+    // occurring on 'holiday_date'.
+    virtual Date earliest_influence(const Date &holiday_date)const=0;
+    virtual Date latest_influence(const Date &holiday_date)const=0;
+
+    // Indicates whether this holiday is active on the given date.
+    virtual bool active(const Date &arbitrary_date)const;
   };
 
-  // An OrdinaryHoliday is a Holiday that kees track of two integers,
-  // days_before_ and days_after_, that define the number of days
-  // influence is felt before and after the actual holiday date.  This
-  // is an implementation detail
-  class OrdinaryHoliday : public Holiday{
+  // A factory function that will create a holiday based on its name.
+  // Args:
+  //   holiday_name: The name of the holiday.  It is an error to ask
+  //     for an unrecognized holiday.
+  //   days_before: The number of days before the date of the actual
+  //     holiday that the holiday's influence can be felt.
+  //   days_after: The number of days after the date of the actual
+  //     holiday that the holiday's influence can be felt.
+  // Returns:
+  //   A heap-allocated pointer to the requested holiday.  The caller
+  //   is responsible for deleting the returned object.
+  Holiday * CreateNamedHoliday(const string &holiday_name,
+                               int days_before,
+                               int days_after);
+
+  //======================================================================
+  // An OrdinaryAnnualHoliday is a Holiday that occurs once per year,
+  // with a fixed-sized window of influence.  An OrdinaryAnnualHoliday
+  // keeps track of two integers: days_before and days_after, that
+  // define its influence window.
+  class OrdinaryAnnualHoliday : public Holiday{
    public:
-    OrdinaryHoliday(int days_before, int days_after);
-    virtual Date earliest_influence(int year)const;
-    virtual Date latest_influence(int year)const;
+    OrdinaryAnnualHoliday(int days_before, int days_after);
+    virtual Date earliest_influence(const Date &holiday_date)const;
+    virtual Date latest_influence(const Date &holiday_date)const;
     virtual int maximum_window_width()const;
+    virtual Date date_on_or_after(const Date &d)const;
+    virtual Date date_on_or_before(const Date &d)const;
+
+    // The date the holiday occurs on a given year.  For floating
+    // holidays, the date() function might be expensive to compute
+    // over and over again, so we defer computation to a rarely called
+    // function compute_date(), and store the results in a table.
+    // This class implements the table logic, and requires its
+    // children to implement compute_date().
     virtual Date date(int year)const;
+
+    // Compute the date of this holiday in the given year.
     virtual Date compute_date(int year)const = 0;
    private:
     int days_before_;
     int days_after_;
     typedef int Year;
-    mutable map<Year, Date> date_lookup_table_;
-    mutable map<Year, Date> earliest_influence_by_year_;
-    mutable map<Year, Date> latest_influence_by_year_;
+    mutable std::map<Year, Date> date_lookup_table_;
+    mutable std::map<Year, Date> earliest_influence_by_year_;
+    mutable std::map<Year, Date> latest_influence_by_year_;
   };
 
+  //======================================================================
   // A FixedDateHoliday is a Holiday that occurs on the same date each
-  // year.  FixedDateHolidays can "bridge" if they occur on the
-  // weekend.  Need to decide what that means.  For now I'm ignoring it.
-  // TODO(stevescott):  handle bridging.
-  //
-  // A non-fixed date holiday is called a floating holiday.
-  class FixedDateHoliday : public OrdinaryHoliday{
+  // year.
+  class FixedDateHoliday : public OrdinaryAnnualHoliday{
    public:
     // month is an integer between 1 and 12.
     FixedDateHoliday(int month, int day_of_month, int days_before = 1,
@@ -220,12 +129,40 @@ namespace BOOM{
     const int day_of_month_;
   };
 
-  // For floating holidays, the date() function might be expensive to
-  // compute over and over again, so we defer computation to a rarely
-  // called function compute_date(), and store the results in a lookup
-  // table.  This class implements the lookup table logic, and
-  // requires its children to implement compute_date().
-  class FloatingHoliday : public OrdinaryHoliday{
+  //======================================================================
+  // An NthWeekdayInMonthHoliday is an OrdinaryAnnualHoliday defined
+  // as the n'th weekday in a month.  For example, Thanksgiving is the
+  // 4th Thursday in November.
+  class NthWeekdayInMonthHoliday : public OrdinaryAnnualHoliday{
+   public:
+    NthWeekdayInMonthHoliday(int which_week, DayNames day, MonthNames month,
+                             int days_before, int days_after);
+    virtual Date compute_date(int year)const;
+   private:
+    int which_week_;
+    DayNames day_name_;
+    MonthNames month_name_;
+  };
+
+  //======================================================================
+  // An LastWeekdayInMonthHoliday is an OrdinaryAnnualHoliday defined
+  // as the last weekday in a month.  For example, Memorial Day is the
+  // last Monday in May.
+  class LastWeekdayInMonthHoliday : public OrdinaryAnnualHoliday{
+   public:
+    LastWeekdayInMonthHoliday(DayNames day, MonthNames month,
+                              int days_before, int days_after);
+    virtual Date compute_date(int year)const;
+   private:
+    DayNames day_name_;
+    MonthNames month_name_;
+  };
+
+  //======================================================================
+  // A floating holiday is a holiday that does not occur on the same
+  // date each year.  Children of this class must define their own
+  // compute_date function.
+  class FloatingHoliday : public OrdinaryAnnualHoliday{
    public:
     FloatingHoliday(int days_before, int days_after);
   };
@@ -234,13 +171,16 @@ namespace BOOM{
   // Specific holidays observed in the US
   class NewYearsDay : public FixedDateHoliday{
    public:
-    NewYearsDay(int days_before, int days_after);
+    NewYearsDay(int days_before, int days_after)
+        : FixedDateHoliday(Jan, 1, days_before, days_after)
+    {}
   };
 
-  class MartinLutherKingDay : public FloatingHoliday{
+  class MartinLutherKingDay : public NthWeekdayInMonthHoliday{
    public:
-    MartinLutherKingDay(int days_before, int days_after);
-    virtual Date compute_date(int year)const;
+    MartinLutherKingDay(int days_before, int days_after)
+        : NthWeekdayInMonthHoliday(3, Mon, Jan, days_before, days_after)
+    {}
   };
 
   class SuperBowlSunday : public FloatingHoliday{
@@ -249,20 +189,25 @@ namespace BOOM{
     virtual Date compute_date(int year)const;
   };
 
-  class PresidentsDay : public FloatingHoliday{
+  class PresidentsDay : public NthWeekdayInMonthHoliday{
    public:
-    PresidentsDay(int days_before, int days_after);
-    virtual Date compute_date(int year)const;
+    PresidentsDay(int days_before, int days_after)
+        : NthWeekdayInMonthHoliday(3, Mon, Feb, days_before, days_after)
+    {}
   };
 
   class ValentinesDay : public FixedDateHoliday{
    public:
-    ValentinesDay(int days_before, int days_after);
+    ValentinesDay(int days_before, int days_after)
+        : FixedDateHoliday(Feb, 14, days_before, days_after)
+    {}
   };
 
   class SaintPatricksDay : public FixedDateHoliday{
    public:
-    SaintPatricksDay(int days_before, int days_after);
+    SaintPatricksDay(int days_before, int days_after)
+        : FixedDateHoliday(Mar, 17, days_before, days_after)
+    {}
   };
 
   class USDaylightSavingsTimeBegins : public FloatingHoliday{
@@ -283,46 +228,70 @@ namespace BOOM{
     virtual Date compute_date(int year)const;
   };
 
-  class IndependenceDay : public FixedDateHoliday{
+  // The US definition of Mother's day: second Sunday in May.
+  class USMothersDay : public NthWeekdayInMonthHoliday{
    public:
-    IndependenceDay(int days_before, int days_after);
+    USMothersDay(int days_before, int days_after)
+        : NthWeekdayInMonthHoliday(2, Sun, May, days_before, days_after)
+    {}
   };
 
-  class LaborDay : public FloatingHoliday{
+  class MemorialDay : public LastWeekdayInMonthHoliday{
    public:
-    LaborDay(int days_before, int days_after);
-    virtual Date compute_date(int year)const;
+    MemorialDay(int days_before, int days_after);
+   };
+
+  class IndependenceDay : public FixedDateHoliday{
+   public:
+    IndependenceDay(int days_before, int days_after)
+        : FixedDateHoliday(Jul, 4, days_before, days_after)
+    {}
+  };
+
+  class LaborDay : public NthWeekdayInMonthHoliday{
+   public:
+    LaborDay(int days_before, int days_after)
+        : NthWeekdayInMonthHoliday(1, Mon, Sep, days_before, days_after)
+    {}
+  };
+
+  class ColumbusDay : public NthWeekdayInMonthHoliday{
+   public:
+    ColumbusDay(int days_before, int days_after)
+        : NthWeekdayInMonthHoliday(2, Mon, Oct, days_before, days_after)
+    {}
   };
 
   class Halloween : public FixedDateHoliday{
    public:
-    Halloween(int days_before, int days_after);
+    Halloween(int days_before, int days_after)
+        : FixedDateHoliday(Oct, 31, days_before, days_after)
+    {}
   };
-
-  class Thanksgiving : public FloatingHoliday{
-   public:
-    Thanksgiving(int days_before, int days_after);
-    virtual Date compute_date(int year)const;
-   };
-
-  class MemorialDay : public FloatingHoliday{
-   public:
-    MemorialDay(int days_before, int days_after);
-    virtual Date compute_date(int year)const;
-   };
 
   class VeteransDay : public FixedDateHoliday{
    public:
-    VeteransDay(int days_before, int days_after);
+    VeteransDay(int days_before, int days_after)
+        : FixedDateHoliday(Nov, 11, days_before, days_after)
+    {}
    };
 
+  class Thanksgiving : public NthWeekdayInMonthHoliday{
+   public:
+    Thanksgiving(int days_before, int days_after)
+        : NthWeekdayInMonthHoliday(4, Thu, Nov, days_before, days_after)
+    {}
+   };
 
-  // Christmas is special because sometimes there can be very
-  // different numbers of shopping days between Thanksgiving and
-  // Christmas in different years.
+  // Note that there can be very different numbers of shopping days
+  // between Thanksgiving and Christmas in different years.
   class Christmas : public FixedDateHoliday{
    public:
-    Christmas(int days_before, int days_after);
+    Christmas(int days_before, int days_after)
+        : FixedDateHoliday(Dec, 25, days_before, days_after)
+    {}
   };
 
-}
+}  // namespace BOOM
+
+#endif  // BOOM_HOLIDAY_HPP_

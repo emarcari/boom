@@ -60,7 +60,7 @@ namespace {
     double ss = suf.sumsq() + 2 * prior.beta();
 
     double siginv;
-    if (sigma_upper_limit == BOOM::infinity(1)) {
+    if (sigma_upper_limit == BOOM::infinity()) {
       siginv = BOOM::rgamma_mt(rng, df/2, ss/2);
     } else {
       siginv = BOOM::rtrun_gamma_mt(rng, df/2, ss/2,
@@ -82,8 +82,8 @@ namespace BOOM {
         nu_level_prior_(nu_level_prior),
         sigsq_slope_prior_(sigsq_slope_prior),
         nu_slope_prior_(nu_slope_prior),
-        sigma_level_upper_limit_(infinity(1)),
-        sigma_slope_upper_limit_(infinity(1))
+        sigma_level_upper_limit_(infinity()),
+        sigma_slope_upper_limit_(infinity())
   {}
 
   double StudentLocalLinearTrendPosteriorSampler::logpri()const{

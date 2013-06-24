@@ -50,8 +50,8 @@ double qlogis(double p, double location, double scale, int lower_tail, int log_p
     if (scale <	 0.) ML_ERR_return_NAN;
     if (scale == 0.) return location;
 
-    if(R_DT_qIv(p) <= 0) return BOOM::infinity(-1);
-    if(p == R_DT_1) return BOOM::infinity(1);
+    if(R_DT_qIv(p) <= 0) return BOOM::negative_infinity();
+    if(p == R_DT_1) return BOOM::infinity();
 
     /* p := logit(p) = log( p / (1-p) )	 : */
     if(log_p) {

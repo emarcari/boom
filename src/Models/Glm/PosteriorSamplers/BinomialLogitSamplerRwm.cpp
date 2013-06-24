@@ -58,9 +58,10 @@ namespace BOOM{
     Spd ivar(pri_->siginv());
     Vec beta(m_->Beta());
     for(int i = 0; i < data.size(); ++i){
-      double eta = beta.dot(data[i]->x());
+      Ptr<BinomialRegressionData> dp = data[i];
+      double eta = beta.dot(dp->x());
       double prob = plogis(eta);
-      ivar.add_outer(data[i]->x(), prob * (1-prob));
+      ivar.add_outer(dp->x(), dp->n() * prob * (1-prob));
     }
 
     proposal_->set_ivar(ivar);

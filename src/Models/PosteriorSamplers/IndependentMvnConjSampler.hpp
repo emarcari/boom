@@ -42,7 +42,7 @@ namespace BOOM {
                               double mean_sample_size,
                               double sd_guess,
                               double sd_sample_size,
-                              double sigma_upper_limit = infinity(1));
+                              double sigma_upper_limit = infinity());
 
     virtual void draw();
     virtual double logpri()const;

@@ -336,6 +336,7 @@ namespace BOOM{
        || b->ncol() != blocks_[which_block]->ncol()){
       report_error("");
     }
+    blocks_[which_block] = b;
   }
 
   void BlockDiagonalMatrix::clear(){

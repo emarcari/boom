@@ -11,6 +11,7 @@
 
 #include <Models/ParamTypes.hpp>
 #include <Models/SpdParams.hpp>
+#include <Models/Glm/GlmCoefs.hpp>
 
 #include <Interfaces/R/boom_r_tools.hpp>
 
@@ -104,7 +105,7 @@ namespace BOOM{
     // will almost always be the RListIoManager, which has the
     // PROTECT/UNPROTECT stuff safely hidden away so the caller won't
     // need to worry about protecting the individual list elements.
-    virtual SEXP prepare_to_write(int niter);
+    virtual SEXP prepare_to_write(int niter) = 0;
 
     // Takes the list as an argument.  Finds the list element that
     // this object is supposed to manage in the given object.  Set the
@@ -127,7 +128,7 @@ namespace BOOM{
    protected:
     // StoreBuffer must be called in derived classes to pass the SEXP
     // that manages the parameter to this base class.
-    void StoreBuffer(SEXP buffer);
+    virtual void StoreBuffer(SEXP buffer);
     SEXP rbuffer(){return rbuffer_;}
 
     // Calling next_position() returns the current position and
@@ -147,8 +148,31 @@ namespace BOOM{
   };
 
   //----------------------------------------------------------------------
+  // Most elements in the list will be arrays of fixed dimension
+  // storing real numbers.  This class makes it easy to handle real
+  // valued data.
+  class RealValuedRListIoElement : public RListIoElement {
+   public:
+    RealValuedRListIoElement(const string &name);
+    virtual SEXP prepare_to_write(int niter);
+    virtual void prepare_to_stream(SEXP object);
+   protected:
+    virtual void StoreBuffer(SEXP buffer);
+    double *data();
+   private:
+    double *data_;
+  };
+
+  //----------------------------------------------------------------------
+  class ListValuedRListIoElement : public RListIoElement {
+   public:
+    ListValuedRListIoElement(const string &name);
+    virtual SEXP prepare_to_write(int niter);
+  };
+
+  //----------------------------------------------------------------------
   // For tracking an individual diagonal element of a variance matrix.
-  class PartialSpdListElement : public RListIoElement {
+  class PartialSpdListElement : public RealValuedRListIoElement {
    public:
     PartialSpdListElement(Ptr<SpdParams> prm,
                           const string &param_name,
@@ -165,7 +189,7 @@ namespace BOOM{
 
   //----------------------------------------------------------------------
   // For managing UnivariateParams, stored in an R vector.
-  class UnivariateListElement : public RListIoElement {
+  class UnivariateListElement : public RealValuedRListIoElement {
    public:
     UnivariateListElement(Ptr<UnivParams>, const string &name);
     virtual void write();
@@ -188,7 +212,7 @@ namespace BOOM{
 
   // For managing scalar (double) output that is not stored in a
   // UnivParams.
-  class NativeUnivariateListElement : public RListIoElement {
+  class NativeUnivariateListElement : public RealValuedRListIoElement {
    public:
     // Args:
     //   callback: A pointer to the callback object responsible for
@@ -216,7 +240,7 @@ namespace BOOM{
   //----------------------------------------------------------------------
   // Use this class when BOOM stores a variance, but you want to
   // report a standard deviation.
-  class StandardDeviationListElement : public RListIoElement {
+  class StandardDeviationListElement : public RealValuedRListIoElement {
    public:
     StandardDeviationListElement(
         Ptr<UnivParams>, const string &name);
@@ -228,7 +252,7 @@ namespace BOOM{
 
   //----------------------------------------------------------------------
   // For managing VectorParams, stored in an R matrix.
-  class VectorListElement : public RListIoElement {
+  class VectorListElement : public RealValuedRListIoElement {
    public:
     VectorListElement(Ptr<VectorParams> m,
                       const string &param_name);
@@ -241,6 +265,22 @@ namespace BOOM{
     void CheckSize();
     Ptr<VectorParams> prm_;
     SubMatrix matrix_view_;
+  };
+
+  //----------------------------------------------------------------------
+  // For vectors representing regression or glm coefficients.  These
+  // need special attention when streaming, because include/exclude
+  // indicators must be set correctly.
+  class GlmCoefsListElement : public VectorListElement {
+   public:
+    GlmCoefsListElement(Ptr<GlmCoefs> m,
+                        const string &param_name);
+    virtual void stream();
+   private:
+    Ptr<GlmCoefs> coefs_;
+
+    // Workspace to use when streaming.
+    Vector beta_;
   };
 
   //----------------------------------------------------------------------
@@ -258,7 +298,7 @@ namespace BOOM{
   //----------------------------------------------------------------------
   // For reporting a vector of standard deviations when the model
   // stores a vector of variances.
-  class SdVectorListElement : public RListIoElement {
+  class SdVectorListElement : public RealValuedRListIoElement {
    public:
     SdVectorListElement(Ptr<VectorParams> v,
                         const string &param_name);
@@ -275,10 +315,10 @@ namespace BOOM{
   //----------------------------------------------------------------------
   // A mix-in class for handling row and column names for list
   // elements that store MCMC draws of matrices.
-  class MatrixListElementBase : public RListIoElement {
+  class MatrixListElementBase : public RealValuedRListIoElement {
    public:
     MatrixListElementBase(const string &param_name)
-        : RListIoElement(param_name) {}
+        : RealValuedRListIoElement(param_name) {}
     virtual int nrow() const = 0;
     virtual int ncol() const = 0;
     const std::vector<std::string> & row_names()const;
@@ -352,7 +392,7 @@ namespace BOOM{
 
   // A NativeVectorListElement manages a native BOOM Vec that is not
   // stored in a VectorParams.
-  class NativeVectorListElement : public RListIoElement{
+  class NativeVectorListElement : public RealValuedRListIoElement{
    public:
     // Args:
     //   callback: supplied access to the vectors that need to be
@@ -416,6 +456,74 @@ namespace BOOM{
     boost::shared_ptr<MatrixIoCallback> callback_;
     Mat *streaming_buffer_;
     ArrayView array_view_;
+  };
+
+  //----------------------------------------------------------------------
+  // A NativeArrayListElement manages output for one or more
+  // parameters where a single MCMC iteration is represented by an R
+  // multidimensional array.  The array has leading dimension niter
+  // (number of MCMC iterations).  The remaining dimensions are
+  // specified by the dim() member function of the callback provided
+  // to the constructor.
+  class ArrayIoCallback {
+   public:
+    virtual ~ArrayIoCallback(){}
+
+    // Returns the dimensions of the array corresponding to one MCMC
+    // draw.  This will have one less element than the R object
+    // holding the draws (which has a leading dimension corresponding
+    // to MCMC iteration number).
+    virtual std::vector<int> dim()const = 0;
+
+    // Write the parameters to be stored.
+    // Args:
+    //   view: A view into an array (of dimension dim()) that holds
+    //     the parameters.  The intent is for view to be a slice of
+    //     the R array that will eventually be returned to the user.
+    virtual void write_to_array(ArrayView &view)const = 0;
+
+    // Read parameters from a previously stored array.
+    // Args:
+    //   view: A view into an array (of dimension dim()) that holds
+    //     previously stored values of the parameters.  The intent is
+    //     that this is a slice of the R array to which the parameters
+    //     were written by write_to_array().
+    virtual void read_from_array(const ArrayView &view) = 0;
+  };
+
+  // Introductory comments given above ArrayIoCallback.
+  class NativeArrayListElement : public RListIoElement {
+   public:
+    // Args:
+    //   callback: A pointer to an object descended from class
+    //     ArrayIoCallback.  The NativeArrayListElement takes
+    //     ownership of callback, which is deleted by the
+    //     NativeArrayListElement destructor.
+    //   name: The name of this object's component in the list
+    //     managed by its RListIoManager.
+    NativeArrayListElement(ArrayIoCallback *callback,
+                           const string &name);
+    virtual SEXP prepare_to_write(int niter);
+    virtual void prepare_to_stream(SEXP object);
+    virtual void write();
+    virtual void stream();
+   private:
+    // Returns an ArrayView pointing to the next position (MCMC
+    // iteration) in the buffer.  The ArrayView has one less dimension
+    // than the R object, because it corresponds to a single MCMC
+    // iteration.
+    ArrayView next_array_view();
+
+    boost::shared_ptr<ArrayIoCallback> callback_;
+
+    // A view into the R buffer holding the data.
+    ArrayView array_buffer_;
+
+    // An index used to subscript array_buffer_ when calling
+    // next_array_view().  The leading index is the MCMC number.  All
+    // other positions are -1, as detailed in the comments to
+    // ArrayView::slice().
+    std::vector<int> array_view_index_;
   };
 
 }  // namespace BOOM

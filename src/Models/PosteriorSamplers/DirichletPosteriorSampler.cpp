@@ -23,7 +23,9 @@
 namespace BOOM{
   typedef DirichletPosteriorSampler DPS;
 
-  DPS::DirichletPosteriorSampler(DirichletModel *mod, Ptr<VectorModel> Phi, Ptr<DoubleModel> alpha)
+  DPS::DirichletPosteriorSampler(DirichletModel *mod,
+                                 Ptr<VectorModel> Phi,
+                                 Ptr<DoubleModel> alpha)
     : mod_(mod),
       phi_prior_(Phi),
       alpha_prior_(alpha)
@@ -49,7 +51,8 @@ double DPS::logpri()const{
   double alpha = sum(nu);
   double ans = alpha_prior_->logp(alpha);
   ans+= phi_prior_->logp(nu/alpha);
-  ans -= (dim()-1) * log(alpha);  // jacobian term make the prior with respect to nu
+  // Add in the Jacobian term to make the prior with respect to nu.
+  ans -= (dim()-1) * log(alpha);
   return ans;
 }
 //----------------------------------------------------------------------
@@ -70,14 +73,14 @@ uint DPS::dim()const{ return mod_->nu().size(); }
   {}
 //----------------------------------------------------------------------
   double DLP::operator()(double nu)const{
-    if(nu < min_nu_) return BOOM::infinity(-1);
+    if(nu < min_nu_) return BOOM::negative_infinity();
     nu_[pos_]=nu;
     return logp();
   }
 //----------------------------------------------------------------------
   double DLP::logp()const{
     double alpha = sum(nu_);
-    if(alpha<=0) return BOOM::infinity(-1);
+    if(alpha<=0) return BOOM::negative_infinity();
     uint d = nu_.size();
     double ans = alpha_prior_->logp(alpha);   // alpha prior
     if(!finite(ans)) return ans;

@@ -92,7 +92,9 @@ namespace BOOM{
     double sigma(int i)const;
 
     void set_mu(const Vec &mu);
+    void set_mu_element(double mu, int position);
     void set_sigsq(const Vec &sigsq);
+    void set_sigsq_element(double sigsq, int position);
 
     virtual double pdf(const Data * dp, bool logscale)const;
    private:

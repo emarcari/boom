@@ -30,7 +30,7 @@ TGM::TruncatedGammaModel(double a, double b, double trunc)
 {}
 
 double TGM::logp(double x)const{
-  if(x < trunc_) return BOOM::infinity(-1);
+  if(x < trunc_) return BOOM::negative_infinity();
   return dgamma(x,alpha(),beta(),true) - lognc_;
 }
 }

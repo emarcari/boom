@@ -109,13 +109,29 @@ namespace BOOM{
      typedef std::vector<double>::iterator IT;
   };
 
-
-
   double trun_norm(double);
   double trun_norm_mt(RNG &, double);
 
-  double rtrun_norm(double, double, double, bool log=false);
-  double rtrun_norm_mt(RNG &, double, double, double, bool log=false);
+  // Returns the mean and the variance of the truncated normal
+  // distribution, where the untruncated distribution is N(mu, sigma).
+  // If positive_support is true, the region of support is from
+  // cutpoint to infinity.  Otherwise the region of support is from
+  // cutpoint to -infinity.
+  //
+  // On output, *mean and *variance contain the mean and variance of
+  // the truncated distribution.
+  //
+  // Be aware that the standard deviation of the untruncated
+  // distribution is input.  The variance of the truncated
+  // distribution is output.
+  void trun_norm_moments(
+      double mu, double sigma, double cutpoint, bool positive_support,
+      double *mean, double *variance);
+
+  double rtrun_norm(double mu, double sigma,
+                    double cutpoint, bool positive_support = true);
+  double rtrun_norm_mt(RNG &, double mu, double sigma,
+                       double cutpoint, bool positive_support = true);
 
   double dtrun_norm(double, double, double, double,
 		    bool low=true, bool log=false);

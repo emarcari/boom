@@ -145,16 +145,16 @@ namespace BOOM{
     assert(m>0);
     uint which = m-1;
     double ans = vpri_[which]->logp(g);
-    if(ans==BOOM::infinity(-1)) return ans;
+    if(ans==BOOM::negative_infinity()) return ans;
 
     Ominv = g.select(bpri_[which]->siginv());
     double logdet = Ominv.logdet();
-    if(logdet == BOOM::infinity(-1)) return logdet;
+    if(logdet == BOOM::negative_infinity()) return logdet;
 
     bool ok=true;
     iV_tilde_ = Ominv + g.select(suf->xtwx(which));
     Mat L = iV_tilde_.chol(ok);
-    if(!ok)  return BOOM::infinity(-1);
+    if(!ok)  return BOOM::negative_infinity();
     logdet += 2*sum(log(L.diag()));
 
     Vec mu = g.select(bpri_[which]->mu());

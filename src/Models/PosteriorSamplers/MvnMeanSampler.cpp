@@ -58,7 +58,7 @@ namespace BOOM{
 
   double MCS::logpri()const{
     double k = kappa->value();
-    if(k==0.0) return BOOM::infinity(-1);
+    if(k==0.0) return BOOM::negative_infinity();
     const Ptr<SpdParams> Sig = mvn->Sigma_prm();
     const Vec &mu(mvn->mu());
     uint d = mvn->dim();

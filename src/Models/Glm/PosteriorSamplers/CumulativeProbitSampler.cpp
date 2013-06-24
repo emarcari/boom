@@ -104,7 +104,7 @@ namespace BOOM{
     for(int i = 0; i < k; ++i){
       double lo = i == 0 ? 0 : delta_[i-1];
       bool top = i == k-1;
-      double hi = top ? BOOM::infinity(1) : delta_[i+1];
+      double hi = top ? BOOM::infinity() : delta_[i+1];
       PartialTarget f(m_->delta_log_likelihood(), i, delta_);
       ScalarSliceSampler sam(f, true);
       if(!top) sam.set_limits(lo, hi);

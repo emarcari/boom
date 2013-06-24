@@ -23,10 +23,7 @@
 #include <limits>
 
 namespace BOOM{
-
-
   typedef MvnCorrelationSampler CS;
-
   CS::MvnCorrelationSampler(MvnModel *Mod,
 			    Ptr<CorrModel> Pri,
 			    bool refresh_suf)
@@ -76,7 +73,7 @@ namespace BOOM{
 
     Chol L(R_);
     if(!L.is_pos_def()){
-      return BOOM::infinity(-1);
+      return BOOM::negative_infinity();
     }
     double ans = pri_->logp(R_);
     ans += -.5*(df_ + R_.nrow() + 1) * L.logdet();
@@ -123,13 +120,12 @@ namespace BOOM{
   void CS::check_limits(double oldr, double eps){
     if(oldr < lo_ - eps || oldr  > hi_ + eps){
       std::ostringstream err;
-      err << "error:  original matrix is not positive definite in CorrelationSampler::draw"
-          << endl
+      err << "Error:  original matrix is not positive definite "
+          << "in CorrelationSampler::draw." << endl
           << "lo = " << lo_ << endl
           << "hi = " << hi_ << endl
           << "R(" << i_ << ", " << j_ << ") = " << oldr << endl;
-      string msg = err.str();
-      throw_exception<std::runtime_error>(msg);
+      report_error(err.str());
     }
   }
 

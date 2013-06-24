@@ -16,321 +16,73 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
+#include <cassert>
+#include <cpputil/report_error.hpp>
 #include <Models/StateSpace/StateModels/Holiday.hpp>
-#include <distributions.hpp>
 
 namespace BOOM{
-  typedef HolidayStateModel HSM;
 
-  // Some utility classes in an unnamed namespace.
-  namespace{
-    class HolidayDateCompare{
-     public:
-      HolidayDateCompare(int year) : year_(year) {}
-      bool operator()(boost::shared_ptr<Holiday> h, const Date &d)const{
-        return h->earliest_influence(year_) < d;
-      }
-     private:
-      int year_;
-    };
-
-    class HolidayOrder {
-     public:
-      HolidayOrder(int year) : year_(year) {}
-      bool operator()(boost::shared_ptr<Holiday> h1,
-                      boost::shared_ptr<Holiday> h2)const{
-        return h1->earliest_influence(year_) < h2->earliest_influence(year_);
-      }
-     private:
-      int year_;
-    };
-  } // un-named namespace
-
-  //======================================================================
-  typedef RandomWalkHolidayStateModel RWHSM;
-  RWHSM::RandomWalkHolidayStateModel(Holiday *holiday, const Date &time_zero)
-      : holiday_(holiday),
-        time_zero_(time_zero)
-  {
-    int dim = holiday->maximum_window_width();
-    initial_state_mean_.resize(dim);
-    initial_state_variance_.resize(dim);
-    identity_transition_matrix_ = new IdentityMatrix(dim);
-    zero_state_variance_matrix_ = new ZeroMatrix(dim);
-    for(int i = 0; i < dim; ++i){
-      NEW(SingleSparseDiagonalElementMatrix, variance_matrix)(dim, 1.0, i);
-      active_state_variance_matrix_.push_back(variance_matrix);
+  Date Holiday::nearest(const Date &d)const{
+    Date next_holiday(date_on_or_after(d));
+    if (next_holiday == d) {
+      return next_holiday;
+    }
+    Date previous_holiday(date_on_or_before(d));
+    if ((d - previous_holiday) < (next_holiday - d)) {
+      return previous_holiday;
+    } else {
+      return next_holiday;
     }
   }
-
-  RandomWalkHolidayStateModel * RWHSM::clone()const{
-    return new RandomWalkHolidayStateModel(*this);}
-
-  void RWHSM::observe_state(const ConstVectorView then,
-                            const ConstVectorView now,
-                            int time_now){
-    Date today = time_zero_ + time_now;
-    if(holiday_->active(today)){
-      int position = today - holiday_->earliest_influence(today.year());
-      double delta = now[position] - then[position];
-      suf()->update_raw(delta);
-    }
-  }
-
-  uint RWHSM::state_dimension()const{
-    return holiday_->maximum_window_width();
-  }
-
-  void RWHSM::simulate_state_error(VectorView eta, int t)const{
-    Date now = time_zero_ + t;
-    eta = 0;
-    if(holiday_->active(now)){
-      int position = now - holiday_->earliest_influence(now.year());
-      eta[position] = rnorm(0, sigma());
-    }
-  }
-
-  Ptr<SparseMatrixBlock>  RWHSM::state_transition_matrix(int t)const{
-    return identity_transition_matrix_;
-  }
-
-  Ptr<SparseMatrixBlock> RWHSM::state_variance_matrix(int t)const{
-    Date now = time_zero_ + t;
-    if(holiday_->active(now)){
-      int position = now - holiday_->earliest_influence(now.year());
-      return active_state_variance_matrix_[position];
-    }
-    return zero_state_variance_matrix_;
-  }
-
-  SparseVector RWHSM::observation_matrix(int t)const{
-    Date now = time_zero_ + t;
-    SparseVector ans(state_dimension());
-    if(holiday_->active(now)){
-      int position = now - holiday_->earliest_influence(now.year());
-      ans[position] = 1.0;
-    }
-    return ans;
-  }
-
-  void RWHSM::set_sigsq(double sigsq){
-    ZeroMeanGaussianModel::set_sigsq(sigsq);
-    for(int i = 0; i < active_state_variance_matrix_.size(); ++i){
-      active_state_variance_matrix_[i]->set_value(sigsq);
-    }
-  }
-
-  Vec RWHSM::initial_state_mean()const{
-    return initial_state_mean_;
-  }
-
-  Spd RWHSM::initial_state_variance()const{
-    return initial_state_variance_;
-  }
-
-  void RWHSM::set_initial_state_mean(const Vec &v){
-    initial_state_mean_ = v;
-  }
-
-  void RWHSM::set_initial_state_variance(const Spd &Sigma){
-    initial_state_variance_ = Sigma;
-  }
-
-  void RWHSM::set_time_zero(const Date &time_zero){
-    time_zero_ = time_zero;
-  }
-
-  //======================================================================
-  HSM::HolidayStateModel()
-      : number_of_days_in_holiday_windows_(0),
-        t_marker_(0)
-  {}
-
-  HSM::HolidayStateModel(Date time_zero)
-      : time_zero_(time_zero),
-        number_of_days_in_holiday_windows_(0),
-        date_marker_(time_zero),
-        t_marker_(0)
-  {}
-
-  HolidayStateModel * HSM::clone()const{
-    return new HolidayStateModel(*this);}
-
-  void HSM::add_holiday(Holiday *holiday){
-    boost::shared_ptr<Holiday> pholiday(holiday);
-    holidays_in_one_year_.push_back(pholiday);
-    number_of_days_in_holiday_windows_ += holiday->maximum_window_width();
-    initialize();
-  }
-
-  void HSM::set_time_zero(const Date &time_zero){
-    time_zero_ = time_zero;
-    date_marker_ = time_zero;
-    t_marker_ = 0;
-  }
-
-  void HSM::observe_state(const ConstVectorView then,
-                          const ConstVectorView now,
-                          int time_now){
-    Date current_date = date_at_time_t(time_now);
-    std::vector<Holiday *> active_holidays = get_active_holidays(current_date);
-    int n = active_holidays.size();
-    for(int i = 0; i < n; ++i){
-      ///////////////////////////////////
-      // This is the hard part.
-      //      active_holidays[i]->observe_state(then, now);
-    }
-  }
-
-  std::vector<Holiday *> HSM::get_active_holidays(const Date &current_date){
-    std::vector<Holiday *> active_holidays;
-    for(int i = 0; i < holidays_in_one_year_.size(); ++i){
-      Holiday *holiday = holidays_in_one_year_[i].get();
-      if(holiday->active(current_date));
-      active_holidays.push_back(holiday);
-    }
-    return active_holidays;
-  }
-
-  uint HSM::state_dimension()const{
-    return number_of_days_in_holiday_windows_;
-  }
-
-  void HSM::simulate_state_error(VectorView eta, int t)const{
-    if(eta.size() != state_dimension()){
-      ostringstream err;
-      err << "Wrong size vector passed to "
-          << "HolidayStateModel::simulate_state_error"
-          << endl
-          << "Expected 'eta' to be of length " << state_dimension()
-          << " but eta.size() is " << eta.size() << endl;
-      report_error(err.str());
-    }
-    Date current_date = date_at_time_t(t);
-    eta = 0;
-    if(in_holiday_window(current_date)){
-      eta[0] = rnorm(0, sigma());
-    }
-  }
-
-  Ptr<SparseMatrixBlock> HSM::state_transition_matrix(int t)const{
-    Date current_date = date_at_time_t(t);
-    if(in_holiday_window(current_date)){
-      return active_transition_matrix_;
-    }
-    return inactive_transition_matrix_;
-  }
-
-  Ptr<SparseMatrixBlock> HSM::state_variance_matrix(int t)const{
-    Date current_date = date_at_time_t(t);
-    if(in_holiday_window(current_date)){
-      return active_state_variance_matrix_;
-    }
-    return inactive_state_variance_matrix_;
-  }
-
-  SparseVector HSM::observation_matrix(int t)const{
-    Date current_date = date_at_time_t(t);
-    SparseVector ans(state_dimension());
-    if(in_holiday_window(current_date)){
-      ans[0] = 1;
-    }
-    return ans;
-  }
-
-  void HSM::set_initial_state_mean(const Vec &mean){
-    if(mean.size() != state_dimension()){
-      ostringstream err;
-      err << "Wrong sized argument to HSM::"
-          << "set_initial_state_mean." << endl
-          << "State dimension is " << state_dimension()
-          << ", but mean is of dimension " << mean.size() << "." << endl;
-      report_error(err.str());
-    }
-    initial_state_mean_ = mean;
-  }
-
-  Vec HSM::initial_state_mean()const{
-    return initial_state_mean_;
-  }
-
-  void HSM::set_initial_state_variance(const Spd &variance){
-    if(nrow(variance) != state_dimension()){
-      ostringstream err;
-      err << "Wrong sized argument to HolidayStateModel::"
-          << "set_initial_state_variance." << endl
-          << "State dimension is " << state_dimension()
-          << ", but variance is of dimension " << nrow(variance) << "."
-          << endl;
-      report_error(err.str());
-    }
-    initial_state_variance_ = variance;
-  }
-
-  Spd HSM::initial_state_variance()const{
-    return initial_state_variance_;}
-
-  void HSM::initialize(){
-    active_transition_matrix_ = new SeasonalStateSpaceMatrix(
-        number_of_days_in_holiday_windows_);
-    active_state_variance_matrix_ = new UpperLeftCornerMatrix(
-        state_dimension(), 1.0);
-    inactive_transition_matrix_ = new IdentityMatrix(state_dimension());
-    inactive_state_variance_matrix_ = new ZeroMatrix(state_dimension());
-  }
-
-  Date HSM::date_at_time_t(int t)const{
-    return time_zero_ + t;
-  }
-
-  bool HSM::in_holiday_window(const Date &date)const{
-    for (int i = 0; i < holidays_in_one_year_.size(); ++i) {
-      if(holidays_in_one_year_[i]->active(date)) return true;
-    }
-    return false;
-  }
-
-  //======================================================================
-  // Now we can define a whole bunch of holidays.
 
   bool Holiday::active(const Date &d)const{
-    int year = d.year();
-    return d >= earliest_influence(year) && d <= latest_influence(year);
+    Date holiday_date(nearest(d));
+    return d >= earliest_influence(holiday_date)
+        && d <= latest_influence(holiday_date);
   }
 
-  OrdinaryHoliday::OrdinaryHoliday(int days_before, int days_after)
+  //======================================================================
+
+  OrdinaryAnnualHoliday::OrdinaryAnnualHoliday(int days_before, int days_after)
       : days_before_(days_before),
         days_after_(days_after)
-  { assert(days_before >= 0);
+  {
+    assert(days_before >= 0);
     assert(days_after >= 0);
   }
 
-  Date OrdinaryHoliday::earliest_influence(int year)const{
-    map<Year, Date>::iterator it = earliest_influence_by_year_.find(year);
+  Date OrdinaryAnnualHoliday::earliest_influence(const Date &holiday_date)const{
+    int year = holiday_date.year();
+    std::map<Year, Date>::iterator it = earliest_influence_by_year_.find(year);
     if(it != earliest_influence_by_year_.end()){
       return it->second;
     }
     Date ans = date(year) - days_before_;
     earliest_influence_by_year_[year] = ans;
+    // Note that year refers to the year of the holiday, and
+    // earliest_influence_by_year_[year] contains a Date whose year()
+    // might not be in the same year as the holiday (if the holiday is
+    // close to a year boundary).
     return ans;
   }
 
-  Date OrdinaryHoliday::latest_influence(int year)const{
-    map<Year, Date>::iterator it = latest_influence_by_year_.find(year);
+  Date OrdinaryAnnualHoliday::latest_influence(const Date &holiday_date)const{
+    int year = holiday_date.year();
+    std::map<Year, Date>::iterator it = latest_influence_by_year_.find(year);
     if(it != latest_influence_by_year_.end()){
       return it->second;
     }
-    Date ans = date(year) - days_before_;
+    Date ans = date(year) + days_after_;
     latest_influence_by_year_[year] = ans;
     return ans;
   }
 
-  int OrdinaryHoliday::maximum_window_width()const{
+  int OrdinaryAnnualHoliday::maximum_window_width()const{
     return 1 + days_before_ + days_after_;
   }
 
-  Date OrdinaryHoliday::date(int year)const{
-    map<Year, Date>::iterator it = date_lookup_table_.find(year);
+  Date OrdinaryAnnualHoliday::date(int year)const{
+    std::map<Year, Date>::iterator it = date_lookup_table_.find(year);
     if(it != date_lookup_table_.end()){
       return it->second;
     }
@@ -339,12 +91,30 @@ namespace BOOM{
     return ans;
   }
 
-  //----------------------------------------------------------------------
+  Date OrdinaryAnnualHoliday::date_on_or_after(const Date &d)const{
+    Date date_in_same_year(date(d.year()));
+    if (date_in_same_year >= d) {
+      return date_in_same_year;
+    } else {
+      return date(d.year() + 1);
+    }
+  }
+
+  Date OrdinaryAnnualHoliday::date_on_or_before(const Date &d)const{
+    Date date_in_same_year(date(d.year()));
+    if (date_in_same_year <= d) {
+      return date_in_same_year;
+    } else {
+      return date(d.year() - 1);
+    }
+  }
+
+  //======================================================================
   FixedDateHoliday::FixedDateHoliday(int month,
                                      int day_of_month,
                                      int days_before,
                                      int days_after)
-      : OrdinaryHoliday(days_before, days_after),
+      : OrdinaryAnnualHoliday(days_before, days_after),
         month_name_(MonthNames(month)),
         day_of_month_(day_of_month)
   {}
@@ -354,36 +124,41 @@ namespace BOOM{
     return ans;
   }
 
-  //----------------------------------------------------------------------
+  //======================================================================
+  NthWeekdayInMonthHoliday::NthWeekdayInMonthHoliday(int which_week,
+                                                     DayNames day,
+                                                     MonthNames month,
+                                                     int days_before,
+                                                     int days_after)
+      : OrdinaryAnnualHoliday(days_before, days_after),
+        which_week_(which_week),
+        day_name_(day),
+        month_name_(month)
+  {}
+
+  Date NthWeekdayInMonthHoliday::compute_date(int year) const {
+    return nth_weekday_in_month(which_week_, day_name_, month_name_, year);
+  }
+
+  //======================================================================
+  LastWeekdayInMonthHoliday::LastWeekdayInMonthHoliday(DayNames day,
+                                                       MonthNames month,
+                                                       int days_before,
+                                                       int days_after)
+      : OrdinaryAnnualHoliday(days_before, days_after),
+        day_name_(day),
+        month_name_(month)
+  {}
+
+  Date LastWeekdayInMonthHoliday::compute_date(int year) const {
+    return last_weekday_in_month(day_name_, month_name_, year);
+  }
+  //======================================================================
   FloatingHoliday::FloatingHoliday(int days_before, int days_after)
-      : OrdinaryHoliday(days_before, days_after)
+      : OrdinaryAnnualHoliday(days_before, days_after)
   {}
 
-  //----------------------------------------------------------------------
-  NewYearsDay::NewYearsDay(int days_before, int days_after)
-      : FixedDateHoliday(Jan, 1, days_before, days_after)
-  {}
-  //----------------------------------------------------------------------
-  MartinLutherKingDay::MartinLutherKingDay(int days_before, int days_after)
-      : FloatingHoliday(days_before, days_after)
-  {}
-
-  // MLK day is 3rd Monday of January
-  Date MartinLutherKingDay::compute_date(int year)const{
-    return nth_weekday_in_month(3, Mon, Jan, year);
-  }
-
-  //----------------------------------------------------------------------
-  PresidentsDay::PresidentsDay(int days_before, int days_after)
-      : FloatingHoliday(days_before, days_after)
-  {}
-
-  // PresidentsDay is 3rd Monday in Feb.
-  Date PresidentsDay::compute_date(int year)const{
-    return nth_weekday_in_month(3, Mon, Feb, year);
-  }
-
-  //----------------------------------------------------------------------
+  //======================================================================
   SuperBowlSunday::SuperBowlSunday(int days_before, int days_after)
        : FloatingHoliday(days_before, days_after)
    {}
@@ -421,17 +196,8 @@ namespace BOOM{
     // should never get here
     return Date(Jan, 1, 1000);
   }
-  //----------------------------------------------------------------------
+  //======================================================================
 
-  ValentinesDay::ValentinesDay(int days_before, int days_after)
-      : FixedDateHoliday(Feb, 14, days_before, days_after)
-  {}
-
-  SaintPatricksDay::SaintPatricksDay(int days_before, int days_after)
-      : FixedDateHoliday(Mar, 17, days_before, days_after)
-  {}
-
-  //----------------------------------------------------------------------
   USDaylightSavingsTimeBegins::USDaylightSavingsTimeBegins(int days_before, int days_after)
       : FloatingHoliday(days_before, days_after)
   {}
@@ -448,7 +214,7 @@ namespace BOOM{
     }
     return last_weekday_in_month(Sun, Apr, year);
   }
-  //----------------------------------------------------------------------
+  //======================================================================
   USDaylightSavingsTimeEnds::USDaylightSavingsTimeEnds(int days_before, int days_after)
       : FloatingHoliday(days_before, days_after)
   {}
@@ -464,16 +230,22 @@ namespace BOOM{
     return last_weekday_in_month(Sun, Oct, year);
   }
 
-  //----------------------------------------------------------------------
+  //======================================================================
   EasterSunday::EasterSunday(int days_before, int days_after)
       : FloatingHoliday(days_before, days_after)
   {}
 
   Date EasterSunday::compute_date(int year)const{
-    // This code was copied off the internet from a random student's
-    // homework assignment.  It was able to reproduce easter sunday
+    // This code was copied off the internet from some student's
+    // homework assignment.  It was able to reproduce Easter sunday
     // from 2004 to 2015.  It is claimed to work between 1900 and
-    // 2600.
+    // 2600.  One can compare with
+    // http://en.wikipedia.org/wiki/Computus#Algorithms or the
+    // following section.
+    //
+    // Args:
+    //   year: The four digit year for which Easter Sunday should be
+    //     computed.
     if(year <= 1900 || year >= 2600){
       report_error("Can only compute easter dates between 1900 and 2600.");
     }
@@ -484,9 +256,7 @@ namespace BOOM{
     d = (19 * a + 24) % 30;
     e = (2 * b + 4 * c + 6 * d + 5) % 7;
     day = 22 + d + e;
-
     MonthNames month_name(Mar);
-
     if (day > 31) {
       month_name = Apr;
       day = d + e - 9;
@@ -494,64 +264,18 @@ namespace BOOM{
         day = d + e - 16;
       }
     }
-
     Date ans(month_name, day, year);
     return ans;
   }
 
+  //======================================================================
   MemorialDay::MemorialDay(int days_before, int days_after)
-      : FloatingHoliday(days_before, days_after)
+      : LastWeekdayInMonthHoliday(Mon, May, days_before, days_after)
   {}
 
-  // MemorialDay is the last Monday in May
-  Date MemorialDay::compute_date(int year)const{
-    Date may31(May, 31, year);
-    int days_after_monday = may31.days_after(Mon);
-    return may31 - days_after_monday;
-  }
-
-  IndependenceDay::IndependenceDay(int days_before, int days_after)
-      : FixedDateHoliday(Jul, 4, days_before, days_after)
-  {}
-
-  //----------------------------------------------------------------------
-  LaborDay::LaborDay(int days_before, int days_after)
-      : FloatingHoliday(days_before, days_after)
-  {}
-
-  // Labor day is the first Monday in September.
-  Date LaborDay::compute_date(int year)const{
-    Date sep1(Sep, 1, year);
-    int days_until = sep1.days_until(Mon);
-    return sep1 + days_until;
-  }
-
-  Halloween::Halloween(int days_before, int days_after)
-      : FixedDateHoliday(Oct, 31, days_before, days_after)
-  {}
-
-  VeteransDay::VeteransDay(int days_before, int days_after)
-      : FixedDateHoliday(Nov, 11, days_before, days_after)
-  {}
-
-  //----------------------------------------------------------------------
-  Thanksgiving::Thanksgiving(int days_before, int days_after)
-      : FloatingHoliday(days_before, days_after)
-  {}
-
-  // Thanksgiving is the 4th Thursday in November.
-  Date Thanksgiving::compute_date(int year)const{
-    Date nov1(Nov, 1, year);
-    int days_until_thanksgiving = nov1.days_until(Thu) + 21;
-    return nov1 + days_until_thanksgiving;
-  }
-
-  Christmas::Christmas(int days_before, int days_after)
-      : FixedDateHoliday(Dec, 25, days_before, days_after)
-  {}
-
-    // Factory method to create a Holiday given a string containing
-    // the holiday name.
+  //======================================================================
+  // Factory method to create a Holiday given a string containing
+  // the holiday name.
   Holiday * CreateNamedHoliday(const string &holiday_name,
                                int days_before,
                                int days_after){
@@ -573,10 +297,14 @@ namespace BOOM{
       return new USDaylightSavingsTimeEnds(days_before, days_after);
     } else if(holiday_name=="EasterSunday"){
       return new EasterSunday(days_before, days_after);
+    } else if(holiday_name=="USMothersDay"){
+      return new USMothersDay(days_before, days_after);
     } else if(holiday_name=="IndependenceDay"){
       return new IndependenceDay(days_before, days_after);
     } else if(holiday_name=="LaborDay"){
       return new LaborDay(days_before, days_after);
+    } else if(holiday_name=="ColumbusDay"){
+      return new ColumbusDay(days_before, days_after);
     } else if(holiday_name=="Halloween"){
       return new Halloween(days_before, days_after);
     } else if(holiday_name=="Thanksgiving"){
@@ -588,12 +316,10 @@ namespace BOOM{
     } else if(holiday_name=="Christmas"){
       return new Christmas(days_before, days_after);
     }
-
     ostringstream err;
     err << "Unknown holiday name passed to CreateHoliday:  " << holiday_name;
     report_error(err.str());
-
     return NULL;
   }
 
-}
+}  // namespace BOOM

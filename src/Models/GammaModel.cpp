@@ -27,7 +27,12 @@ namespace BOOM{
   typedef GammaSuf GS;
   typedef GammaModelBase GMB;
 
-  GS::GammaSuf(){}
+  GS::GammaSuf()
+      : sum_(0),
+        sumlog_(0),
+        n_(0)
+  {}
+
   GS::GammaSuf(const GammaSuf &rhs)
     : Sufstat(rhs),
       SufstatDetails<DataType>(rhs),
@@ -38,13 +43,20 @@ namespace BOOM{
 
   GS *GS::clone() const{return new GS(*this);}
 
-  void GS::clear(){sum_ = sumlog_ = n_=0;}
-  void GS::Update(const DoubleData &dat){
-    double x = dat.value();
-    update_raw_data(x);
+  void GS::set(double sum, double sumlog, double n){
+    sum_ = sum;
+    sumlog_ = sumlog;
+    n_ = n;
   }
 
-  void GS::update_raw_data(double x){
+  void GS::clear(){sum_ = sumlog_ = n_=0;}
+
+  void GS::Update(const DoubleData &dat){
+    double x = dat.value();
+    update_raw(x);
+  }
+
+  void GS::update_raw(double x){
     ++n_;
     sum_ += x;
     sumlog_ += log(x);
@@ -145,16 +157,27 @@ namespace BOOM{
 
   //======================================================================
 
-  GammaModel::GammaModel(double a, double b, bool moments)
+  GammaModel::GammaModel(double a, double b)
     : MLE_Model(),
       GMB(),
       ParamPolicy(new UnivParams(a), new UnivParams(b)),
       PriorPolicy()
   {
-    if(moments){
-      double mu =b;
-      b = a/mu;
-      set_beta(b);
+    if (a <= 0 || b <= 0) {
+      report_error("Both parameters must be positive in the "
+                   "GammaModel constructor.");
+    }
+  }
+
+  GammaModel::GammaModel(double shape, double mean, int)
+      : MLE_Model(),
+        GMB(),
+        ParamPolicy(new UnivParams(shape), new UnivParams(shape / mean)),
+        PriorPolicy()
+  {
+    if (shape <= 0 || mean <= 0) {
+      report_error("Both parameters must be positive in the "
+                   "GammaModel constructor.");
     }
   }
 
@@ -170,18 +193,59 @@ namespace BOOM{
     return new GammaModel(*this);}
 
 
-  Ptr<UnivParams> GammaModel::Alpha_prm(){return ParamPolicy::prm1();}
-  Ptr<UnivParams> GammaModel::Beta_prm(){return ParamPolicy::prm2();}
-  const Ptr<UnivParams> GammaModel::Alpha_prm()const{return ParamPolicy::prm1();}
-  const Ptr<UnivParams> GammaModel::Beta_prm()const{return ParamPolicy::prm2();}
+  Ptr<UnivParams> GammaModel::Alpha_prm(){
+    return ParamPolicy::prm1();
+  }
 
-  double GammaModel::alpha()const{return Alpha_prm()->value();}
-  double GammaModel::beta()const{return Beta_prm()->value();}
-  void GammaModel::set_alpha(double a){Alpha_prm()->set(a);}
-  void GammaModel::set_beta(double b){Beta_prm()->set(b);}
+  Ptr<UnivParams> GammaModel::Beta_prm(){
+    return ParamPolicy::prm2();
+  }
+
+  const Ptr<UnivParams> GammaModel::Alpha_prm()const{
+    return ParamPolicy::prm1();
+  }
+
+  const Ptr<UnivParams> GammaModel::Beta_prm()const{
+    return ParamPolicy::prm2();
+  }
+
+  double GammaModel::alpha()const{
+    return ParamPolicy::prm1_ref().value();
+  }
+
+  double GammaModel::beta()const{
+    return ParamPolicy::prm2_ref().value();
+  }
+
+  void GammaModel::set_alpha(double a){
+    if (a <= 0) {
+      ostringstream err;
+      err << "The 'a' parameter must be positive in GammaModel::set_alpha()."
+          << endl
+          << "Called with a = " << a << endl;
+      report_error(err.str());
+    }
+    ParamPolicy::prm1_ref().set(a);
+  }
+
+  void GammaModel::set_beta(double b){
+    if (b <= 0) {
+      ostringstream err;
+      err << "The 'b' parameter must be positive in GammaModel::set_beta()."
+          << endl
+          << "Called with b = " << b << endl;
+      report_error(err.str());
+    }
+    ParamPolicy::prm2_ref().set(b);
+  }
+
   void GammaModel::set_params(double a, double b){
     set_alpha(a);
     set_beta(b);}
+
+  double GammaModel::mean()const{
+    return alpha() / beta();
+  }
 
   inline double bad_gamma_loglike(double a,double b, Vec &g, Mat &h, uint nd){
     if(nd>0){
@@ -189,7 +253,7 @@ namespace BOOM{
       g[1] = (b <= 0) ? -(b+1) : 0;
       if(nd>1) h.set_diag(-1);
     }
-    return BOOM::infinity(-1);
+    return BOOM::negative_infinity();
   }
 
   inline double bad_gamma_loglike(double a, double b, Vec *g, Mat *h){
@@ -200,7 +264,7 @@ namespace BOOM{
     if (h) {
       h->set_diag(-1);
     }
-    return infinity(-1);
+    return negative_infinity();
   }
 
   double GammaModel::Loglike(Vec &g, Mat &h, uint nd) const{
@@ -225,7 +289,7 @@ namespace BOOM{
   }
 
   double GammaModel::loglikelihood(double a, double b)const{
-    if(a<=0 || b<=0) return infinity(-1);
+    if(a<=0 || b<=0) return negative_infinity();
     double n = suf()->n();
     double sum =suf()->sum();
     double sumlog = suf()->sumlog();
@@ -276,22 +340,24 @@ namespace BOOM{
     double ss=0;
     for(uint i=0; i<dat().size(); ++i)
       ss+= pow(dat()[i]->value()-ybar, 2);
-    double v = ss/(n-1);
+    if ( (ss > 0) && (n > 1) ) {
+      double v = ss/(n-1);
 
-    // method of moments estimates
-    double b = ybar/v;
-    double a = ybar*b;
+      // method of moments estimates
+      double b = ybar/v;
+      double a = ybar*b;
 
-    // one step newton refinement:
-    // a = ybar *b;
-    // b - exp(psi(ybar*b))/gm = 0
-    double tmp = exp(digamma(ybar*b))/gm;
-    double f =  b - tmp;
-    double g = 1 - tmp*trigamma(ybar*b) * ybar;
+      // one step newton refinement:
+      // a = ybar *b;
+      // b - exp(psi(ybar*b))/gm = 0
+      double tmp = exp(digamma(ybar*b))/gm;
+      double f =  b - tmp;
+      double g = 1 - tmp*trigamma(ybar*b) * ybar;
 
-    b-= f/g;
-    a = b*ybar;
-    set_params(a,b);
+      b-= f/g;
+      a = b*ybar;
+      set_params(a,b);
+    }
     NumOptModel::mle();
   }
 

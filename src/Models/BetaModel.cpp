@@ -17,6 +17,7 @@
 */
 #include "BetaModel.hpp"
 #include <cmath>
+#include <sstream>
 #include <distributions.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <cpputil/math_utils.hpp>
@@ -28,11 +29,26 @@ namespace BOOM{
   typedef BetaSuf BS;
   typedef BetaModel BM;
 
+  BS::BetaSuf()
+      : n_(0),
+        sumlog_(0),
+        sumlogc_(0)
+  {}
+
+  BS::BetaSuf(const BetaSuf &rhs)
+      : SufstatDetails<DoubleData>(rhs),
+        n_(rhs.n_),
+        sumlog_(rhs.sumlog_),
+        sumlogc_(rhs.sumlogc_)
+  {}
+
   BS * BS::clone()const{return new BS(*this);}
+
   void BS::Update(const DoubleData &d){
     double p = d.value();
     update_raw(p);
   }
+
   void BetaSuf::update_raw(double p){
     ++n_;
     sumlog_ += log(p);
@@ -62,8 +78,7 @@ namespace BOOM{
     return ans;
   }
 
-  Vec::const_iterator BS::unvectorize(Vec::const_iterator &v,
-                                      bool){
+  Vec::const_iterator BS::unvectorize(Vec::const_iterator &v, bool){
     n_ = *v; ++v;
     sumlog_ = *v; ++v;
     sumlogc_ = *v; ++v;
@@ -80,17 +95,26 @@ namespace BOOM{
     return out;
   }
 
-  BM::BetaModel()
-    : ParamPolicy(new UnivParams(1.0), new UnivParams(1.0)),
-      DataPolicy(new BS() ),
-      PriorPolicy()
-  {}
-
   BM::BetaModel(double a, double b)
     : ParamPolicy(new UnivParams(a), new UnivParams(b)),
       DataPolicy(new BS),
       PriorPolicy()
-  {}
+  {
+    set_params(a, b);
+  }
+
+  BM::BetaModel(double mean, double sample_size, int)
+      : ParamPolicy(new UnivParams(mean * sample_size),
+                    new UnivParams( (1-mean) * sample_size)),
+        DataPolicy(new BS),
+        PriorPolicy()
+  {
+    if (mean <= 0 || mean >= 1.0 || sample_size <= 0) {
+      report_error("mean must be in (0, 1), and sample_size must "
+                   "be positive in BetaModel(mean, sample_size, int) "
+                   "constructor");
+    }
+  }
 
   BM::BetaModel(const BM &rhs)
     : Model(rhs),
@@ -109,16 +133,63 @@ namespace BOOM{
   const Ptr<UnivParams> BM::Alpha()const{return ParamPolicy::prm1();}
   const Ptr<UnivParams> BM::Beta()const{return ParamPolicy::prm2();}
 
-  const double &BM::a()const{return Alpha()->value();}
-  const double &BM::b()const{return Beta()->value();}
+  const double &BM::a()const{return ParamPolicy::prm1_ref().value();}
+  const double &BM::b()const{return ParamPolicy::prm2_ref().value();}
 
-  void BM::set_a(double alpha){Alpha()->set(alpha);}
-  void BM::set_b(double beta){Beta()->set(beta);}
+  void BM::set_a(double alpha){
+    if (alpha <= 0) {
+      ostringstream err;
+      err << "The alpha parameter must be positive in BetaModel::set_a()."
+          << endl
+          << "Called with alpha = " << alpha << endl;
+      report_error(err.str());
+    }
+    ParamPolicy::prm1_ref().set(alpha);
+  }
+
+  void BM::set_b(double beta){
+    if (beta <= 0) {
+      ostringstream err;
+      err << "The beta parameter must be positive in BetaModel::set_a()."
+          << endl
+          << "Called with beta = " << beta << endl;
+      report_error(err.str());
+    }
+    ParamPolicy::prm2_ref().set(beta);
+  }
+
   void BM::set_params(double a, double b){set_a(a); set_b(b);}
+
+  double BM::mean()const{return a()/sample_size();}
+  double BM::sample_size()const{return a() + b();}
+  void BM::set_sample_size(double a_plus_b){
+    double mu = mean();
+    double a = mu * a_plus_b;
+    double b = (1-mu) * a_plus_b;
+    set_params(a, b);
+  }
+
+  void BM::set_mean(double a_over_a_plus_b){
+    double n = sample_size();
+    double a = a_over_a_plus_b * n;
+    double b = (1 - a_over_a_plus_b) * n;
+    set_params(a, b);
+  }
 
   double BM::Loglike(Vec &g, Mat &h, uint nd) const{
     double alpha = a();
     double beta = b();
+    if (alpha <= 0 || beta <= 0) {
+      if (nd > 0) {
+        g[0] = (alpha <= 0) ? 1.0 : 0.0;
+        g[1] = (beta <= 0) ? 1.0 : 0.0;
+        if (nd > 1) {
+          h = 0.0;
+          h.diag() = -1.0;
+        }
+      }
+      return negative_infinity();
+    }
 
     double n = suf()->n();
     double sumlog = suf()->sumlog();
@@ -140,9 +211,13 @@ namespace BOOM{
     return ans;
   }
 
+  double BM::log_likelihood(double a, double b)const{
+    return beta_log_likelihood(a, b, *suf());
+  }
+
   double BM::Logp(double x, double &d1, double &d2, uint nd) const{
-    if(x<0 || x>1) return BOOM::infinity(-1);
-    double inf = BOOM::infinity(1);
+    if(x<0 || x>1) return BOOM::negative_infinity();
+    double inf = BOOM::infinity();
     double a = this->a();
     double b = this->b();
     if(a==inf || b==inf) return Logp_degenerate(x,d1,d2,nd);
@@ -161,7 +236,7 @@ namespace BOOM{
   }
 
   double BM::Logp_degenerate(double x, double &d1, double &d2, uint nd)const{
-    double inf = BOOM::infinity(1);
+    double inf = BOOM::infinity();
     double a_inf = a()==inf;
     double b_inf = b()==inf;
     if(a_inf && b_inf) {
@@ -171,12 +246,16 @@ namespace BOOM{
       d1=0;
       if(nd>1) d2=0;}
     if(b_inf) x= 1-x;
-    return x==1.0 ?  0.0 : BOOM::infinity(-1);
+    return x==1.0 ?  0.0 : BOOM::negative_infinity();
   }
 
   double BM::sim() const { return rbeta(a(),b());}
 
   double beta_log_likelihood(double a, double b, const BetaSuf &suf){
+    if (a <= 0 || b <= 0) {
+      return negative_infinity();
+    }
+
     double n = suf.n();
     double sumlog = suf.sumlog();
     double sumlogc = suf.sumlogc();

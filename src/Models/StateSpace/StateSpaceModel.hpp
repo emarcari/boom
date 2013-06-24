@@ -57,12 +57,12 @@ namespace BOOM{
     Vec simulate_forecast(int n, const Vec &final_state);
 
     // Simulate the next n time periods given current parameters and a
-    // specified set of observed data.  Uses infinity(-1) as a signal
+    // specified set of observed data.  Uses negative_infinity() as a signal
     // for missing data.
     Vec simulate_forecast_given_observed_data(int n, const Vec &observed_data);
 
     // Run the Kalman filter over the set of observed data, using
-    // infinity(-1) as a signal for missing data.  The .a and .P
+    // negative_infinity() as a signal for missing data.  The .a and .P
     // elements in the returned ScalarKalmanStorage give the mean and
     // variance of the state one period after the last element in
     // observed_data.  t0 is notional time period for

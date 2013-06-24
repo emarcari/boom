@@ -121,7 +121,7 @@ namespace BOOM {
 
     double operator()(double y) const {
       if (y >= sum_ || y <= 0.0){
-        return(BOOM::infinity(-1));
+        return(BOOM::negative_infinity());
       }
       return logp(y, mui_) + logp(sum_ - y, muj_);
     }

@@ -71,12 +71,12 @@ double dbeta(double x, double a, double b, int give_log)
     if (x < 0 || x > 1) return(R_D__0);
     if (x == 0) {
 	if(a > 1) return(R_D__0);
-	if(a < 1) return(BOOM::infinity(1));
+	if(a < 1) return(BOOM::infinity());
 	/* a == 1 : */ return(R_D_val(b));
     }
     if (x == 1) {
 	if(b > 1) return(R_D__0);
-	if(b < 1) return(BOOM::infinity(1));
+	if(b < 1) return(BOOM::infinity());
 	/* b == 1 : */ return(R_D_val(a));
     }
     if (a < 1) {

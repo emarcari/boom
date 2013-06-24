@@ -18,6 +18,7 @@
 #include <Models/Glm/PosteriorSamplers/BinomialLogitSpikeSlabSampler.hpp>
 #include <cpputil/seq.hpp>
 #include <distributions.hpp>
+#include <cpputil/math_utils.hpp>
 
 namespace BOOM{
   typedef BinomialLogitSpikeSlabSampler BLSSS;
@@ -26,7 +27,7 @@ namespace BOOM{
                                        Ptr<MvnBase> pri,
                                        Ptr<VariableSelectionPrior> vpri,
                                        int clt_threshold)
-      : BinomialLogitSampler(m, pri, clt_threshold),
+      : BinomialLogitAuxmixSampler(m, pri, clt_threshold),
         m_(m),
         pri_(pri),
         vpri_(vpri),
@@ -47,12 +48,12 @@ namespace BOOM{
       m_->set_Beta(b, allow_model_selection_);
       return;
     }
-    ivar_ = g.select(pri_->siginv());
-    ivar_mu_ = ivar_ * g.select(pri_->mu());
-    ivar_ += g.select(xtwx());
-    ivar_mu_ += g.select(xtwu());
-    Vec b = ivar_.solve(ivar_mu_);
-    b = rmvn_ivar(b, ivar_);
+    SpdMatrix ivar = g.select(pri_->siginv());
+    Vector ivar_mu = ivar * g.select(pri_->mu());
+    ivar += g.select(suf().xtx());
+    ivar_mu += g.select(suf().xty());
+    Vector b = ivar.solve(ivar_mu);
+    b = rmvn_ivar(b, ivar);
 
     // If model selection is turned off and some elements of beta
     // happen to be zero (because, e.g., of a failed MH step) we don't
@@ -63,7 +64,7 @@ namespace BOOM{
   double BLSSS::logpri()const{
     const Selector & g(m_->coef().inc());
     double ans = vpri_->logp(g);  // p(gamma)
-    if(ans == BOOM::infinity(-1)) return ans;
+    if(ans == BOOM::negative_infinity()) return ans;
     if(g.nvars() > 0){
       ans += dmvn(m_->beta(),
                   g.select(pri_->mu()),
@@ -76,7 +77,7 @@ namespace BOOM{
   double BLSSS::log_model_prob(const Selector &g)const{
     // borrowed from MLVS.cpp
     double num = vpri_->logp(g);
-    if(num==BOOM::infinity(-1) || g.nvars() == 0){
+    if(num==BOOM::negative_infinity() || g.nvars() == 0){
       // If num == -infinity then it is in a zero support point in the
       // prior.  If g.nvars()==0 then all coefficients are zero
       // because of the point mass.  The only entries remaining in the
@@ -85,20 +86,20 @@ namespace BOOM{
       // in the non-empty case below.
       return num;
     }
-    ivar_ = g.select(pri_->siginv());
-    num += .5*ivar_.logdet();
-    if(num == BOOM::infinity(-1)) return num;
+    SpdMatrix ivar = g.select(pri_->siginv());
+    num += .5*ivar.logdet();
+    if(num == BOOM::negative_infinity()) return num;
 
-    Vec mu = g.select(pri_->mu());
-    ivar_mu_ = ivar_ * mu;
-    num -= .5*mu.dot(ivar_mu_);
+    Vector mu = g.select(pri_->mu());
+    Vector ivar_mu = ivar * mu;
+    num -= .5*mu.dot(ivar_mu);
 
     bool ok=true;
-    ivar_ = ivar_ + g.select(xtwx());
-    Mat L = ivar_.chol(ok);
-    if(!ok)  return BOOM::infinity(-1);
-    double denom = sum(log(L.diag()));  // = .5 log |ivar_|
-    Vec S = g.select(xtwu()) + ivar_mu_;
+    ivar += g.select(suf().xtx());
+    Mat L = ivar.chol(ok);
+    if(!ok)  return BOOM::negative_infinity();
+    double denom = sum(log(L.diag()));  // = .5 log |ivar|
+    Vec S = g.select(suf().xty()) + ivar_mu;
     Lsolve_inplace(L,S);
     denom-= .5*S.normsq();  // S.normsq =  beta_tilde ^T V_tilde beta_tilde
     return num-denom;

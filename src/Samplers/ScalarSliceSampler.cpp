@@ -190,7 +190,8 @@ namespace BOOM{
                                  double logplo, double logphi,
                                  double logp_slice) const {
     ostringstream err;
-    err << " lo = " << lo << "  logp(lo) = " << logplo << endl
+    err << endl
+        << "lo = " << lo << "  logp(lo) = " << logplo << endl
 	<< "hi = " << hi << "  logp(hi) = " << logphi << endl
 	<< "x  = " << x  << "  logp(x)  = " << logp_slice << endl;
     return err.str().c_str();

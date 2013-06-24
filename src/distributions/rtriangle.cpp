@@ -39,10 +39,10 @@ namespace BOOM{
 
      if(x1 < x0) {
        std::ostringstream err;
-       err << "error in rtriangle_mt: called with" << endl
-           << "x0 = " << x0 << endl
-           << "x1 = " << x1 << endl
-           << "xm = " << xm << endl
+       err << "error in rtriangle_mt: called with" << std::endl
+           << "x0 = " << x0 << std::endl
+           << "x1 = " << x1 << std::endl
+           << "xm = " << xm << std::endl
            << "x0 must be less than x1";
        throw_exception<std::runtime_error>(err.str());
      }
@@ -70,18 +70,18 @@ namespace BOOM{
 
      if(x1<x0){
        std::ostringstream err;
-       err << "error in dtriangle: called with" << endl
-           << "x0 = " << x0 << endl
-           << "x1 = " << x1 << endl
-           << "xm = " << xm << endl
-           << "logscale = " << logscale << endl
+       err << "error in dtriangle: called with" << std::endl
+           << "x0 = " << x0 << std::endl
+           << "x1 = " << x1 << std::endl
+           << "xm = " << xm << std::endl
+           << "logscale = " << logscale << std::endl
            << "x0 must be less than x1";
 
        throw_exception<std::runtime_error>(err.str());
      }
      if(x0==x1) return x0;
 
-     if(x<x0 || x> x1) return (logscale ? infinity(-1) : 0);
+     if(x<x0 || x> x1) return (logscale ? negative_infinity() : 0);
 
      if(xm< x0 || xm>x1) xm=(x0+x1)/2.0;
      y = 2.0/(x1-x0);
@@ -98,10 +98,10 @@ namespace BOOM{
 
      if(x1<x0){
        std::ostringstream err;
-       err << "error in ptriangle: called with" << endl
-           << "x0 = " << x0 << endl
-           << "x1 = " << x1 << endl
-           << "xm = " << xm << endl
+       err << "error in ptriangle: called with" << std::endl
+           << "x0 = " << x0 << std::endl
+           << "x1 = " << x1 << std::endl
+           << "xm = " << xm << std::endl
            << "x0 must be less than x1";
        throw_exception<std::runtime_error>(err.str());
      }
@@ -134,10 +134,10 @@ namespace BOOM{
 
      if(x1<x0){
        std::ostringstream err;
-       err << "error in qtriangle: called with" << endl
-           << "x0 = " << x0 << endl
-           << "x1 = " << x1 << endl
-           << "xm = " << xm << endl
+       err << "error in qtriangle: called with" << std::endl
+           << "x0 = " << x0 << std::endl
+           << "x1 = " << x1 << std::endl
+           << "xm = " << xm << std::endl
            << "x0 must be less than x1";
        throw_exception<std::runtime_error>(err.str());
      }

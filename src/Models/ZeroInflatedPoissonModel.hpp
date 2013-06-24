@@ -30,7 +30,9 @@ namespace BOOM {
   class ZeroInflatedPoissonSuf : public SufstatDetails<IntData> {
    public:
     ZeroInflatedPoissonSuf();
-    ZeroInflatedPoissonSuf(double nzero, double npos, double sum_of_positives);
+    ZeroInflatedPoissonSuf(double number_of_zero_trials,
+                           double number_of_positive_trials,
+                           double total_number_of_events);
     ZeroInflatedPoissonSuf * clone()const;
 
     // Required virtual functions..

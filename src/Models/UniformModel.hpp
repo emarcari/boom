@@ -40,7 +40,7 @@ namespace BOOM{
 
     void clear();
     void Update(const DoubleData &d);
-    void update_raw_data(double x);
+    void update_raw(double x);
 
     double lo()const;
     double hi()const;
@@ -53,9 +53,9 @@ namespace BOOM{
 
     virtual Vec vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-					    bool minimal=true);
+                                            bool minimal=true);
     virtual Vec::const_iterator unvectorize(const Vec &v,
-					    bool minimal=true);
+                                            bool minimal=true);
     virtual ostream &print(ostream &out)const;
   private:
     double lo_, hi_;

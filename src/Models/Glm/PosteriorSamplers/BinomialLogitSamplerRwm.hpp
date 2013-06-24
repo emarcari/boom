@@ -41,8 +41,8 @@ namespace BOOM{
 
     virtual void draw();
     virtual double logpri()const;
-    MvtRwmProposal * proposal(){return proposal_.dumb_ptr();}
-    const MvtRwmProposal * proposal()const{return proposal_.dumb_ptr();}
+    MvtRwmProposal * proposal(){return proposal_.get();}
+    const MvtRwmProposal * proposal()const{return proposal_.get();}
 
     void set_chunk_size(int n);
    private:

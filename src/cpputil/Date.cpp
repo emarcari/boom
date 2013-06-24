@@ -683,19 +683,45 @@ namespace BOOM{
     return unknown_month;
   }
 
+  DayNames str2day(const string &s) {
+    if (s.size() <= 4) {
+      if (s == "Sun" || s == "sun") return Sun;
+      if (s == "Mon" || s == "mon") return Mon;
+      if (s == "Tue" || s == "tue") return Tue;
+      if (s == "Wed" || s == "wed") return Wed;
+      if (s == "Thu" || s == "thu") return Thu;
+      if (s == "Fri" || s == "fri") return Fri;
+      if (s == "Sat" || s == "sat") return Sat;
+    } else {
+      if (s == "Sunday" || s == "sunday") return Sun;
+      if (s == "Monday" || s == "monday") return Mon;
+      if (s == "Tuesday" || s == "tuesday") return Tue;
+      if (s == "Wednesday" || s == "wednesday") return Wed;
+      if (s == "Thursday" || s == "thursday") return Thu;
+      if (s == "Friday" || s == "friday") return Fri;
+      if (s == "Saturday" || s == "saturday") return Sat;
+    }
+    ostringstream err;
+    err << "Unrecognized day name: " << s;
+    report_error(err.str());
+    return Sun;  // to keep the compiler quiet.
+  }
+
   int operator-(const Date &d1, const Date &d2){
     return d1.days_after_jan_1_1970() - d2.days_after_jan_1_1970();
   }
 
   //============================================================
-  Date nth_weekday_in_month(int n, DayNames weekday, MonthNames month, int year){
+  Date nth_weekday_in_month(
+      int n, DayNames weekday, MonthNames month, int year){
     if(n<1) report_error("n must be >= 1 in nth_weekday_in_month");
     Date ans(month, 1, year);
     int days_to = ans.days_until(weekday);
     ans += days_to + 7 * (n-1);
     if(ans.month() != month){
       ostringstream err;
-      err << "n is too large in nth_weekday_in_month.  There are not " << n << " "
+      err << "n is too large in nth_weekday_in_month.  There are not "
+          << n << " "
           << weekday << "s in " << month << " in " << year << ".";
       report_error(err.str());
     }

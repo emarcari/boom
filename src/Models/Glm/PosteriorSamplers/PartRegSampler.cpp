@@ -318,7 +318,7 @@ namespace BOOM{
   }
 
   double PRS::compute_log_model_prob(const Selector &g)const{
-    if(g.nvars()==0) return BOOM::infinity(-1);
+    if(g.nvars()==0) return BOOM::negative_infinity();
     Spd Ominv = g.select(prior_ivar_);
     double SS = set_reg_post_params(g,Ominv);
     double DF = suf_->n() + prior_df_;

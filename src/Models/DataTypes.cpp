@@ -59,9 +59,14 @@ namespace BOOM{
   ostream & VectorData::display(ostream &out)const{
     out << x ; return out;}
 
-  void VectorData::set(const Vec &rhs, bool Signal){
+  void VectorData::set(const Vec &rhs, bool sig){
     x =rhs;
-    if(Signal) signal();
+    if(sig) signal();
+  }
+
+  void VectorData::set_element(double value, int position, bool sig){
+    x[position] = value;
+    if(sig) signal();
   }
 
   double VectorData::operator[](uint i)const{
@@ -96,6 +101,11 @@ namespace BOOM{
 
   void MatrixData::set(const Mat &rhs, bool sig){
     x = rhs;
+    if(sig) signal();
+  }
+
+  void MatrixData::set_element(double value, int row, int col, bool sig){
+    x(row, col) = value;
     if(sig) signal();
   }
 

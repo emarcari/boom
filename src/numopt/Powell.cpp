@@ -23,6 +23,8 @@
 #include <cpputil/math_utils.hpp>
 #include <cpputil/report_error.hpp>
 
+using std::min;
+
 namespace PowellNewUOAImpl{
   class NewUOATargetFun {
    public:
@@ -81,7 +83,7 @@ namespace BOOM{
 
   PowellMinimizer::PowellMinimizer(Target f)
       : f_(f),
-        minimum_(infinity(1)),
+        minimum_(infinity()),
         initial_stepsize_(1.0),
         desired_precision_(1e-6),
         number_of_interpolating_points_(-1),

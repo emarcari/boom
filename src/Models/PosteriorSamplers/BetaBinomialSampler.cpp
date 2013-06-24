@@ -34,7 +34,10 @@ namespace BOOM{
     double nyes = mod_->suf()->sum();
     double n = mod_->n() * mod_->suf()->nobs();
     double nno = n - nyes;
-    double p = rbeta_mt(rng(), a + nyes, b+nno);
+    double p;
+    do {
+      p = rbeta_mt(rng(), a + nyes, b+nno);
+    } while(p <= 0 || p >= 1);
     mod_->set_prob(p);
   }
 

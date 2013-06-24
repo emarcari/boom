@@ -205,7 +205,7 @@ namespace BOOM{
 
    double SpdMatrix::logdet(bool &ok) const{
      Matrix L(chol(ok));
-     if(!ok) return BOOM::infinity(-1);
+     if(!ok) return BOOM::negative_infinity();
      double ans =0.0;
      uint n = nrow();
      for(uint i=0; i<n; ++i) ans+= std::log(L(i,i));

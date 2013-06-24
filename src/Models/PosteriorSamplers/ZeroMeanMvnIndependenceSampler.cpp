@@ -31,7 +31,7 @@ namespace BOOM{
       : m_(model),
         prior_(prior),
         which_variable_(which_variable),
-        upper_truncation_point_(infinity(1))
+        upper_truncation_point_(infinity())
   {}
 
   ZMMI::ZeroMeanMvnIndependenceSampler(ZeroMeanMvnModel *model,
@@ -42,7 +42,7 @@ namespace BOOM{
         prior_(new GammaModel(prior_df/2,
                               pow(prior_sigma_guess, 2) * prior_df / 2)),
         which_variable_(which_variable),
-        upper_truncation_point_(infinity(1))
+        upper_truncation_point_(infinity())
   {}
 
   void ZMMI::set_sigma_upper_limit(double max_sigma){
@@ -61,7 +61,7 @@ namespace BOOM{
     double df = 2 * prior_->alpha() + m_->suf()->n();
     Spd sumsq = m_->suf()->center_sumsq(m_->mu());
     double ss = 2 * prior_->beta() + sumsq(i,i);
-    if(upper_truncation_point_ == infinity(1)){
+    if(upper_truncation_point_ == infinity()){
       siginv(i, i) = rgamma_mt(rng(), df/2, ss/2);
     }else{
       double cutpoint = 1.0/pow(upper_truncation_point_, 2);
@@ -119,7 +119,7 @@ namespace BOOM{
       double ss = 2 * priors_[i]->beta() + sumsq(i,i);
       if (sigma_upper_truncation_point_[i] == 0) {
         Sigma(i, i) = 0.0;
-      } if(sigma_upper_truncation_point_[i] == infinity(1)){
+      } if(sigma_upper_truncation_point_[i] == infinity()){
         Sigma(i, i) = 1.0 / rgamma_mt(rng(), df/2, ss/2);
       } else {
         double cutpoint = 1.0/pow(sigma_upper_truncation_point_[i], 2);

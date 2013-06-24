@@ -77,8 +77,8 @@ namespace BOOM{
     Ptr<ZeroMatrix> error_variance_;
 
    protected:
-    RegressionModel * regression() {return reg_.dumb_ptr();}
-    const RegressionModel * regression()const{return reg_.dumb_ptr();}
+    RegressionModel * regression() {return reg_.get();}
+    const RegressionModel * regression()const{return reg_.get();}
   };
 
 }

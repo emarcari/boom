@@ -58,7 +58,7 @@ namespace BOOM{
 
     double TF::operator()(const Vec &b)const{
       ParamHolder ph(b, v, wsp);
-      if(pcr->a()<= 0.0) return BOOM::infinity(-1);
+      if(pcr->a()<= 0.0) return BOOM::negative_infinity();
       double ans = pcr->loglike();
       return ans;
     }
