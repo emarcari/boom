@@ -19,14 +19,26 @@
 #ifndef BOOM_REF_COUNTED_HPP
 #define BOOM_REF_COUNTED_HPP
 
+#ifndef NO_BOOST_THREADS
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/locks.hpp>
+#endif
 
 namespace BOOM{
 
+#ifdef NO_BOOST_THREADS
+#define BOOM_LOCK(MUTEX)
+#else
+#define BOOM_LOCK(MUTEX) boost::lock_guard<boost::mutex> lock(MUTEX)
+#endif
+
   class RefCounted{
     unsigned int cnt_;
+#ifdef NO_BOOST_THREADS
+    int ref_count_mutex_;
+#else
     boost::mutex ref_count_mutex_;
+#endif
   public:
     RefCounted(): cnt_(0){}
     RefCounted(const RefCounted &): cnt_(0), ref_count_mutex_() {}
@@ -37,15 +49,16 @@ namespace BOOM{
 
     virtual ~RefCounted(){}
     void up_count(){
-      boost::lock_guard<boost::mutex> lock(ref_count_mutex_);
+      BOOM_LOCK(ref_count_mutex_);
       ++cnt_;
     }
     void down_count(){
-      boost::lock_guard<boost::mutex> lock(ref_count_mutex_);
+      BOOM_LOCK(ref_count_mutex_);
       --cnt_;
     }
     unsigned int ref_count()const{return cnt_;}
   };
 
+#undef BOOM_LOCK
 }
 #endif // BOOM_REF_COUNTED_HPP

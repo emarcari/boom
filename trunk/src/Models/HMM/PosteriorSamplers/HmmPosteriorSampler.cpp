@@ -18,8 +18,11 @@
 
 #include <Models/HMM/PosteriorSamplers/HmmPosteriorSampler.hpp>
 #include <Models/HMM/HmmFilter.hpp>
+
+#ifndef NO_BOOST_THREADS
 #include <boost/thread.hpp>
 #include <boost/ref.hpp>
+#endif
 
 namespace BOOM{
 
@@ -50,18 +53,22 @@ typedef HmmPosteriorSampler HS;
     std::vector<Ptr<MixtureComponent> > mix = hmm_->mixture_components();
     uint S = mix.size();
 
+#ifndef NO_BOOST_THREADS
     if(use_threads_){
       if(workers_.size()!=S) use_threads(true);
       boost::thread_group tg;
       for(uint s=0; s<S; ++s)
         tg.add_thread(new boost::thread(boost::ref(*workers_[s])));
       tg.join_all();
-    }else{
+    }else
+#endif
+    {
       for(uint s=0; s<S; ++s) mix[s]->sample_posterior();
     }
   }
 
   void HS::use_threads(bool yn){
+#ifndef NO_BOOST_THREADS
     use_threads_ = yn;
     if(!use_threads_) return;
     std::vector<Ptr<MixtureComponent> > mix = hmm_->mixture_components();
@@ -72,5 +79,6 @@ typedef HmmPosteriorSampler HS;
           worker(new MixtureComponentSampler(mix[s].get()));
       workers_.push_back(worker);
     }
+#endif
   }
 }

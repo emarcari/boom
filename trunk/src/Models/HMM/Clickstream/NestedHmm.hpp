@@ -76,16 +76,13 @@ namespace BOOM {
     ostream & write_suf(ostream &)const;
 
     // Sets the number of threads to use for data imputation.
-    // TODO(stevescott):  Why is this virtual?
     void set_threads(int n);
 
     double impute_latent_data();
-    double impute_latent_data_with_threads();
 
     virtual std::vector<Ptr<Sufstat> > suf_vec()const;
 
     double fwd_bkwd(bool bayes=false, bool find_mode=true);
-    double fwd_bkwd_with_threads(bool bayes=false, bool find_mode=true);
     double fwd(Ptr<Stream>)const;
     void bkwd_sampling(Ptr<Stream>);
     void bkwd_smoothing(Ptr<Stream>);
@@ -154,11 +151,11 @@ namespace BOOM {
     ConstSubMatrix get_htrans(const Mat &P, int H)const;
     ConstSubMatrix get_block(const Mat &P, int H1, int H2)const;
     Mat get_Htrans(const Mat &P)const;
+    double fwd_bkwd_with_threads(bool bayes=false, bool find_mode=true);
+    double impute_latent_data_with_threads();
 
-    //------------------------------------------------------------
-   protected:
-    virtual double collect_threads();
-    virtual void clear_client_data();
+    double collect_threads();
+    void clear_client_data();
     void allocate_data_to_workers();
     void add_worker(Ptr<NestedHmm> w);
     void clear_workers();

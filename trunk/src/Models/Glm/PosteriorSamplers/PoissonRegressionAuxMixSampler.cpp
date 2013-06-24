@@ -19,7 +19,10 @@
 #include <Models/Glm/PosteriorSamplers/PoissonRegressionAuxMixSampler.hpp>
 #include <Models/Glm/PosteriorSamplers/poisson_mixture_approximation_table.hpp>
 #include <distributions.hpp>
+
+#ifndef NO_BOOST_THREADS
 #include <boost/thread/thread.hpp>
+#endif
 
 namespace {
   inline double square(double x) { return x * x; }
@@ -46,6 +49,7 @@ namespace BOOM {
     // thread_id = 0, for impute_latent_data method to work correctly
     // in the unthreaded case (i.e. when there is a master but no
     // workers).
+#ifndef NO_BOOST_THREADS
     if (number_of_threads > 1) {
       workers_.reserve(number_of_threads);
       for (int i = 0; i < number_of_threads; ++i) {
@@ -58,6 +62,7 @@ namespace BOOM {
         workers_.push_back(data_imputer);
       }
     }
+#endif
   }
 
   // This is the private constructor, to be used for building worker
@@ -146,6 +151,10 @@ namespace BOOM {
   // above 1 - tau[i].
   void PoissonRegressionAuxMixSampler::impute_latent_data(){
     complete_data_suf_.clear();
+#ifdef NO_BOOST_THREADS
+    impute_latent_data_single_threaded();
+    first_time_ = false;
+#else
     if (first_time_ || workers_.empty()) {
       impute_latent_data_single_threaded();
       first_time_ = false;
@@ -166,6 +175,7 @@ namespace BOOM {
             workers_[i]->complete_data_sufficient_statistics());
       }
     }
+#endif
   }
 
   double PoissonRegressionAuxMixSampler::draw_final_event_time(int y){

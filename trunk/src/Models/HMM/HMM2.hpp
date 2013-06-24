@@ -66,7 +66,6 @@ class HiddenMarkovModel :
 
   // returns loglike as a side effect
   double impute_latent_data();
-  double impute_latent_data_with_threads();
   uint nthreads()const;
 
   Ptr<MarkovModel> mark();
@@ -109,6 +108,8 @@ class HiddenMarkovModel :
   Ptr<UnivParams> loglike_;
   Ptr<UnivParams> logpost_;
   std::vector<Ptr<HmmDataImputer> > workers_;
+
+  double impute_latent_data_with_threads();
 };
 //----------------------------------------------------------------------
 

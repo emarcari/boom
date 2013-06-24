@@ -22,7 +22,6 @@
 
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
-#include <boost/thread/locks.hpp>
 #include <cpputil/lse.hpp>
 #include <cpputil/math_utils.hpp>
 #include <cpputil/report_error.hpp>
